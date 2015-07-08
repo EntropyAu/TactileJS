@@ -1,0 +1,30 @@
+
+ol {
+  list-style: none;
+  border: 1px solid transparent;
+  margin: 0;
+}
+ol.vertical {
+  max-height: 300px;
+  overflow-y: auto;
+}
+ol.vertical li {
+  max-width: 500px;
+}
+ol.horizontal {
+  max-width: 500px;
+  overflow-y: hidden;
+  overflow-x: auto;
+}
+ol.horizontal li {
+  display: inline-block;
+}
+li, ol li {
+  list-style: none;
+  overfow: hidden;
+  background: #F9F9F9;
+  border: 1px solid #CCC;
+  margin: 4px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
