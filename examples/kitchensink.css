@@ -3,12 +3,11 @@ ol {
   list-style: none;
   border: 1px solid transparent;
   margin: 0;
+  padding: 0;
 }
 ol.vertical {
   max-height: 300px;
   overflow-y: auto;
-}
-ol.vertical li {
   max-width: 500px;
 }
 ol.horizontal {
@@ -27,4 +26,16 @@ li, ol li {
   margin: 4px;
   padding: 4px 8px;
   box-sizing: border-box;
+}
+
+.dd-drag-hover {
+  border: 1px solid red;
+}
+
+body {
+  font-size: 16px;
+}
+
+.main.container {
+  margin-top: 7em;
 }

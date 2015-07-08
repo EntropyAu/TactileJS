@@ -1,5 +1,11 @@
 
+export function midpointTop(clientRect) {
+  return clientRect.top + clientRect.height / 2;
+}
 
+export function midpointLeft(clientRect) {
+  return clientRect.left + clientRect.width / 2;
+}
 
 export function fuzzyBinarySearch(elements, value, accessor) {
   let lo = 0,

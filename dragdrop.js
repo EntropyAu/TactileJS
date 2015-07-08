@@ -74,9 +74,11 @@
 	      handleSelector: "[data-drag-handle]",
 	      sortableSelector: "[data-drag-sortable]",
 	      canvasSelector: "[data-drag-canvas]",
+	      valueSelector: "[data-drag-value]",
 	      droppableSelector: "[data-drag-droppable]",
 	      dropZoneSelector: "[data-drag-sortable],[data-drag-droppable],[data-drag-canvas]",
 	      disabledSelector: "[data-drag-disabled]",
+	      scrollableSelector: "[data-drag-scrollable]",
 	      placeholderClass: "dd-drag-placeholder",
 	      ghostClass: "dd-drag-ghost",
 	      overlayClass: "dd-drag-overlay",
@@ -84,7 +86,10 @@
 	      duration: 150,
 	      easing: "ease-in-out",
 	      animateGhostSize: true,
-	      animatedElementLimit: 10
+	      animatedElementLimit: 10,
+	      scrollDelay: 1000,
+	      scrollDistance: 40,
+	      scrollSpeed: 5
 	    };
 
 	    var onPointerDown = this.onPointerDown.bind(this);
@@ -121,8 +126,8 @@
 
 	      var dragElClientRect = dragEl.getBoundingClientRect();
 	      var parentElClientRect = parentEl.getBoundingClientRect();
-	      var parentOffsetTop = dragElClientRect.top - parentElClientRect.top;
-	      var parentOffsetLeft = dragElClientRect.left - parentElClientRect.left;
+	      var offsetTop = dragElClientRect.top - parentElClientRect.top;
+	      var offsetLeft = dragElClientRect.left - parentElClientRect.left;
 
 	      // record the offset of the grip point on the drag item
 	      var gripTop = e.clientY - dragElClientRect.top;
@@ -141,6 +146,12 @@
 	      ghostEl.classList.add(this.options.ghostClass);
 	      ghostEl.style.width = dragElClientRect.width + "px";
 	      ghostEl.style.height = dragElClientRect.height + "px";
+	      ghostEl.style.transform = "";
+	      ghostEl.style.msTransform = "";
+	      ghostEl.style.mozTransform = "";
+	      ghostEl.style.webkitTransform = "";
+	      ghostEl.style.top = "";
+	      ghostEl.style.left = "";
 	      Velocity(ghostEl, { translateX: e.clientX - gripLeft, translateY: e.clientY - gripTop, boxShadowBlur: 0 }, { duration: 0 });
 	      overlayEl.appendChild(ghostEl);
 
@@ -154,6 +165,12 @@
 	      var placeholderEl = dragEl.cloneNode(true);
 	      placeholderEl.removeAttribute("id");
 	      placeholderEl.classList.add(this.options.placeholderClass);
+	      placeholderEl.style.transform = "";
+	      placeholderEl.style.msTransform = "";
+	      placeholderEl.style.mozTransform = "";
+	      placeholderEl.style.webkitTransform = "";
+	      placeholderEl.style.top = "";
+	      placeholderEl.style.left = "";
 	      parentEl.insertBefore(placeholderEl, dragEl.nextSibling);
 
 	      var orientation = dragEl.getAttribute("data-drag-orientation") || "both";
@@ -167,26 +184,31 @@
 	        ghostWidth: dragElClientRect.width,
 	        ghostHeight: dragElClientRect.height,
 	        placeholderEl: placeholderEl,
-	        placeholderDropZoneEl: null,
-	        placeholderDropZoneIndex: null,
-	        placeholderDropZoneOffsetTop: null,
-	        placeholderDropZoneOffsetLeft: null,
+	        placeholderParentEl: null,
+	        placeholderIndex: null,
+	        placeholderOffsetTop: null,
+	        placeholderOffsetLeft: null,
+	        placeholderWidth: null,
+	        placeholderHeight: null,
 	        gripTop: gripTop,
 	        gripLeft: gripLeft,
-	        parentEl: document.body,
+	        parentEl: parentEl,
 	        parentIndex: parentIndex,
-	        parentOffsetTop: parentOffsetTop,
-	        parentOffsetLeft: parentOffsetLeft,
+	        offsetTop: offsetTop,
+	        offsetLeft: offsetLeft,
 	        originalParentEl: parentEl,
 	        originalParentIndex: parentIndex,
-	        originalParentOffsetTop: parentOffsetTop,
-	        originalParentOffsetLeft: parentOffsetLeft,
-	        orientation: orientation
+	        originalParentOffsetTop: offsetTop,
+	        originalParentOffsetLeft: offsetLeft,
+	        orientation: orientation,
+	        pointerClientX: e.clientX,
+	        pointerClientY: e.clientY,
+	        scrollInterval: null
 	      };
 
-	      this._findDropZone(e.clientX, e.clientY);
-
 	      this._updatePlaceholder(false);
+
+	      this._findDropZone(e.clientX, e.clientY);
 
 	      dom.raiseEvent(dragEl, "dragstart", {});
 
@@ -197,6 +219,9 @@
 	    value: function onPointerMove(e) {
 	      // suppress default event handling, prevents the drag from being interpreted as a selection
 	      dom.cancelEvent(e);
+
+	      this.context.pointerClientX = e.clientX;
+	      this.context.pointerClientY = e.clientY;
 
 	      var newClientTop = e.clientY - this.context.gripTop;
 	      var newClientLeft = e.clientX - this.context.gripLeft;
@@ -216,7 +241,26 @@
 	      if (this.context.parentEl.matches(this.options.canvasSelector)) this._updateCanvasOffsets(e.clientX, e.clientY);
 	      this._updatePlaceholder();
 	      this._updateGhost(newClientLeft, newClientTop);
-	      return false;
+	      this._autoScroll(e.clientX, e.clientY);
+	    }
+	  }, {
+	    key: "_autoScroll",
+	    value: function _autoScroll(clientLeft, clientTop) {
+	      if (!this.context.parentEl) return;
+	      if (dom.canScrollVertical(this.context.parentEl)) {
+	        var containerRect = this.context.parentEl.getBoundingClientRect();
+	        if (clientTop > containerRect.bottom - 20) {
+	          this.context.parentEl.scrollTop += 5;
+	        }
+	        if (clientTop < containerRect.top + 20) {
+	          this.context.parentEl.scrollTop += -5;
+	        }
+	      }
+	    }
+	  }, {
+	    key: "_onScrollInterval",
+	    value: function _onScrollInterval() {
+	      this.context.scrollInterval = setInterval(this._onScrollInterval.bind(this), 16);
 	    }
 	  }, {
 	    key: "_findDropZone",
@@ -225,22 +269,24 @@
 	      while (!this._positionIsInDropZone(this.context.parentEl, clientLeft, clientTop)) {
 	        var parentDropZoneEl = dom.closest(this.context.parentEl.parentElement, "body," + this.options.dropZoneSelector);
 	        if (!parentDropZoneEl) break;
+	        this.context.parentEl.classList.remove(this.options.dropZoneHoverClass);
 	        dom.raiseEvent(this.context.parentEl, "dragleave", {});
 	        this.context.parentEl = parentDropZoneEl;
 	      }
 
 	      // walk down the drop zone tree to the lowest level dropZone
 	      this._buildDropZoneCacheIfRequired(this.context.parentEl);
-	      var parentOffsetLeft = clientLeft - this.context.parentEl.__dd_clientRect.left + this.context.parentEl.scrollLeft,
-	          parentOffsetTop = clientTop - this.context.parentEl.__dd_clientRect.top + this.context.parentEl.scrollTop;
-	      var childDropZoneEl = this._getChildDropZoneAtOffset(this.context.parentEl, parentOffsetTop, parentOffsetLeft);
+	      var offsetLeft = clientLeft - this.context.parentEl.__dd_clientRect.left + this.context.parentEl.scrollLeft,
+	          offsetTop = clientTop - this.context.parentEl.__dd_clientRect.top + this.context.parentEl.scrollTop;
+	      var childDropZoneEl = this._getChildDropZoneAtOffset(this.context.parentEl, offsetTop, offsetLeft);
 	      while (childDropZoneEl) {
 	        this.context.parentEl = childDropZoneEl;
 	        this._buildDropZoneCacheIfRequired(this.context.parentEl);
-	        parentOffsetLeft = clientLeft - this.context.parentEl.__dd_clientRect.left + this.context.parentEl.scrollLeft, parentOffsetTop = clientTop - this.context.parentEl.__dd_clientRect.top + this.context.parentEl.scrollTop;
+	        offsetLeft = clientLeft - this.context.parentEl.__dd_clientRect.left + this.context.parentEl.scrollLeft, offsetTop = clientTop - this.context.parentEl.__dd_clientRect.top + this.context.parentEl.scrollTop;
 
+	        this.context.parentEl.classList.add(this.options.dropZoneHoverClass);
 	        dom.raiseEvent(this.context.parentEl, "dragenter", {});
-	        childDropZoneEl = this._getChildDropZoneAtOffset(this.context.parentEl, parentOffsetTop, parentOffsetLeft);
+	        childDropZoneEl = this._getChildDropZoneAtOffset(this.context.parentEl, offsetTop, offsetLeft);
 	      }
 	    }
 	  }, {
@@ -250,29 +296,31 @@
 	    value: function _updateSortableIndex(clientLeft, clientTop) {
 	      var direction = this.context.parentEl.getAttribute("data-drag-sortable") || "vertical";
 	      var newIndex = null;
+
 	      switch (direction) {
 	        case "horizontal":
-	          newIndex = helpers.fuzzyBinarySearch(this.context.parentEl.children, clientLeft - this.context.parentEl.__dd_clientRect.left + this.context.parentEl.scrollLeft, function (el) {
-	            return el.offsetLeft - el.offsetWidth / 2;
+	          newIndex = helpers.fuzzyBinarySearch(this.context.parentEl.children, clientLeft, function (el) {
+	            return helpers.midpointLeft(el.getBoundingClientRect());
 	          });
 	          break;
 	        case "vertical":
-	          newIndex = helpers.fuzzyBinarySearch(this.context.parentEl.children, clientTop - this.context.parentEl.__dd_clientRect.top + this.context.parentEl.scrollTop, function (el) {
-	            return el.offsetTop + el.offsetHeight / 2;
+	          newIndex = helpers.fuzzyBinarySearch(this.context.parentEl.children, clientTop, function (el) {
+	            return helpers.midpointTop(el.getBoundingClientRect());
 	          });
 	          break;
 	        case "wrap":
 	          throw new Error("Not implemented");
 	      }
 	      // the parent index will be based on the set of children INCLUDING the placeholder element we need to compensate
-	      if (this.context.placeholderDropZoneIndex && newIndex > this.context.placeholderDropZoneIndex) newIndex--;
+	      if (this.context.placeholderIndex && newIndex > this.context.placeholderIndex) newIndex++;
+
 	      this.context.parentIndex = newIndex;
 	    }
 	  }, {
 	    key: "_updateCanvasOffsets",
 	    value: function _updateCanvasOffsets(clientLeft, clientTop) {
-	      var parentOffsetLeft = clientLeft - this.context.parentEl.__dd_clientRect.left + this.context.parentEl.scrollLeft,
-	          parentOffsetTop = clientTop - this.context.parentEl.__dd_clientRect.top + this.context.parentEl.scrollTop;
+	      var offsetLeft = clientLeft - this.context.parentEl.__dd_clientRect.left + this.context.parentEl.scrollLeft,
+	          offsetTop = clientTop - this.context.parentEl.__dd_clientRect.top + this.context.parentEl.scrollTop;
 
 	      // snap to drop zone bounds
 	      var snapToBounds = this.context.parentEl.getAttribute("data-drag-snap-to-bounds");
@@ -294,8 +342,8 @@
 	        newTop = Math.round((newTop - dropZoneOffsets.top) / cellH) * cellH + dropZoneOffsets.top;
 	        newLeft = Math.round((newLeft - dropZoneOffsets.left) / cellW) * cellW + dropZoneOffsets.left;
 	      }
-	      this.context.parentOffsetLeft = null;
-	      this.context.parentOffsetTop = null;
+	      this.context.offsetLeft = offsetLeft;
+	      this.context.offsetTop = offsetTop;
 	    }
 	  }, {
 	    key: "_updateGhost",
@@ -304,6 +352,15 @@
 	        translateX: clientLeft,
 	        translateY: clientTop
 	      }, { duration: 0 });
+	      if (this.options.animateGhostSize && this.context.placeholderParentEl) {
+	        Velocity(this.context.ghostEl, {
+	          width: this.context.placeholderWidth,
+	          height: this.context.placeholderHeight
+	        }, {
+	          duration: this.options.duration,
+	          easing: "linear",
+	          queue: false });
+	      }
 	    }
 	  }, {
 	    key: "_updatePlaceholder",
@@ -311,7 +368,7 @@
 	      var animate = arguments[0] === undefined ? true : arguments[0];
 
 	      // check if we have any work to do...
-	      if (this.context.parentIndex === this.context.placeholderDropZoneIndex && this.context.parentEl === this.context.placeholderDropZoneEl) return;
+	      if (this.context.parentIndex === this.context.placeholderIndex && this.context.parentEl === this.context.placeholderParentEl && this.context.offsetTop === this.context.placeholderOffsetTop && this.context.offsetLeft === this.context.placeholderOffsetLeft) return;
 
 	      // TODO: optimisation, update both old and new before triggering animation avoid two layout passes
 	      // TODO: optimisation, recycle old positions
@@ -320,23 +377,44 @@
 	      var newPhParentEl = this.context.parentEl.matches(this.options.dropZoneSelector) ? this.context.parentEl : null;
 
 	      // first, remove the old placeholder
-	      if (this.context.placeholderDropZoneEl && (this.context.parentEl === null || this.context.parentEl !== newPhParentEl)) {
-	        if (animate) this._cacheChildOffsets(this.context.placeholderDropZoneEl, "_old");
+	      if (this.context.placeholderParentEl && (this.context.parentEl === null || this.context.parentEl !== newPhParentEl)) {
+	        if (animate) this._cacheChildOffsets(this.context.placeholderParentEl, "_old");
 	        this.context.placeholderEl.remove();
-	        if (animate) this._cacheChildOffsets(this.context.placeholderDropZoneEl, "_new");
-	        if (animate) this._animateElementsBetweenSavedOffsets(this.context.placeholderDropZoneEl);
+	        if (animate) this._cacheChildOffsets(this.context.placeholderParentEl, "_new");
+	        if (animate) this._animateElementsBetweenSavedOffsets(this.context.placeholderParentEl);
+	        this.context.placeholderWidth = null;
+	        this.context.placeholderHeight = null;
+	        this.context.placeholderParentEl = null;
 	      }
 
 	      // insert the new placeholder
-	      if (newPhParentEl) {
+	      if (this._isSortable(newPhParentEl) && (this.context.placeholderParentEl !== this.context.parentEl || this.context.placeholderIndex !== this.context.parentIndex)) {
 	        if (animate) this._cacheChildOffsets(this.context.parentEl, "_old");
 	        this.context.parentEl.insertBefore(this.context.placeholderEl, this.context.parentEl.children[this.context.parentIndex]);
 	        if (animate) this._cacheChildOffsets(this.context.parentEl, "_new");
 	        if (animate) this._animateElementsBetweenSavedOffsets(this.context.parentEl);
+	        this.context.placeholderParentEl = this.context.parentEl;
 	      }
 
-	      this.context.placeholderDropZoneIndex = this.context.parentIndex;
-	      this.context.placeholderDropZoneEl = newPhParentEl;
+	      if (this._isCanvas(newPhParentEl)) {
+	        if (this.context.placeholderParentEl !== this.context.parentEl) {
+	          this.context.parentEl.appendChild(this.context.placeholderEl);
+	          this.context.placeholderParentEl = this.context.parentEl;
+	        }
+	        dom.translate(this.context.placeholderEl, this.context.offsetLeft, this.context.offsetTop);
+	        this.context.placeholderOffsetLeft = this.context.offsetLeft;
+	        this.context.placeholderOffsetTop = this.context.offsetTop;
+	      } else {
+	        dom.translate(this.context.placeholderEl, 0, 0);
+	      }
+
+	      this.context.placeholderIndex = this.context.parentIndex;
+
+	      // measure the width and height of the item for use later
+	      if (this.context.placeholderParentEl) {
+	        this.context.placeholderWidth = this.context.placeholderEl.getBoundingClientRect().width;
+	        this.context.placeholderHeight = this.context.placeholderEl.getBoundingClientRect().height;
+	      }
 	    }
 	  }, {
 	    key: "onPointerUp",
@@ -345,7 +423,7 @@
 	      dom.raiseEvent(this.context.dragEl, "dragend", {});
 	      dom.raiseEvent(this.context.dragEl, "drop", {});
 
-	      if (this.context.placeholderDropZoneEl) {
+	      if (this.context.placeholderParentEl) {
 	        var placeholderRect = this.context.placeholderEl.getBoundingClientRect();
 	        var targetProps = {
 	          translateX: [placeholderRect.left, "ease-out"],
@@ -360,20 +438,26 @@
 	        Velocity(this.context.ghostEl, targetProps, {
 	          duration: this.options.duration,
 	          easing: this.options.easing,
-	          complete: this._cleanUp.bind(this)
+	          complete: this._placeDragElInFinalPosition.bind(this)
 	        });
 	      } else {
-	        _cleanUp();
+	        this._placeDragElInFinalPosition();
 	      }
 	    }
 	  }, {
-	    key: "_cleanUp",
-	    value: function _cleanUp() {
+	    key: "_placeDragElInFinalPosition",
+	    value: function _placeDragElInFinalPosition() {
 	      this.context.placeholderEl.remove();
-	      // restore the original dragEl to its (new/old) position
-	      if (this.context.parentEl) {
+
+	      if (this._isSortable(this.context.parentEl)) {
 	        this.context.parentEl.insertBefore(this.context.dragEl, this.context.parentEl.children[this.context.parentIndex]);
-	      } else {
+	      }
+	      if (this._isCanvas(this.context.parentEl)) {
+	        dom.topLeft(this.context.dragEl, this.context.offsetTop, this.context.offsetLeft);
+	        this.context.parentEl.appendChild(this.context.dragEl);
+	      }
+	      if (!this.context.parentEl) {
+	        dom.topLeft(this.context.dragEl, this.context.originalOffsetTop, this.context.originalOffsetLeft);
 	        this.context.originalDropZone.insertBefore(this.context.dragEl, this.context.originalAfterEl);
 	      }
 	      this.context.overlayEl.remove();
@@ -470,6 +554,16 @@
 	      return null;
 	    }
 	  }, {
+	    key: "_isSortable",
+	    value: function _isSortable(el) {
+	      return el && el.matches(this.options.sortableSelector);
+	    }
+	  }, {
+	    key: "_isCanvas",
+	    value: function _isCanvas(el) {
+	      return el && el.matches(this.options.canvasSelector);
+	    }
+	  }, {
 	    key: "_positionIsInDropZone",
 	    value: function _positionIsInDropZone(parentEl, clientLeft, clientTop) {
 	      this._buildDropZoneCacheIfRequired(parentEl);
@@ -546,7 +640,6 @@
 	        for (var _iterator4 = el.children[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
 	          var childEl = _step4.value;
 
-	          if (++animatedItemCount > this.options.animatedElementLimit) break;
 	          if (childEl.matches("." + this.options.placeholderClass)) continue;
 
 	          var oldOffset = childEl._old;
@@ -554,13 +647,14 @@
 
 	          if (!oldOffset || !newOffset || oldOffset.top === newOffset.top && oldOffset.left === newOffset.left) continue;
 
+	          if (++animatedItemCount > this.options.animatedElementLimit) break;
+
 	          // the following line makes the animations smoother in safari
 	          //childEl.style.webkitTransform = 'translate3d(0,' + (oldOffset.top - newOffset.top) + 'px,0)';
 
 	          Velocity(childEl, {
 	            translateX: "+=" + (oldOffset.left - newOffset.left) + "px",
-	            translateY: "+=" + (oldOffset.top - newOffset.top) + "px",
-	            translateZ: "1px"
+	            translateY: "+=" + (oldOffset.top - newOffset.top) + "px"
 	          }, { duration: 0 });
 
 	          Velocity(childEl, {
@@ -608,7 +702,17 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.midpointTop = midpointTop;
+	exports.midpointLeft = midpointLeft;
 	exports.fuzzyBinarySearch = fuzzyBinarySearch;
+
+	function midpointTop(clientRect) {
+	  return clientRect.top + clientRect.height / 2;
+	}
+
+	function midpointLeft(clientRect) {
+	  return clientRect.left + clientRect.width / 2;
+	}
 
 	function fuzzyBinarySearch(elements, value, accessor) {
 	  var lo = 0,
@@ -638,12 +742,18 @@
 /* 2 */
 /***/ function(module, exports) {
 
+	// selectors
+
 	'use strict';
 
 	Object.defineProperty(exports, '__esModule', {
 	  value: true
 	});
 	exports.closest = closest;
+	exports.translate = translate;
+	exports.topLeft = topLeft;
+	exports.canScrollVertical = canScrollVertical;
+	exports.canScrollHorizontal = canScrollHorizontal;
 	exports.cancelEvent = cancelEvent;
 	exports.raiseEvent = raiseEvent;
 
@@ -655,6 +765,37 @@
 	  return null;
 	}
 
+	// vendor
+
+	var vendorTransform = null;
+	setTimeout(function () {
+	  if (document.body.style.webkitTransform !== undefined) vendorTransform = 'webkitTransform';
+	  if (document.body.style.mozTransform !== undefined) vendorTransform = 'mozTransform';
+	  if (document.body.style.msTransform !== undefined) vendorTransform = 'msTransform';
+	  if (document.body.style.transform !== undefined) vendorTransform = 'transform';
+	});
+
+	function translate(el, x, y) {
+	  el.style[vendorTransform] = 'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(0)';
+	}
+
+	function topLeft(el, t, l) {
+	  el.style.top = t + 'px';
+	  el.style.left = l + 'px';
+	}
+
+	// utilities
+
+	function canScrollVertical(el) {
+	  return el.scrollHeight > el.clientHeight;
+	}
+
+	function canScrollHorizontal(el) {
+	  return el.scrollWidth > el.clientWidth;
+	}
+
+	// events
+
 	function cancelEvent(e) {
 	  e.stopPropagation();
 	  e.preventDefault();
@@ -664,9 +805,7 @@
 
 	function raiseEvent(source, eventName, eventData) {
 	  var event = new CustomEvent(eventName, eventData);
-	  if (window['_' + eventName]) window['_' + eventName](source, event);
 	  source.dispatchEvent(event);
-	  //console.log(eventName, eventData, source);
 	}
 
 /***/ }
