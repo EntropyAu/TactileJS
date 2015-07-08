@@ -587,26 +587,6 @@
 	        }
 	      }
 	    }
-
-	    /*
-	     // TODO: explore replacing with simulated mousewheel event
-	    function _bubbleScroll(el, dx, dy) {
-	      while ((dx != 0 || dy != 0) && el != null) {
-	        let oldScrollLeft = el.scrollLeft;
-	        let oldScrollTop = el.scrollTop;
-	        let newScrollLeft = oldScrollLeft;
-	        let newScrollTop = oldScrollTop;
-	        if (dx > 0) { newScrollLeft = Math.min(el.scrollWidth - el.clientWidth, oldScrollLeft + dx); dx -= newScrollLeft - oldScrollLeft; };
-	        if (dx < 0) { newScrollLeft = Math.max(0, oldScrollLeft - dx); dx -= newScrollLeft - oldScrollLeft; };
-	        if (dy > 0) { newScrollTop = Math.min(el.scrollHeight - el.clientHeight, oldScrollTop + dy); dy -= newScrollTop - oldScrollTop; };
-	        if (dy < 0) { newScrollTop = Math.max(0, oldScrollTop - dy); dy -= newScrollTop - oldScrollTop; };
-	        if (newScrollLeft != oldScrollLeft) el.scrollLeft = newScrollLeft;
-	        if (newScrollTop != oldScrollTop) el.scrollTop = newScrollTop;
-	        el = el.parentElement;
-	      }
-	    }
-	    */
-
 	  }]);
 
 	  return DragDrop;
