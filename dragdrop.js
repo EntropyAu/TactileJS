@@ -93,6 +93,7 @@
 	      easing: "ease-in-out",
 	      ghostResize: true,
 	      ghostResizeAnimated: true,
+	      ghostShadowSize: 20,
 	      animatedElementLimit: 10
 	    };
 	    var onPointerDown = this.onPointerDown.bind(this);
@@ -180,7 +181,13 @@
 	      overlayEl.appendChild(ghostEl);
 
 	      // animate the ghost 'lifting up' from the original position
-	      Velocity(ghostEl, { rotateZ: -1, boxShadowBlur: 10 }, { duration: this.options.duration, easing: this.options.easing });
+	      Velocity(ghostEl, {
+	        rotateZ: -1,
+	        boxShadowBlur: this.options.ghostShadowSize
+	      }, {
+	        duration: this.options.duration,
+	        easing: this.options.easing
+	      });
 
 	      // apply focus to the ghost to clear any in-progress selections
 	      ghostEl.focus();
