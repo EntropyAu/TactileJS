@@ -1,5 +1,5 @@
-*** Drag & Drop
-Under initial development
+*** Drag & Drop ***
+* Under initial development *
 
 
 webpack --watch
