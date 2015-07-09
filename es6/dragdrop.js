@@ -1,6 +1,7 @@
 import * as constants from "./constants.js";
 import * as helpers from "./helpers.js";
 import * as dom from "./dom.js";
+import * as scrolling from "./scrolling.js"
 
 // conventions
 // all client positions are expressed as x,y
@@ -21,7 +22,7 @@ export class DragDrop {
       animatedElementLimit: 10,
       scrollDelay:          1000,
       scrollDistance:       40,
-      scrollSpeed:          5
+      scrollSpeed:          3
     }
     var onPointerDown = this.onPointerDown.bind(this);
     document.addEventListener('mousedown', onPointerDown, false);
@@ -43,7 +44,8 @@ export class DragDrop {
       // if the item contains a handle (which was not the the pointer down spot) then ignore
       // TODO need to generate permutations of descendant item handle selector
       if (dragEl.querySelectorAll(constants.handleSelector).length >
-          dragEl.querySelectorAll(constants.draggableSelector + ' ' + constants.handleSelector).length) return;
+          dragEl.querySelectorAll(`${constants.draggableSelector} ${constants.handleSelector}`).length)
+        return;
     }
     if (!dragEl) return;
 
@@ -131,7 +133,10 @@ export class DragDrop {
       orientation: orientation,
       pointerX: e.clientX,
       pointerY: e.clientY,
-      scrollInterval: null
+      scrollAnimationFrame: null,
+      scrollEl: null,
+      scrollDx: null,
+      scrollDy: null
     };
 
     this.updatePlaceholder(this.context, false);
@@ -171,33 +176,75 @@ export class DragDrop {
     dom.raiseEvent(context.dragEl, 'drag', {});
 
     this.findDropZone(context);
-    if (this._isSortable(context.parentEl)) this.updateSortableIndex(context);
-    if (this._isCanvas(context.parentEl)) this.updateCanvasOffsets(context);
+    if (this.isSortable(context.parentEl)) this.updateSortableIndex(context);
+    if (this.isCanvas(context.parentEl)) this.updateCanvasOffsets(context);
     this.updatePlaceholder(context);
     this.updateGhost(context);
-    this.autoScroll(context);
+    this.updateAutoScroll(context);
   }
 
 
 
-  autoScroll(context) {
-    if (!context.parentEl) return;
-    if (dom.canScrollVertical(context.parentEl)) {
-      let containerRect = context.parentEl.getBoundingClientRect();
-      if (context.pointerY > containerRect.bottom - 20) {
-        context.parentEl.scrollTop += 5;
-      }
-      if (context.pointerY < containerRect.top + 20) {
-        context.parentEl.scrollTop += -5;
-      }
+  onScrollAnimationFrame() {
+    this.continueAutoScroll(this.context);
+  }
+
+  updateAutoScroll(context) {
+    [context.scrollEl, context.scrollDx, context.scrollDy] = this.getScrollZoneUnderPointer(context);
+    if (context.scrollEl) this.startAutoScroll(context);
+    if (!context.scrollEl) this.stopAutoScroll(context);
+  }
+
+  startAutoScroll(context) {
+    context.scrollAnimationFrame = requestAnimationFrame(this.onScrollAnimationFrame.bind(this));
+  }
+
+  stopAutoScroll(context) {
+    if (context.scrollAnimationFrame) {
+      cancelAnimationFrame(context.scrollAnimationFrame);
+      context.scrollAnimationFrame = null;
+    }
+  }
+
+  continueAutoScroll(context) {
+    if (context && context.scrollEl) {
+      context.scrollEl.scrollTop += context.scrollDy;
+      context.scrollEl.scrollLeft += context.scrollDx;
+      this.updateAutoScroll(context);
     }
   }
 
 
-  _onScrollInterval() {
-    this.context.scrollInterval = setInterval(this._onScrollInterval.bind(this), 16);
 
+  getScrollZoneUnderPointer(context) {
+    var scrollableAncestorEls = dom.ancestors(context.parentEl, constants.scrollableSelector);
+
+    for (let i = 0; i < scrollableAncestorEls.length; i++) {
+      let scrollEl = scrollableAncestorEls[i];
+      let scrollableRect = scrollEl.getBoundingClientRect();  // cache this
+      let sx = 0;
+      let sy = 0;
+
+      if (scrollEl.getAttribute(constants.scrollAttribute) !== 'vertical') {
+        let hScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.width / 3);
+        if (context.pointerX > scrollableRect.right  - hScrollDistance && dom.canScrollRight(scrollEl)) sx = +this.options.scrollSpeed;
+        if (context.pointerX < scrollableRect.left   + hScrollDistance && dom.canScrollLeft(scrollEl)) sx = -this.options.scrollSpeed;
+      }
+
+      if (scrollEl.getAttribute(constants.scrollAttribute) !== 'horizontal') {
+        let vScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.height / 3);
+        if (context.pointerY < scrollableRect.top    + vScrollDistance && dom.canScrollUp(scrollEl)) sy = -this.options.scrollSpeed;
+        if (context.pointerY > scrollableRect.bottom - vScrollDistance && dom.canScrollDown(scrollEl)) sy = +this.options.scrollSpeed;
+      }
+
+      if (sx !== 0 || sy !== 0) {
+        return [scrollEl, sx, sy];
+      }
+    }
+    return [null, null, null];
   }
+
+
 
 
   findDropZone(context) {
@@ -249,7 +296,7 @@ export class DragDrop {
         newIndex = helpers.fuzzyBinarySearch(
           context.parentEl.children,
           offsetPointerX,
-          el => helpers.midpointLeft(el.getBoundingClientRect()));
+          el => el.offsetLeft + el.offsetWidth / 2);
         break;
       case 'vertical':
         newIndex = helpers.fuzzyBinarySearch(
@@ -316,27 +363,27 @@ export class DragDrop {
     // first, remove the old placeholder
     if (context.placeholderParentEl
       && (context.parentEl === null || context.parentEl !== newPhParentEl)) {
-      if (animate) this._cacheChildOffsets(context.placeholderParentEl, '_old');
+      if (animate) this.cacheChildOffsets(context.placeholderParentEl, '_old');
       context.placeholderEl.remove();
-      if (animate) this._cacheChildOffsets(context.placeholderParentEl, '_new');
-      if (animate) this._animateElementsBetweenSavedOffsets(context.placeholderParentEl);
+      if (animate) this.cacheChildOffsets(context.placeholderParentEl, '_new');
+      if (animate) this.animateElementsBetweenSavedOffsets(context.placeholderParentEl);
       context.placeholderWidth = null;
       context.placeholderHeight = null;
       context.placeholderParentEl = null;
     }
 
     // insert the new placeholder
-    if (this._isSortable(newPhParentEl)
+    if (this.isSortable(newPhParentEl)
       && (context.placeholderParentEl !== context.parentEl
         || context.placeholderIndex !== context.parentIndex)) {
-      if (animate) this._cacheChildOffsets(context.parentEl, '_old');
+      if (animate) this.cacheChildOffsets(context.parentEl, '_old');
       context.parentEl.insertBefore(context.placeholderEl, context.parentEl.children[context.parentIndex]);
-      if (animate) this._cacheChildOffsets(context.parentEl, '_new');
-      if (animate) this._animateElementsBetweenSavedOffsets(context.parentEl);
+      if (animate) this.cacheChildOffsets(context.parentEl, '_new');
+      if (animate) this.animateElementsBetweenSavedOffsets(context.parentEl);
       context.placeholderParentEl = context.parentEl;
     }
 
-    if (this._isCanvas(newPhParentEl)) {
+    if (this.isCanvas(newPhParentEl)) {
       if (context.placeholderParentEl !== context.parentEl) {
         context.parentEl.appendChild(context.placeholderEl);
         context.placeholderParentEl = context.parentEl;
@@ -405,9 +452,11 @@ export class DragDrop {
 
 
   onPointerUp(e) {
-    this._unbindPointerEventsForDragging()
+    this.unbindPointerEventsForDragging()
     dom.raiseEvent(this.context.dragEl, 'dragend', {})
     dom.raiseEvent(this.context.dragEl, 'drop', {})
+
+    this.stopAutoScroll(this.context);
 
     if (this.context.placeholderParentEl) {
       let placeholderRect = this.context.placeholderEl.getBoundingClientRect();
@@ -426,21 +475,21 @@ export class DragDrop {
       Velocity(this.context.ghostEl, targetProps, {
         duration: this.options.duration,
         easing: this.options.easing,
-        complete: this._placeDragElInFinalPosition.bind(this)
+        complete: this.placeDragElInFinalPosition.bind(this)
       });
     } else {
-      this._placeDragElInFinalPosition()
+      this.placeDragElInFinalPosition()
     }
   }
 
 
-  _placeDragElInFinalPosition() {
+  placeDragElInFinalPosition() {
     this.context.placeholderEl.remove();
 
-    if (this._isSortable(this.context.parentEl)) {
+    if (this.isSortable(this.context.parentEl)) {
       this.context.parentEl.insertBefore(this.context.dragEl, this.context.parentEl.children[this.context.parentIndex]);
     }
-    if (this._isCanvas(this.context.parentEl)) {
+    if (this.isCanvas(this.context.parentEl)) {
       dom.topLeft(this.context.dragEl, this.context.offsetTop, this.context.offsetLeft);
       this.context.parentEl.appendChild(this.context.dragEl);
     }
@@ -486,7 +535,7 @@ export class DragDrop {
   }
 
 
-  _clearDropZoneCache(el) {
+  clearDropZoneCache(el) {
     delete el.__dd_clientRect;
     delete el.__dd_scrollTop;
     delete el.__dd_scrollLeft;
@@ -506,11 +555,11 @@ export class DragDrop {
   }
 
 
-  _isSortable(el) {
+  isSortable(el) {
     return el && el.matches(constants.sortableSelector);
   }
 
-  _isCanvas(el) {
+  isCanvas(el) {
     return el && el.matches(constants.canvasSelector);
   }
 
@@ -524,7 +573,7 @@ export class DragDrop {
   }
 
 
-  _checkScrollProximity(el, offsetTop, offsetLeft) {
+  checkScrollProximity(el, offsetTop, offsetLeft) {
     // iterate up the tree until we find a scrollable element
     //
   }
@@ -537,23 +586,15 @@ export class DragDrop {
     document.addEventListener('mouseup', this.onPointerUpBound, false);
   }
 
-  _unbindPointerEventsForDragging() {
+  unbindPointerEventsForDragging() {
     document.removeEventListener('mousemove', this.onPointerMoveBound);
     document.removeEventListener('mouseup', this.onPointerUpBound);
   }
 
 
-  _dragenter(dropZoneEl, event) {
-    dropZoneEl.classList.add(this.options.dropZoneHoverClass);
-  }
-
-  _dragleave(dropZoneEl, event) {
-    dropZoneEl.classList.remove(this.options.dropZoneHoverClass);
-  }
-
-
   // WARNING: function may trigger layout refresh
-  _cacheChildOffsets(el, propertyName) {
+  // optimisation: don't need to cache all; only cache those likely impacted by offset
+  cacheChildOffsets(el, propertyName) {
     // don't use babel.io for..of here, as it prevents optimisation
     for (let i = 0; i < el.children.length; i++) {
       let childEl = el.children[i];
@@ -562,7 +603,7 @@ export class DragDrop {
   }
 
 
-  _animateElementsBetweenSavedOffsets(el) {
+  animateElementsBetweenSavedOffsets(el) {
     let animatedItemCount = 0;
     for (let childEl of el.children) {
       if (childEl.matches(`.${this.options.placeholderClass}`)) continue;

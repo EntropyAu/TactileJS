@@ -1,4 +1,3 @@
-
 [data-drag-sortable],
 [data-drag-canvas] {
   // required to ensure offset positions are relative to containers
@@ -9,26 +8,46 @@
           user-select: none;
 }
 
+[data-drag-sortable] > *,
+[data-drag-canvas] > * {
+  cursor: default;
+}
+
 [data-drag-canvas] > * {
   position: absolute;
   display: inline-block;
   margin: 0;
 }
 
-[data-drag-sortable] > *,
-[data-drag-canvas] > * {
-  cursor: default;
+[data-drag-sortable] > * {
+  -webkit-backface-visibility: hidden;
+     -moz-backface-visibility: hidden;
+      -ms-backface-visibility: hidden;
+          backface-visibility: hidden;
+  will-change: transform;
+}
+
+[data-drag-scrollable] {
+  position: relative;
+}
+
+[data-drag-scrollable='both'] {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+[data-drag-scrollable='horizontal'] {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+[data-drag-scrollable='vertical'] {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 [data-drag-disabled] {
   cursor: default;
-}
-
-.dd-drag-placeholder {
-  opacity: 0.1;
-  box-shadow: none !important;
-  z-index: -1;
-  position: relative;
 }
 
 [data-drag-handle] {
@@ -51,6 +70,13 @@
 
 /* TODO figure out a different way of applying these classes */
 /* performance of * is problematic */
+.dd-drag-placeholder {
+  opacity: 0.1;
+  box-shadow: none !important;
+  z-index: -1;
+  position: relative;
+}
+
 .dd-drag-hover > * {
   -webkit-backface-visibility: hidden;
      -moz-backface-visibility: hidden;
@@ -89,12 +115,5 @@
       -ms-backface-visibility: hidden;
           backface-visibility: hidden;
   box-shadow: 0 0 0 rgba(0,0,0,0.15);
-  will-change: transform;
-}
-[data-drag-sortable] > * {
-  -webkit-backface-visibility: hidden;
-     -moz-backface-visibility: hidden;
-      -ms-backface-visibility: hidden;
-          backface-visibility: hidden;
   will-change: transform;
 }

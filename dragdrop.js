@@ -50,6 +50,8 @@
 	  value: true
 	});
 
+	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
+
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
@@ -67,6 +69,10 @@
 	var _domJs = __webpack_require__(3);
 
 	var dom = _interopRequireWildcard(_domJs);
+
+	var _scrollingJs = __webpack_require__(4);
+
+	var scrolling = _interopRequireWildcard(_scrollingJs);
 
 	// conventions
 	// all client positions are expressed as x,y
@@ -89,7 +95,7 @@
 	      animatedElementLimit: 10,
 	      scrollDelay: 1000,
 	      scrollDistance: 40,
-	      scrollSpeed: 5
+	      scrollSpeed: 3
 	    };
 	    var onPointerDown = this.onPointerDown.bind(this);
 	    document.addEventListener("mousedown", onPointerDown, false);
@@ -199,7 +205,10 @@
 	        orientation: orientation,
 	        pointerX: e.clientX,
 	        pointerY: e.clientY,
-	        scrollInterval: null
+	        scrollAnimationFrame: null,
+	        scrollEl: null,
+	        scrollDx: null,
+	        scrollDy: null
 	      };
 
 	      this.updatePlaceholder(this.context, false);
@@ -236,30 +245,81 @@
 	      dom.raiseEvent(context.dragEl, "drag", {});
 
 	      this.findDropZone(context);
-	      if (this._isSortable(context.parentEl)) this.updateSortableIndex(context);
-	      if (this._isCanvas(context.parentEl)) this.updateCanvasOffsets(context);
+	      if (this.isSortable(context.parentEl)) this.updateSortableIndex(context);
+	      if (this.isCanvas(context.parentEl)) this.updateCanvasOffsets(context);
 	      this.updatePlaceholder(context);
 	      this.updateGhost(context);
-	      this.autoScroll(context);
+	      this.updateAutoScroll(context);
 	    }
 	  }, {
-	    key: "autoScroll",
-	    value: function autoScroll(context) {
-	      if (!context.parentEl) return;
-	      if (dom.canScrollVertical(context.parentEl)) {
-	        var containerRect = context.parentEl.getBoundingClientRect();
-	        if (context.pointerY > containerRect.bottom - 20) {
-	          context.parentEl.scrollTop += 5;
-	        }
-	        if (context.pointerY < containerRect.top + 20) {
-	          context.parentEl.scrollTop += -5;
-	        }
+	    key: "onScrollAnimationFrame",
+	    value: function onScrollAnimationFrame() {
+	      this.continueAutoScroll(this.context);
+	    }
+	  }, {
+	    key: "updateAutoScroll",
+	    value: function updateAutoScroll(context) {
+	      var _getScrollZoneUnderPointer = this.getScrollZoneUnderPointer(context);
+
+	      var _getScrollZoneUnderPointer2 = _slicedToArray(_getScrollZoneUnderPointer, 3);
+
+	      context.scrollEl = _getScrollZoneUnderPointer2[0];
+	      context.scrollDx = _getScrollZoneUnderPointer2[1];
+	      context.scrollDy = _getScrollZoneUnderPointer2[2];
+
+	      if (context.scrollEl) this.startAutoScroll(context);
+	      if (!context.scrollEl) this.stopAutoScroll(context);
+	    }
+	  }, {
+	    key: "startAutoScroll",
+	    value: function startAutoScroll(context) {
+	      context.scrollAnimationFrame = requestAnimationFrame(this.onScrollAnimationFrame.bind(this));
+	    }
+	  }, {
+	    key: "stopAutoScroll",
+	    value: function stopAutoScroll(context) {
+	      if (context.scrollAnimationFrame) {
+	        cancelAnimationFrame(context.scrollAnimationFrame);
+	        context.scrollAnimationFrame = null;
 	      }
 	    }
 	  }, {
-	    key: "_onScrollInterval",
-	    value: function _onScrollInterval() {
-	      this.context.scrollInterval = setInterval(this._onScrollInterval.bind(this), 16);
+	    key: "continueAutoScroll",
+	    value: function continueAutoScroll(context) {
+	      if (context && context.scrollEl) {
+	        context.scrollEl.scrollTop += context.scrollDy;
+	        context.scrollEl.scrollLeft += context.scrollDx;
+	        this.updateAutoScroll(context);
+	      }
+	    }
+	  }, {
+	    key: "getScrollZoneUnderPointer",
+	    value: function getScrollZoneUnderPointer(context) {
+	      var scrollableAncestorEls = dom.ancestors(context.parentEl, constants.scrollableSelector);
+
+	      for (var i = 0; i < scrollableAncestorEls.length; i++) {
+	        var scrollEl = scrollableAncestorEls[i];
+	        var scrollableRect = scrollEl.getBoundingClientRect(); // cache this
+	        var sx = 0;
+	        var sy = 0;
+
+	        if (scrollEl.getAttribute(constants.scrollAttribute) !== "vertical") {
+	          var hScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.width / 3);
+	          if (context.pointerX > scrollableRect.right - hScrollDistance && dom.canScrollRight(scrollEl)) sx = +this.options.scrollSpeed;
+	          if (context.pointerX < scrollableRect.left + hScrollDistance && dom.canScrollLeft(scrollEl)) sx = -this.options.scrollSpeed;
+	        }
+
+	        if (scrollEl.getAttribute(constants.scrollAttribute) !== "horizontal") {
+	          var vScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.height / 3);
+	          if (context.pointerY < scrollableRect.top + vScrollDistance && dom.canScrollUp(scrollEl)) sy = -this.options.scrollSpeed;
+	          if (context.pointerY > scrollableRect.bottom - vScrollDistance && dom.canScrollDown(scrollEl)) sy = +this.options.scrollSpeed;
+	        }
+
+	        if (sx !== 0 || sy !== 0) {
+	          return [scrollEl, sx, sy];
+	        }
+	      }
+	      return [null, null, null];
 	    }
 	  }, {
 	    key: "findDropZone",
@@ -331,7 +391,7 @@
 	      switch (direction) {
 	        case "horizontal":
 	          newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerX, function (el) {
-	            return helpers.midpointLeft(el.getBoundingClientRect());
+	            return el.offsetLeft + el.offsetWidth / 2;
 	          });
 	          break;
 	        case "vertical":
@@ -391,25 +451,25 @@
 
 	      // first, remove the old placeholder
 	      if (context.placeholderParentEl && (context.parentEl === null || context.parentEl !== newPhParentEl)) {
-	        if (animate) this._cacheChildOffsets(context.placeholderParentEl, "_old");
+	        if (animate) this.cacheChildOffsets(context.placeholderParentEl, "_old");
 	        context.placeholderEl.remove();
-	        if (animate) this._cacheChildOffsets(context.placeholderParentEl, "_new");
-	        if (animate) this._animateElementsBetweenSavedOffsets(context.placeholderParentEl);
+	        if (animate) this.cacheChildOffsets(context.placeholderParentEl, "_new");
+	        if (animate) this.animateElementsBetweenSavedOffsets(context.placeholderParentEl);
 	        context.placeholderWidth = null;
 	        context.placeholderHeight = null;
 	        context.placeholderParentEl = null;
 	      }
 
 	      // insert the new placeholder
-	      if (this._isSortable(newPhParentEl) && (context.placeholderParentEl !== context.parentEl || context.placeholderIndex !== context.parentIndex)) {
-	        if (animate) this._cacheChildOffsets(context.parentEl, "_old");
+	      if (this.isSortable(newPhParentEl) && (context.placeholderParentEl !== context.parentEl || context.placeholderIndex !== context.parentIndex)) {
+	        if (animate) this.cacheChildOffsets(context.parentEl, "_old");
 	        context.parentEl.insertBefore(context.placeholderEl, context.parentEl.children[context.parentIndex]);
-	        if (animate) this._cacheChildOffsets(context.parentEl, "_new");
-	        if (animate) this._animateElementsBetweenSavedOffsets(context.parentEl);
+	        if (animate) this.cacheChildOffsets(context.parentEl, "_new");
+	        if (animate) this.animateElementsBetweenSavedOffsets(context.parentEl);
 	        context.placeholderParentEl = context.parentEl;
 	      }
 
-	      if (this._isCanvas(newPhParentEl)) {
+	      if (this.isCanvas(newPhParentEl)) {
 	        if (context.placeholderParentEl !== context.parentEl) {
 	          context.parentEl.appendChild(context.placeholderEl);
 	          context.placeholderParentEl = context.parentEl;
@@ -473,9 +533,11 @@
 	  }, {
 	    key: "onPointerUp",
 	    value: function onPointerUp(e) {
-	      this._unbindPointerEventsForDragging();
+	      this.unbindPointerEventsForDragging();
 	      dom.raiseEvent(this.context.dragEl, "dragend", {});
 	      dom.raiseEvent(this.context.dragEl, "drop", {});
+
+	      this.stopAutoScroll(this.context);
 
 	      if (this.context.placeholderParentEl) {
 	        var placeholderRect = this.context.placeholderEl.getBoundingClientRect();
@@ -494,21 +556,21 @@
 	        Velocity(this.context.ghostEl, targetProps, {
 	          duration: this.options.duration,
 	          easing: this.options.easing,
-	          complete: this._placeDragElInFinalPosition.bind(this)
+	          complete: this.placeDragElInFinalPosition.bind(this)
 	        });
 	      } else {
-	        this._placeDragElInFinalPosition();
+	        this.placeDragElInFinalPosition();
 	      }
 	    }
 	  }, {
-	    key: "_placeDragElInFinalPosition",
-	    value: function _placeDragElInFinalPosition() {
+	    key: "placeDragElInFinalPosition",
+	    value: function placeDragElInFinalPosition() {
 	      this.context.placeholderEl.remove();
 
-	      if (this._isSortable(this.context.parentEl)) {
+	      if (this.isSortable(this.context.parentEl)) {
 	        this.context.parentEl.insertBefore(this.context.dragEl, this.context.parentEl.children[this.context.parentIndex]);
 	      }
-	      if (this._isCanvas(this.context.parentEl)) {
+	      if (this.isCanvas(this.context.parentEl)) {
 	        dom.topLeft(this.context.dragEl, this.context.offsetTop, this.context.offsetLeft);
 	        this.context.parentEl.appendChild(this.context.dragEl);
 	      }
@@ -572,8 +634,8 @@
 	      if (!el.__dd_clientRect) this.buildDropZoneCache(el);
 	    }
 	  }, {
-	    key: "_clearDropZoneCache",
-	    value: function _clearDropZoneCache(el) {
+	    key: "clearDropZoneCache",
+	    value: function clearDropZoneCache(el) {
 	      delete el.__dd_clientRect;
 	      delete el.__dd_scrollTop;
 	      delete el.__dd_scrollLeft;
@@ -610,13 +672,13 @@
 	      return null;
 	    }
 	  }, {
-	    key: "_isSortable",
-	    value: function _isSortable(el) {
+	    key: "isSortable",
+	    value: function isSortable(el) {
 	      return el && el.matches(constants.sortableSelector);
 	    }
 	  }, {
-	    key: "_isCanvas",
-	    value: function _isCanvas(el) {
+	    key: "isCanvas",
+	    value: function isCanvas(el) {
 	      return el && el.matches(constants.canvasSelector);
 	    }
 	  }, {
@@ -628,8 +690,8 @@
 	      return offsetTop >= 0 && offsetTop <= el.__dd_clientRect.height && offsetLeft >= 0 && offsetLeft <= el.__dd_clientRect.width;
 	    }
 	  }, {
-	    key: "_checkScrollProximity",
-	    value: function _checkScrollProximity(el, offsetTop, offsetLeft) {}
+	    key: "checkScrollProximity",
+	    value: function checkScrollProximity(el, offsetTop, offsetLeft) {}
 	  }, {
 	    key: "bindPointerEventsForDragging",
 	    value: function bindPointerEventsForDragging() {
@@ -639,26 +701,17 @@
 	      document.addEventListener("mouseup", this.onPointerUpBound, false);
 	    }
 	  }, {
-	    key: "_unbindPointerEventsForDragging",
-	    value: function _unbindPointerEventsForDragging() {
+	    key: "unbindPointerEventsForDragging",
+	    value: function unbindPointerEventsForDragging() {
 	      document.removeEventListener("mousemove", this.onPointerMoveBound);
 	      document.removeEventListener("mouseup", this.onPointerUpBound);
 	    }
 	  }, {
-	    key: "_dragenter",
-	    value: function _dragenter(dropZoneEl, event) {
-	      dropZoneEl.classList.add(this.options.dropZoneHoverClass);
-	    }
-	  }, {
-	    key: "_dragleave",
-	    value: function _dragleave(dropZoneEl, event) {
-	      dropZoneEl.classList.remove(this.options.dropZoneHoverClass);
-	    }
-	  }, {
-	    key: "_cacheChildOffsets",
+	    key: "cacheChildOffsets",
 
 	    // WARNING: function may trigger layout refresh
-	    value: function _cacheChildOffsets(el, propertyName) {
+	    // optimisation: don't need to cache all; only cache those likely impacted by offset
+	    value: function cacheChildOffsets(el, propertyName) {
 	      // don't use babel.io for..of here, as it prevents optimisation
 	      for (var i = 0; i < el.children.length; i++) {
 	        var childEl = el.children[i];
@@ -666,8 +719,8 @@
 	      }
 	    }
 	  }, {
-	    key: "_animateElementsBetweenSavedOffsets",
-	    value: function _animateElementsBetweenSavedOffsets(el) {
+	    key: "animateElementsBetweenSavedOffsets",
+	    value: function animateElementsBetweenSavedOffsets(el) {
 	      var animatedItemCount = 0;
 	      var _iteratorNormalCompletion4 = true;
 	      var _didIteratorError4 = false;
@@ -739,30 +792,38 @@
 	Object.defineProperty(exports, '__esModule', {
 	  value: true
 	});
+	var acceptsAttribute = 'data-drag-accepts';
+	exports.acceptsAttribute = acceptsAttribute;
+	var canvasAttribute = 'data-drag-canvas';
+	exports.canvasAttribute = canvasAttribute;
 	var sortableAttribute = 'data-drag-sortable';
 	exports.sortableAttribute = sortableAttribute;
+	var droppableAttribute = 'data-drag-droppable';
+	exports.droppableAttribute = droppableAttribute;
 	var snapInBoundsAttribute = 'data-drag-snap-in-bounds';
 	exports.snapInBoundsAttribute = snapInBoundsAttribute;
 	var snapToGridAttribute = 'data-drag-snap-to-grid';
-
 	exports.snapToGridAttribute = snapToGridAttribute;
+	var scrollableAttribute = 'data-drag-scrollable';
+
+	exports.scrollableAttribute = scrollableAttribute;
 	var draggableSelector = '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
 	exports.draggableSelector = draggableSelector;
 	var handleSelector = '[data-drag-handle]';
 	exports.handleSelector = handleSelector;
-	var sortableSelector = '[data-drag-sortable]';
+	var sortableSelector = '[' + sortableAttribute + ']';
 	exports.sortableSelector = sortableSelector;
-	var canvasSelector = '[data-drag-canvas]';
+	var canvasSelector = '[' + canvasAttribute + ']';
 	exports.canvasSelector = canvasSelector;
 	var valueSelector = '[data-drag-value]';
 	exports.valueSelector = valueSelector;
-	var droppableSelector = '[data-drag-droppable]';
+	var droppableSelector = '[' + droppableAttribute + ']';
 	exports.droppableSelector = droppableSelector;
 	var dropZoneSelector = '[data-drag-sortable],[data-drag-droppable],[data-drag-canvas]';
 	exports.dropZoneSelector = dropZoneSelector;
 	var disabledSelector = '[data-drag-disabled]';
 	exports.disabledSelector = disabledSelector;
-	var scrollableSelector = '[data-drag-scrollable]';
+	var scrollableSelector = '[' + scrollableAttribute + ']';
 	exports.scrollableSelector = scrollableSelector;
 
 /***/ },
@@ -822,8 +883,13 @@
 	  value: true
 	});
 	exports.closest = closest;
+	exports.ancestors = ancestors;
 	exports.translate = translate;
 	exports.topLeft = topLeft;
+	exports.canScrollDown = canScrollDown;
+	exports.canScrollUp = canScrollUp;
+	exports.canScrollRight = canScrollRight;
+	exports.canScrollLeft = canScrollLeft;
 	exports.canScrollVertical = canScrollVertical;
 	exports.canScrollHorizontal = canScrollHorizontal;
 	exports.cancelEvent = cancelEvent;
@@ -835,6 +901,15 @@
 	    if (el.matches && el.matches(selector)) return el;
 	  } while (el = el.parentNode);
 	  return null;
+	}
+
+	function ancestors(el, selector) {
+	  if (el === null) return [];
+	  var ancestors = [];
+	  do {
+	    if (el.matches && el.matches(selector)) ancestors.push(el);
+	  } while (el = el.parentNode);
+	  return ancestors;
 	}
 
 	// vendor
@@ -858,6 +933,22 @@
 
 	// utilities
 
+	function canScrollDown(el) {
+	  return el.scrollTop < el.scrollHeight - el.clientHeight;
+	}
+
+	function canScrollUp(el) {
+	  return el.scrollTop > 0;
+	}
+
+	function canScrollRight(el) {
+	  return el.scrollLeft < el.scrollWidth - el.clientWidth;
+	}
+
+	function canScrollLeft(el) {
+	  return el.scrollLeft > 0;
+	}
+
 	function canScrollVertical(el) {
 	  return el.scrollHeight > el.clientHeight;
 	}
@@ -879,6 +970,12 @@
 	  var event = new CustomEvent(eventName, eventData);
 	  source.dispatchEvent(event);
 	}
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	"use strict";
 
 /***/ }
 /******/ ]);

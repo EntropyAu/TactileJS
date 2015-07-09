@@ -7,6 +7,17 @@ export function closest(el, selector) {
   return null;
 }
 
+export function ancestors(el, selector) {
+  if (el === null) return [];
+  let ancestors = [];
+  do {
+    if (el.matches && el.matches(selector))
+      ancestors.push(el);
+  }
+  while (el = el.parentNode)
+  return ancestors;
+}
+
 // vendor
 
 let vendorTransform = null;
@@ -27,6 +38,22 @@ export function topLeft(el, t, l) {
 }
 
 // utilities
+
+export function canScrollDown(el) {
+  return el.scrollTop < el.scrollHeight - el.clientHeight;
+}
+
+export function canScrollUp(el) {
+  return el.scrollTop > 0;
+}
+
+export function canScrollRight(el) {
+  return el.scrollLeft < el.scrollWidth - el.clientWidth;
+}
+
+export function canScrollLeft(el) {
+  return el.scrollLeft > 0;
+}
 
 export function canScrollVertical(el) {
   return el.scrollHeight > el.clientHeight;

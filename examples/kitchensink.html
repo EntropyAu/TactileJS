@@ -26,13 +26,21 @@
         <div class="ui-segment">
 
           <h3>Sortable</h3>
-          <ol data-drag-sortable="vertical"
+          <ol data-drag-sortable
+              data-drag-scrollable
+              data-drag-accepts="*"
               class="vertical">
             <li>Item 1</li>
             <li>Item 2</li>
             <li>Item 3</li>
             <li>Item 4</li>
             <li>Item 5</li>
+            <li>Item 6</li>
+            <li>Item 7</li>
+            <li>Item 8</li>
+            <li>Item 9</li>
+            <li>Item 10</li>
+            <li>Item 11</li>
           </ol>
 
 
@@ -50,6 +58,7 @@
 
           <h3>Horizontal Sortable</h3>
           <ol data-drag-sortable="horizontal"
+              data-drag-scrollable
               class="horizontal">
             <li>Item 1</li>
             <li>Item 2</li>
@@ -80,7 +89,9 @@
           </ol>
 
           <h3>Large Collection Performance</h3>
-          <ol data-drag-sortable style="max-height:250px; overflow:auto">
+          <ol data-drag-sortable
+              data-drag-scrollable
+              style="max-height:250px; overflow:auto">
             <script>
               for (var i = 0; i < 1000; i++)
                 document.write("<li>Item " + i + "</li>")
