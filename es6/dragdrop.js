@@ -233,19 +233,29 @@ export class DragDrop {
   updateSortableIndex(context) {
     let direction = context.parentEl.getAttribute(constants.sortableAttribute) || 'vertical';
 
+
+    let offsetParent = null
+    for (let childEl of context.parentEl.children) {
+      offsetParent = childEl.offsetParent;
+      if (offsetParent !== null) break;
+    }
+    let offsetParentRect = offsetParent.getBoundingClientRect();
+    let offsetPointerX = context.pointerX - offsetParentRect.left + offsetParent.scrollLeft;
+    let offsetPointerY = context.pointerY - offsetParentRect.top + offsetParent.scrollTop;
+
     let newIndex = null;
     switch (direction) {
       case 'horizontal':
         newIndex = helpers.fuzzyBinarySearch(
           context.parentEl.children,
-          context.pointerX,
+          offsetPointerX,
           el => helpers.midpointLeft(el.getBoundingClientRect()));
         break;
       case 'vertical':
         newIndex = helpers.fuzzyBinarySearch(
           context.parentEl.children,
-          context.pointerY,
-          el => helpers.midpointTop(el.getBoundingClientRect()));
+          offsetPointerY,
+          el => el.offsetTop + el.offsetHeight / 2);
         break;
       case 'wrap':
         throw new Error("Not implemented");
@@ -544,7 +554,9 @@ export class DragDrop {
 
   // WARNING: function may trigger layout refresh
   _cacheChildOffsets(el, propertyName) {
-    for (let childEl of el.children) {
+    // don't use babel.io for..of here, as it prevents optimisation
+    for (let i = 0; i < el.children.length; i++) {
+      let childEl = el.children[i];
       childEl[propertyName] = { top: childEl.offsetTop, left: childEl.offsetLeft };
     }
   }

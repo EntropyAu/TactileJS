@@ -296,16 +296,47 @@
 	    value: function updateSortableIndex(context) {
 	      var direction = context.parentEl.getAttribute(constants.sortableAttribute) || "vertical";
 
+	      var offsetParent = null;
+	      var _iteratorNormalCompletion = true;
+	      var _didIteratorError = false;
+	      var _iteratorError = undefined;
+
+	      try {
+	        for (var _iterator = context.parentEl.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	          var childEl = _step.value;
+
+	          offsetParent = childEl.offsetParent;
+	          if (offsetParent !== null) break;
+	        }
+	      } catch (err) {
+	        _didIteratorError = true;
+	        _iteratorError = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion && _iterator["return"]) {
+	            _iterator["return"]();
+	          }
+	        } finally {
+	          if (_didIteratorError) {
+	            throw _iteratorError;
+	          }
+	        }
+	      }
+
+	      var offsetParentRect = offsetParent.getBoundingClientRect();
+	      var offsetPointerX = context.pointerX - offsetParentRect.left + offsetParent.scrollLeft;
+	      var offsetPointerY = context.pointerY - offsetParentRect.top + offsetParent.scrollTop;
+
 	      var newIndex = null;
 	      switch (direction) {
 	        case "horizontal":
-	          newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, context.pointerX, function (el) {
+	          newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerX, function (el) {
 	            return helpers.midpointLeft(el.getBoundingClientRect());
 	          });
 	          break;
 	        case "vertical":
-	          newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, context.pointerY, function (el) {
-	            return helpers.midpointTop(el.getBoundingClientRect());
+	          newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerY, function (el) {
+	            return el.offsetTop + el.offsetHeight / 2;
 	          });
 	          break;
 	        case "wrap":
@@ -496,13 +527,13 @@
 	      el.__dd_scrollLeft = el.scrollLeft;
 	      el.__dd_childDropZones = [];
 
-	      var _iteratorNormalCompletion = true;
-	      var _didIteratorError = false;
-	      var _iteratorError = undefined;
+	      var _iteratorNormalCompletion2 = true;
+	      var _didIteratorError2 = false;
+	      var _iteratorError2 = undefined;
 
 	      try {
-	        for (var _iterator = el.querySelectorAll(constants.dropZoneSelector)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	          var childDropZoneEl = _step.value;
+	        for (var _iterator2 = el.querySelectorAll(constants.dropZoneSelector)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	          var childDropZoneEl = _step2.value;
 
 	          // if the descendant dropZone is embedded within another descendant dropZone let's ignore it.
 	          var intermediateDropZoneEl = dom.closest(childDropZoneEl.parentElement, constants.dropZoneSelector + ",body");
@@ -521,16 +552,16 @@
 	          });
 	        }
 	      } catch (err) {
-	        _didIteratorError = true;
-	        _iteratorError = err;
+	        _didIteratorError2 = true;
+	        _iteratorError2 = err;
 	      } finally {
 	        try {
-	          if (!_iteratorNormalCompletion && _iterator["return"]) {
-	            _iterator["return"]();
+	          if (!_iteratorNormalCompletion2 && _iterator2["return"]) {
+	            _iterator2["return"]();
 	          }
 	        } finally {
-	          if (_didIteratorError) {
-	            throw _iteratorError;
+	          if (_didIteratorError2) {
+	            throw _iteratorError2;
 	          }
 	        }
 	      }
@@ -551,27 +582,27 @@
 	  }, {
 	    key: "getChildDropZoneAtOffset",
 	    value: function getChildDropZoneAtOffset(el, offsetTop, offsetLeft) {
-	      var _iteratorNormalCompletion2 = true;
-	      var _didIteratorError2 = false;
-	      var _iteratorError2 = undefined;
+	      var _iteratorNormalCompletion3 = true;
+	      var _didIteratorError3 = false;
+	      var _iteratorError3 = undefined;
 
 	      try {
-	        for (var _iterator2 = el.__dd_childDropZones[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	          var childDropZone = _step2.value;
+	        for (var _iterator3 = el.__dd_childDropZones[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	          var childDropZone = _step3.value;
 
 	          if (offsetTop >= childDropZone.top && offsetTop <= childDropZone.top + childDropZone.height && offsetLeft >= childDropZone.left && offsetLeft <= childDropZone.left + childDropZone.width) return childDropZone.el;
 	        }
 	      } catch (err) {
-	        _didIteratorError2 = true;
-	        _iteratorError2 = err;
+	        _didIteratorError3 = true;
+	        _iteratorError3 = err;
 	      } finally {
 	        try {
-	          if (!_iteratorNormalCompletion2 && _iterator2["return"]) {
-	            _iterator2["return"]();
+	          if (!_iteratorNormalCompletion3 && _iterator3["return"]) {
+	            _iterator3["return"]();
 	          }
 	        } finally {
-	          if (_didIteratorError2) {
-	            throw _iteratorError2;
+	          if (_didIteratorError3) {
+	            throw _iteratorError3;
 	          }
 	        }
 	      }
@@ -628,29 +659,10 @@
 
 	    // WARNING: function may trigger layout refresh
 	    value: function _cacheChildOffsets(el, propertyName) {
-	      var _iteratorNormalCompletion3 = true;
-	      var _didIteratorError3 = false;
-	      var _iteratorError3 = undefined;
-
-	      try {
-	        for (var _iterator3 = el.children[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-	          var childEl = _step3.value;
-
-	          childEl[propertyName] = { top: childEl.offsetTop, left: childEl.offsetLeft };
-	        }
-	      } catch (err) {
-	        _didIteratorError3 = true;
-	        _iteratorError3 = err;
-	      } finally {
-	        try {
-	          if (!_iteratorNormalCompletion3 && _iterator3["return"]) {
-	            _iterator3["return"]();
-	          }
-	        } finally {
-	          if (_didIteratorError3) {
-	            throw _iteratorError3;
-	          }
-	        }
+	      // don't use babel.io for..of here, as it prevents optimisation
+	      for (var i = 0; i < el.children.length; i++) {
+	        var childEl = el.children[i];
+	        childEl[propertyName] = { top: childEl.offsetTop, left: childEl.offsetLeft };
 	      }
 	    }
 	  }, {
