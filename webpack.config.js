@@ -1,9 +1,9 @@
 var path = require('path');
 module.exports = {
-    entry: './es6/dragdrop.js',
+    entry: './es6/DragDrop.js',
     output: {
         path: __dirname,
-        filename: 'dragdrop.js'
+        filename: 'DragDrop.js'
     },
     module: {
         loaders: [

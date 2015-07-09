@@ -6,7 +6,7 @@ import * as dom from "./dom.js";
 // all client positions are expressed as x,y
 // all offset positions are expressed as l,t
 
-export class DragDrop {
+export default class DragDrop {
   constructor() {
     this.context = null;
     this.plugins = [];
@@ -25,40 +25,54 @@ export class DragDrop {
     document.addEventListener('mousedown', onPointerDown, false);
   }
 
-  addPlugin(plugin) {
+
+  registerPlugin(plugin) {
     this.plugins.push(plugin);
   }
 
-  onPointerMove(e) {
-    // suppress default event handling, prevents the drag from being interpreted as a selection
-    dom.cancelEvent(e);
-    this.dragMove(this.context, e.clientX, e.clientY);
-  }
 
   onPointerDown(e) {
-    // support left click only
     if (e.which !== 1) return;
 
-    let handleEl = dom.closest(e.target, `${constants.handleSelector},${constants.draggableSelector}`);
-    if (!handleEl) return;
+    let dragEl = null;
+    let handleOrDragEl = dom.closest(e.target, `${constants.handleSelector},${constants.draggableSelector}`);
+    if (!handleOrDragEl) return;
 
-    let dragEl = handleEl;
-    if (handleEl.matches(constants.handleSelector)) {
-      // since the pointer is down on a handle element, walk up the DOM to find the associated item
-      dragEl = dom.closest(handleEl, constants.draggableSelector);
+    if (handleOrDragEl.hasAttribute(constants.handleAttribute)) {
+      // the pointer is over a handle element,
+      // ascend the DOM to find the associated draggable item
+      dragEl = dom.closest(handleOrDragEl, constants.draggableSelector);
+      if (dragEl === null) return;
     } else {
       // if the item contains a handle (which was not the the pointer down spot) then ignore
       // TODO need to generate permutations of descendant item handle selector
-      if (dragEl.querySelectorAll(constants.handleSelector).length >
-          dragEl.querySelectorAll(`${constants.draggableSelector} ${constants.handleSelector}`).length)
+      if (handleOrDragEl.querySelectorAll(constants.handleSelector).length >
+          handleOrDragEl.querySelectorAll(`${constants.draggableSelector} ${constants.handleSelector}`).length)
         return;
+      dragEl = handleOrDragEl;
     }
-    if (!dragEl) return;
 
+    this.dragStart(dragEl, e.clientX, e.clientY);
     dom.cancelEvent(e);
+  }
 
+
+  onPointerMove(e) {
+    this.dragMove(this.context, e.clientX, e.clientY);
+    dom.cancelEvent(e);
+  }
+
+
+  onPointerUp(e) {
+    this.unbindPointerEventsForDragging();
+    this.dragEnd(this.context);
+  }
+
+
+  dragStart(dragEl, x, y) {
     // abort the drag if the element is marked as [data-drag-disabled]
-    if (dragEl.hasAttribute(constants.disabledAttribute)) return;
+    if (dragEl.hasAttribute(constants.disabledAttribute))
+      return;
 
     let parentEl = dragEl.parentElement;
     let parentIndex = Array.prototype.indexOf.call(parentEl.children, dragEl);
@@ -67,12 +81,12 @@ export class DragDrop {
     let parentElRect = parentEl.getBoundingClientRect();
     let offsetTop = dragElRect.top - parentElRect.top;
     let offsetLeft = dragElRect.left - parentElRect.left;
-    let pointerX = e.clientX;
-    let pointerY = e.clientY;
+    let pointerX = x;
+    let pointerY = y;
 
     // record the offset of the grip point on the drag item
-    let gripTop = e.clientY - dragElRect.top;
-    let gripLeft = e.clientX - dragElRect.left;
+    let gripTop = y - dragElRect.top;
+    let gripLeft = x - dragElRect.left;
     let gripTopPercent = gripTop / dragElRect.height;
     let gripLeftPercent = gripLeft / dragElRect.width;
 
@@ -124,8 +138,6 @@ export class DragDrop {
       placeholderOffsetLeft: null,
       placeholderWidth: null,
       placeholderHeight: null,
-      gripTop: gripTop,
-      gripLeft: gripLeft,
       gripTopPercent: gripTopPercent,
       gripLeftPercent: gripLeftPercent,
       parentEl: parentEl,
@@ -137,8 +149,10 @@ export class DragDrop {
       originalParentOffsetTop: offsetTop,
       originalParentOffsetLeft: offsetLeft,
       orientation: orientation,
-      pointerX: e.clientX,
-      pointerY: e.clientY
+      pointerX: x,
+      pointerY: y,
+      constrainedX: x,
+      constrainedY: y
     };
 
     this.updatePlaceholder(this.context, false);
@@ -147,12 +161,9 @@ export class DragDrop {
     this.bindPointerEventsForDragging()
 
     // notify plugins
-    for (let plugin of this.plugins)
-      if (plugin.dragStart)
-        plugin.dragStart(this.context);
+    for (let i = 0; i < this.plugins.length; i++)
+      if (this.plugins[i].dragStart) this.plugins[i].dragStart(this.context);
   }
-
-
 
 
 
@@ -160,35 +171,89 @@ export class DragDrop {
     context.pointerX = x;
     context.pointerY = y;
 
-    /*
-    let newClientTop = x - context.gripTop;
-    let newClientLeft = y - context.gripLeft;
-    switch (context.orientation) {
-      case "vertical": newClientLeft = context.originalOffsetLeft; break;
-      case "horizontal": newClientTop = context.originalOffsetTop; break;
-      case "both": break;
-    }
-    */
-
     dom.raiseEvent(context.dragEl, 'drag', {});
 
     this.findDropZone(context);
+
+    this.applyContainmentContraint(context);
+
     if (this.isSortable(context.parentEl)) this.updateSortableIndex(context);
     if (this.isCanvas(context.parentEl)) this.updateCanvasOffsets(context);
     this.updatePlaceholder(context);
     this.updateGhost(context);
 
     // notify plugins
-    for (let plugin of this.plugins)
-      if (plugin.dragMove)
-        plugin.dragMove(this.context);
+    for (let i = 0; i < this.plugins.length; i++)
+      if (this.plugins[i].dragMove) this.plugins[i].dragMove(this.context);
   }
+
+  applyDirectionConstraint(context) {
+    switch (context.orientation) {
+      case "vertical": adjustedX = context.originalOffsetLeft; break;
+      case "horizontal": adjustedY = context.originalOffsetTop; break;
+      case "both": break;
+    }
+  }
+
+  applyContainmentContraint(context) {
+    let adjustedX = context.pointerX - context.gripLeftPercent * context.placeholderWidth;
+    let adjustedY = context.pointerY - context.gripTopPercent * context.placeholderHeight;
+    if (this.parentIsContainmentFor(context.parentEl, context.dragEl)) {
+      let containmentRect = context.parentEl.getBoundingClientRect();
+      adjustedX = helpers.coerce(adjustedX,
+                                 containmentRect.left,
+                                 containmentRect.right - context.placeholderWidth);
+      adjustedY = helpers.coerce(adjustedY,
+                                 containmentRect.top,
+                                 containmentRect.bottom - context.placeholderHeight);
+    }
+    context.constrainedX = adjustedX;
+    context.constrainedY = adjustedY;
+  }
+
+
+  dragEnd(context) {
+
+    // notify plugins
+    for (let i = 0; i < this.plugins.length; i++)
+      if (this.plugins[i].dragEnd) this.plugins[i].dragEnd(this.context);
+
+    if (context.placeholderParentEl) {
+      dom.raiseEvent(context.dragEl, 'drop', {})
+      let placeholderRect = context.placeholderEl.getBoundingClientRect();
+      let targetProps = {
+        translateX: [placeholderRect.left, 'ease-out'],
+        translateY: [placeholderRect.top, 'ease-out'],
+        top: [0, 'ease-out'],
+        left: [0, 'ease-out'],
+        rotateZ: 0,
+        boxShadowBlur: 0
+      };
+      if (this.options.animateGhostSize) {
+        targetProps.width = [placeholderRect.width, 'ease-out'];
+        targetProps.height = [placeholderRect.height, 'ease-out'];
+      }
+      Velocity(context.ghostEl, targetProps, {
+        duration: this.options.duration,
+        easing: this.options.easing,
+        complete: this.placeDragElInFinalPosition.bind(this)
+      });
+    } else {
+      this.placeDragElInFinalPosition()
+    }
+    dom.raiseEvent(context.dragEl, 'dragend', {})
+  }
+
+
+
 
 
 
   findDropZone(context) {
     // walk up the drop zone tree until we find the closest drop zone that includes the dragged item
-    while (!this.positionIsInDropZone(context.parentEl, context.pointerX, context.pointerY)) {
+    while (!this.parentIsContainmentFor(context.parentEl, context.dragEl)
+        && !this.positionIsInDropZone(context.parentEl, context.pointerX, context.pointerY)) {
+
       let parentDropZoneEl = dom.closest(context.parentEl.parentElement, `body,${constants.dropZoneSelector}`);
       if (!parentDropZoneEl) break;
       context.parentEl.classList.remove(this.options.dropZoneHoverClass);
@@ -213,6 +278,18 @@ export class DragDrop {
     }
   }
 
+  parentIsContainmentFor(parentEl, dragEl) {
+    if (parentEl.hasAttribute(constants.containmentAttribute)) {
+      let containmentSelector = parentEl.getAttribute(constants.containmentAttribute);
+      return containmentSelector ? dragEl.matches(containmentSelector) : true;
+    }
+    if (dragEl.hasAttribute(constants.containmentAttribute)) {
+      let containmentSelector = dragEl.getAttribute(constants.containmentAttribute);
+      return containmentSelector ? placeholderEl.matches(containmentSelector) : true;
+    }
+    return false;
+  };
+
 
   // TODO: optimisation, cache layout offsets
   // TODO: optimisation, check immediate neighbours prior to binary search
@@ -226,8 +303,8 @@ export class DragDrop {
       if (offsetParent !== null) break;
     }
     let offsetParentRect = offsetParent.getBoundingClientRect();
-    let offsetPointerX = context.pointerX - offsetParentRect.left + offsetParent.scrollLeft;
-    let offsetPointerY = context.pointerY - offsetParentRect.top + offsetParent.scrollTop;
+    let offsetPointerX = context.constrainedX - offsetParentRect.left + offsetParent.scrollLeft;
+    let offsetPointerY = context.constrainedY - offsetParentRect.top + offsetParent.scrollTop;
 
     let newIndex = null;
     switch (direction) {
@@ -254,8 +331,8 @@ export class DragDrop {
 
 
   updateCanvasOffsets(context) {
-    let offsetLeft = context.pointerX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft,
-        offsetTop  = context.pointerY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
+    let offsetLeft = context.constrainedX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft,
+        offsetTop  = context.constrainedY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
 
     // snap to drop zone bounds
     let snapInBounds = context.parentEl.getAttribute(constants.snapInBoundsAttribute) !== null;
@@ -354,8 +431,9 @@ export class DragDrop {
 
   updateGhostPosition(context) {
     Velocity(context.ghostEl, {
-      translateX: context.pointerX,
-      translateY: context.pointerY
+      translateX: context.constrainedX + context.gripLeftPercent * context.placeholderWidth,
+      translateY: context.constrainedY + context.gripTopPercent * context.placeholderHeight,
+      translateZ: 1
     }, { duration: 0 });
   }
 
@@ -363,7 +441,8 @@ export class DragDrop {
     // do nothing if the placeholder is not currently visible
     if (!context.placeholderParentEl) return;
     // do nothing if the ghost and placeholder are the same size
-    if (context.ghostWidth === context.placeholderWidth && context.ghostHeight === context.placeholderHeight)
+    if (context.ghostWidth === context.placeholderWidth
+     && context.ghostHeight === context.placeholderHeight)
       return;
 
     const velocityOptions = this.options.ghostResizeAnimated
@@ -386,45 +465,6 @@ export class DragDrop {
 
     context.ghostWidth = context.placeholderWidth;
     context.ghostHeight = context.placeholderHeight;
-  }
-
-  onPointerUp(e) {
-    this.unbindPointerEventsForDragging();
-    this.dragEnd(this.context);
-  }
-
-
-  dragEnd(context) {
-    dom.raiseEvent(context.dragEl, 'dragend', {})
-    dom.raiseEvent(context.dragEl, 'drop', {})
-
-    // notify plugins
-    for (let plugin of this.plugins)
-      if (plugin.dragEnd)
-        plugin.dragEnd(context);
-
-    if (context.placeholderParentEl) {
-      let placeholderRect = context.placeholderEl.getBoundingClientRect();
-      let targetProps = {
-        translateX: [placeholderRect.left, 'ease-out'],
-        translateY: [placeholderRect.top, 'ease-out'],
-        top: [0, 'ease-out'],
-        left: [0, 'ease-out'],
-        rotateZ: 0,
-        boxShadowBlur: 0
-      };
-      if (this.options.animateGhostSize) {
-        targetProps.width = [placeholderRect.width, 'ease-out'];
-        targetProps.height = [placeholderRect.height, 'ease-out'];
-      }
-      Velocity(context.ghostEl, targetProps, {
-        duration: this.options.duration,
-        easing: this.options.easing,
-        complete: this.placeDragElInFinalPosition.bind(this)
-      });
-    } else {
-      this.placeDragElInFinalPosition()
-    }
   }
 
 
@@ -557,7 +597,8 @@ export class DragDrop {
 
       Velocity(childEl, {
         translateX: '+=' + (oldOffset.left - newOffset.left) + 'px',
-        translateY: '+=' + (oldOffset.top - newOffset.top) + 'px'
+        translateY: '+=' + (oldOffset.top - newOffset.top) + 'px',
+        translateZ: 1
       }, { duration: 0 });
 
       Velocity(childEl, {
@@ -575,4 +616,4 @@ export class DragDrop {
 
 window.dragDrop = new DragDrop();
 import DragDropScroller from "./DragDropScroller.js"
-dragDrop.addPlugin(new DragDropScroller())
+dragDrop.registerPlugin(new DragDropScroller())

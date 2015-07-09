@@ -32,6 +32,10 @@ export function translate(el, x, y) {
   el.style[vendorTransform] = `translateX(${x}px) translateY(${y}px) translateZ(0)`;
 }
 
+export function translate3d(el, x, y, z) {
+  el.style[vendorTransform] = `translateX(${x}px) translateY(${y}px) translateZ(${z}px)`;
+}
+
 export function topLeft(el, t, l) {
   el.style.top = `${t}px`;
   el.style.left = `${l}px`;

@@ -1,10 +1,11 @@
 export const acceptsAttribute      = 'data-drag-accepts';
 export const canvasAttribute       = 'data-drag-canvas';
-export const sortableAttribute     = 'data-drag-sortable';
+export const containmentAttribute  = 'data-drag-containment';
 export const droppableAttribute    = 'data-drag-droppable';
 export const snapInBoundsAttribute = 'data-drag-snap-in-bounds';
 export const snapToGridAttribute   = 'data-drag-snap-to-grid';
 export const scrollableAttribute   = 'data-drag-scrollable';
+export const sortableAttribute     = 'data-drag-sortable';
 export const disabledAttribute     = 'data-drag-disabled';
 
 export const draggableSelector  = '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';

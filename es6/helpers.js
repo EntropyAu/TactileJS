@@ -1,4 +1,8 @@
 
+export function coerce(value, min, max) {
+  return value > max ? max : (value < min ? min : value);
+}
+
 export function midpointTop(clientRect) {
   return clientRect.top + clientRect.height / 2;
 }
