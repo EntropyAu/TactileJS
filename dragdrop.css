@@ -67,6 +67,12 @@
   background: transparent;
   overflow: hidden;
   z-index: 10000;
+  cursor: hand;
+  cursor: -webkit-grabbing;
+  cursor: -moz-grabbing;
+  cursor: -ms-grabbing;
+  cursor: grabbing;
+
   -webkit-user-select: none;
      -moz-user-select: none;
       -ms-user-select: none;
