@@ -25,10 +25,10 @@
 ol {
   list-style: none;
   border: 1px solid transparent;
-  margin: 0;
+  margin: 8px;
   padding: 0;
   transition: border 250ms linear;
-  min-height: 20px;
+  min-height: 40px;
 }
 [data-drag-canvas] {
   border: 1px solid transparent;
@@ -50,6 +50,9 @@ li, ol li {
   margin: 4px;
   padding: 4px 8px;
   box-sizing: border-box;
+}
+ol ol {
+  border-left: 1px solid #2185d0;
 }
 
 .dd-drag-hover {

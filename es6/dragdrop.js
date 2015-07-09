@@ -314,9 +314,14 @@ export default class DragDrop {
   updateSortableIndex(context) {
     let direction = context.parentEl.getAttribute(constants.sortableAttribute) || 'vertical';
 
+    if (context.parentEl.children.length === 0) {
+      context.parentIndex = 0;
+      return;
+    }
 
     let offsetParent = null
-    for (let childEl of context.parentEl.children) {
+    for (let i = 0; i < context.parentEl.children.length; i++) {
+      let childEl = context.parentEl.children[i];
       offsetParent = childEl.offsetParent;
       if (offsetParent !== null) break;
     }
