@@ -212,14 +212,14 @@
 	        placeholderHeight: null,
 	        gripTopPercent: gripTopPercent,
 	        gripLeftPercent: gripLeftPercent,
-	        parentEl: parentEl,
+	        parentEl: null,
 	        parentIndex: parentIndex,
 	        offsetTop: offsetTop,
 	        offsetLeft: offsetLeft,
 	        originalParentEl: parentEl,
 	        originalParentIndex: parentIndex,
-	        originalParentOffsetTop: offsetTop,
-	        originalParentOffsetLeft: offsetLeft,
+	        originalOffsetTop: offsetTop,
+	        originalOffsetLeft: offsetLeft,
 	        orientation: orientation,
 	        pointerX: x,
 	        pointerY: y,
@@ -227,9 +227,10 @@
 	        constrainedY: y
 	      };
 
+	      this.setDropZone(this.context, parentEl);
 	      this.updatePlaceholder(this.context, false);
 	      this.findDropZone(this.context);
-	      dom.raiseEvent(dragEl, "dragstart", {});
+	      dom.raiseEvent(dragEl, constants.dragStartEvent, {});
 	      this.bindPointerEventsForDragging();
 
 	      // notify plugins
@@ -243,7 +244,7 @@
 	      context.pointerX = x;
 	      context.pointerY = y;
 
-	      dom.raiseEvent(context.dragEl, "drag", {});
+	      dom.raiseEvent(context.dragEl, constants.dragEvent, {});
 
 	      this.findDropZone(context);
 
@@ -288,11 +289,13 @@
 	    key: "dragEnd",
 	    value: function dragEnd(context) {
 
+	      if (context.parentEl) context.parentEl.classList.remove(this.options.dropZoneHoverClass);
+
 	      // notify plugins
 	      for (var i = 0; i < this.plugins.length; i++) {
 	        if (this.plugins[i].dragEnd) this.plugins[i].dragEnd(this.context);
 	      }if (context.placeholderParentEl) {
-	        dom.raiseEvent(context.dragEl, "drop", {});
+	        dom.raiseEvent(context.dragEl, constants.dropEvent, {});
 	        var placeholderRect = context.placeholderEl.getBoundingClientRect();
 	        var targetProps = {
 	          translateX: [placeholderRect.left, "ease-out"],
@@ -314,7 +317,7 @@
 	      } else {
 	        this.placeDragElInFinalPosition();
 	      }
-	      dom.raiseEvent(context.dragEl, "dragend", {});
+	      dom.raiseEvent(context.dragEl, constants.dragEndEvent, {});
 	    }
 	  }, {
 	    key: "findDropZone",
@@ -324,9 +327,7 @@
 
 	        var parentDropZoneEl = dom.closest(context.parentEl.parentElement, "body," + constants.dropZoneSelector);
 	        if (!parentDropZoneEl) break;
-	        context.parentEl.classList.remove(this.options.dropZoneHoverClass);
-	        dom.raiseEvent(context.parentEl, "dragleave", {});
-	        context.parentEl = parentDropZoneEl;
+	        this.setDropZone(context, parentDropZoneEl);
 	      }
 
 	      // walk down the drop zone tree to the lowest level dropZone
@@ -335,14 +336,25 @@
 	          offsetTop = context.pointerY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
 	      var childDropZoneEl = this.getChildDropZoneAtOffset(context.parentEl, offsetTop, offsetLeft);
 	      while (childDropZoneEl) {
-	        context.parentEl = childDropZoneEl;
+	        this.setDropZone(context, childDropZoneEl);
+
 	        this.buildDropZoneCacheIfRequired(context.parentEl);
 	        offsetLeft = context.pointerX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft, offsetTop = context.pointerY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
-
-	        context.parentEl.classList.add(this.options.dropZoneHoverClass);
-	        dom.raiseEvent(context.parentEl, "dragenter", {});
 	        childDropZoneEl = this.getChildDropZoneAtOffset(context.parentEl, offsetTop, offsetLeft);
 	      }
+	    }
+	  }, {
+	    key: "setDropZone",
+	    value: function setDropZone(context, newDropZoneEl) {
+	      if (context.parentEl) {
+	        context.parentEl.classList.remove(this.options.dropZoneHoverClass);
+	        dom.raiseEvent(context.parentEl, constants.dragLeaveEvent, {});
+	      }
+	      if (newDropZoneEl) {
+	        newDropZoneEl.classList.add(this.options.dropZoneHoverClass);
+	        dom.raiseEvent(newDropZoneEl, constants.dragEnterEvent, {});
+	      }
+	      context.parentEl = newDropZoneEl;
 	    }
 	  }, {
 	    key: "parentIsContainmentFor",
@@ -804,7 +816,20 @@
 	var disabledSelector = '[' + disabledAttribute + ']';
 	exports.disabledSelector = disabledSelector;
 	var scrollableSelector = '[' + scrollableAttribute + ']';
+
 	exports.scrollableSelector = scrollableSelector;
+	var dragStartEvent = 'dragstart';
+	exports.dragStartEvent = dragStartEvent;
+	var dragEndEvent = 'dragend';
+	exports.dragEndEvent = dragEndEvent;
+	var dragLeaveEvent = 'dragleave';
+	exports.dragLeaveEvent = dragLeaveEvent;
+	var dragEnterEvent = 'dragenter';
+	exports.dragEnterEvent = dragEnterEvent;
+	var dropEvent = 'drop';
+	exports.dropEvent = dropEvent;
+	var dragEvent = 'drag';
+	exports.dragEvent = dragEvent;
 
 /***/ },
 /* 2 */

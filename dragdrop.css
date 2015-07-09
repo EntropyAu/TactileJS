@@ -114,6 +114,6 @@
      -moz-backface-visibility: hidden;
       -ms-backface-visibility: hidden;
           backface-visibility: hidden;
-  box-shadow: 0 0 0 rgba(0,0,0,0.15);
+  box-shadow: 0 0 0 rgba(0,0,0,0.3);
   will-change: transform;
 }

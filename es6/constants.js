@@ -17,3 +17,10 @@ export const droppableSelector  = `[${droppableAttribute}]`;
 export const dropZoneSelector   = '[data-drag-sortable],[data-drag-droppable],[data-drag-canvas]';
 export const disabledSelector   = `[${disabledAttribute}]`;
 export const scrollableSelector = `[${scrollableAttribute}]`;
+
+export const dragStartEvent     = 'dragstart';
+export const dragEndEvent       = 'dragend';
+export const dragLeaveEvent     = 'dragleave';
+export const dragEnterEvent     = 'dragenter';
+export const dropEvent          = 'drop';
+export const dragEvent          = 'drag';

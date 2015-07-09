@@ -25,6 +25,28 @@
       <div class="column">
         <div class="ui-segment">
 
+          <h3>Sortable with Accepts</h3>
+          <ol data-drag-sortable="horizontal"
+              data-drag-scrollable
+              class="horizontal">
+            <li class='red'>Item 1</li>
+            <li class='orange'>Item 2</li>
+            <li class='yellow'>Item 3</li>
+            <li class='lime'>Item 4</li>
+            <li class='green'>Item 5</li>
+          </ol>
+          <ol data-drag-sortable
+              data-drag-accepts=".red">
+          </ol>
+          <ol data-drag-sortable
+              data-drag-accepts=".orange">
+          </ol>
+          <ol data-drag-sortable
+              data-drag-accepts=".yellow">
+          </ol>
+
+
+
           <h3>Sortable with Containment</h3>
           <ol data-drag-sortable
               data-drag-containment
