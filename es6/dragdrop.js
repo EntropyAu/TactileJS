@@ -1,7 +1,6 @@
 import * as constants from "./constants.js";
 import * as helpers from "./helpers.js";
 import * as dom from "./dom.js";
-import * as scrolling from "./scrolling.js"
 
 // conventions
 // all client positions are expressed as x,y
@@ -10,6 +9,7 @@ import * as scrolling from "./scrolling.js"
 export class DragDrop {
   constructor() {
     this.context = null;
+    this.plugins = [];
     this.options = {
       placeholderClass:     'dd-drag-placeholder',
       ghostClass:           'dd-drag-ghost',
@@ -19,15 +19,21 @@ export class DragDrop {
       easing:               'ease-in-out',
       ghostResize:          true,
       ghostResizeAnimated:  true,
-      animatedElementLimit: 10,
-      scrollDelay:          1000,
-      scrollDistance:       40,
-      scrollSpeed:          3
+      animatedElementLimit: 10
     }
     var onPointerDown = this.onPointerDown.bind(this);
     document.addEventListener('mousedown', onPointerDown, false);
   }
 
+  addPlugin(plugin) {
+    this.plugins.push(plugin);
+  }
+
+  onPointerMove(e) {
+    // suppress default event handling, prevents the drag from being interpreted as a selection
+    dom.cancelEvent(e);
+    this.dragMove(this.context, e.clientX, e.clientY);
+  }
 
   onPointerDown(e) {
     // support left click only
@@ -52,7 +58,7 @@ export class DragDrop {
     dom.cancelEvent(e);
 
     // abort the drag if the element is marked as [data-drag-disabled]
-    if (dragEl.matches(constants.disabledSelector)) return;
+    if (dragEl.hasAttribute(constants.disabledAttribute)) return;
 
     let parentEl = dragEl.parentElement;
     let parentIndex = Array.prototype.indexOf.call(parentEl.children, dragEl);
@@ -132,31 +138,22 @@ export class DragDrop {
       originalParentOffsetLeft: offsetLeft,
       orientation: orientation,
       pointerX: e.clientX,
-      pointerY: e.clientY,
-      scrollAnimationFrame: null,
-      scrollEl: null,
-      scrollDx: null,
-      scrollDy: null
+      pointerY: e.clientY
     };
 
     this.updatePlaceholder(this.context, false);
     this.findDropZone(this.context);
     dom.raiseEvent(dragEl, 'dragstart', {})
     this.bindPointerEventsForDragging()
+
+    // notify plugins
+    for (let plugin of this.plugins)
+      if (plugin.dragStart)
+        plugin.dragStart(this.context);
   }
 
 
-  dragStart(dragEl) {
 
-  }
-
-
-
-  onPointerMove(e) {
-    // suppress default event handling, prevents the drag from being interpreted as a selection
-    dom.cancelEvent(e);
-    this.dragMove(this.context, e.clientX, e.clientY);
-  }
 
 
   dragMove(context, x, y) {
@@ -180,70 +177,12 @@ export class DragDrop {
     if (this.isCanvas(context.parentEl)) this.updateCanvasOffsets(context);
     this.updatePlaceholder(context);
     this.updateGhost(context);
-    this.updateAutoScroll(context);
+
+    // notify plugins
+    for (let plugin of this.plugins)
+      if (plugin.dragMove)
+        plugin.dragMove(this.context);
   }
-
-
-
-  onScrollAnimationFrame() {
-    this.continueAutoScroll(this.context);
-  }
-
-  updateAutoScroll(context) {
-    [context.scrollEl, context.scrollDx, context.scrollDy] = this.getScrollZoneUnderPointer(context);
-    if (context.scrollEl) this.startAutoScroll(context);
-    if (!context.scrollEl) this.stopAutoScroll(context);
-  }
-
-  startAutoScroll(context) {
-    context.scrollAnimationFrame = requestAnimationFrame(this.onScrollAnimationFrame.bind(this));
-  }
-
-  stopAutoScroll(context) {
-    if (context.scrollAnimationFrame) {
-      cancelAnimationFrame(context.scrollAnimationFrame);
-      context.scrollAnimationFrame = null;
-    }
-  }
-
-  continueAutoScroll(context) {
-    if (context && context.scrollEl) {
-      context.scrollEl.scrollTop += context.scrollDy;
-      context.scrollEl.scrollLeft += context.scrollDx;
-      this.updateAutoScroll(context);
-    }
-  }
-
-
-
-  getScrollZoneUnderPointer(context) {
-    var scrollableAncestorEls = dom.ancestors(context.parentEl, constants.scrollableSelector);
-
-    for (let i = 0; i < scrollableAncestorEls.length; i++) {
-      let scrollEl = scrollableAncestorEls[i];
-      let scrollableRect = scrollEl.getBoundingClientRect();  // cache this
-      let sx = 0;
-      let sy = 0;
-
-      if (scrollEl.getAttribute(constants.scrollAttribute) !== 'vertical') {
-        let hScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.width / 3);
-        if (context.pointerX > scrollableRect.right  - hScrollDistance && dom.canScrollRight(scrollEl)) sx = +this.options.scrollSpeed;
-        if (context.pointerX < scrollableRect.left   + hScrollDistance && dom.canScrollLeft(scrollEl)) sx = -this.options.scrollSpeed;
-      }
-
-      if (scrollEl.getAttribute(constants.scrollAttribute) !== 'horizontal') {
-        let vScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.height / 3);
-        if (context.pointerY < scrollableRect.top    + vScrollDistance && dom.canScrollUp(scrollEl)) sy = -this.options.scrollSpeed;
-        if (context.pointerY > scrollableRect.bottom - vScrollDistance && dom.canScrollDown(scrollEl)) sy = +this.options.scrollSpeed;
-      }
-
-      if (sx !== 0 || sy !== 0) {
-        return [scrollEl, sx, sy];
-      }
-    }
-    return [null, null, null];
-  }
-
 
 
 
@@ -449,17 +388,23 @@ export class DragDrop {
     context.ghostHeight = context.placeholderHeight;
   }
 
-
-
   onPointerUp(e) {
-    this.unbindPointerEventsForDragging()
-    dom.raiseEvent(this.context.dragEl, 'dragend', {})
-    dom.raiseEvent(this.context.dragEl, 'drop', {})
+    this.unbindPointerEventsForDragging();
+    this.dragEnd(this.context);
+  }
 
-    this.stopAutoScroll(this.context);
 
-    if (this.context.placeholderParentEl) {
-      let placeholderRect = this.context.placeholderEl.getBoundingClientRect();
+  dragEnd(context) {
+    dom.raiseEvent(context.dragEl, 'dragend', {})
+    dom.raiseEvent(context.dragEl, 'drop', {})
+
+    // notify plugins
+    for (let plugin of this.plugins)
+      if (plugin.dragEnd)
+        plugin.dragEnd(context);
+
+    if (context.placeholderParentEl) {
+      let placeholderRect = context.placeholderEl.getBoundingClientRect();
       let targetProps = {
         translateX: [placeholderRect.left, 'ease-out'],
         translateY: [placeholderRect.top, 'ease-out'],
@@ -472,7 +417,7 @@ export class DragDrop {
         targetProps.width = [placeholderRect.width, 'ease-out'];
         targetProps.height = [placeholderRect.height, 'ease-out'];
       }
-      Velocity(this.context.ghostEl, targetProps, {
+      Velocity(context.ghostEl, targetProps, {
         duration: this.options.duration,
         easing: this.options.easing,
         complete: this.placeDragElInFinalPosition.bind(this)
@@ -573,12 +518,6 @@ export class DragDrop {
   }
 
 
-  checkScrollProximity(el, offsetTop, offsetLeft) {
-    // iterate up the tree until we find a scrollable element
-    //
-  }
-
-
   bindPointerEventsForDragging() {
     this.onPointerMoveBound = this.onPointerMove.bind(this);
     this.onPointerUpBound = this.onPointerUp.bind(this);
@@ -633,4 +572,7 @@ export class DragDrop {
   }
 }
 
+
 window.dragDrop = new DragDrop();
+import DragDropScroller from "./DragDropScroller.js"
+dragDrop.addPlugin(new DragDropScroller())
