@@ -7,6 +7,7 @@ export const snapToGridAttribute   = 'data-drag-snap-to-grid';
 export const scrollableAttribute   = 'data-drag-scrollable';
 export const sortableAttribute     = 'data-drag-sortable';
 export const disabledAttribute     = 'data-drag-disabled';
+export const handleAttribute       = 'data-drag-handle';
 
 export const draggableSelector  = '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
 export const handleSelector     = '[data-drag-handle]';

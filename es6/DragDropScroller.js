@@ -6,6 +6,7 @@ import * as dom from "./dom.js";
 // TODO: lock scroll height
 // TODO: refactor: clearer scroll start, scroll finish
 // TODO: refactor: rename ancestors (it's inclusive of this generation)
+// TODO: trigger placeholder update when scroll stops
 export default class DragDropScrolling {
   constructor() {
     this.options = {

@@ -725,8 +725,10 @@
 	var sortableAttribute = 'data-drag-sortable';
 	exports.sortableAttribute = sortableAttribute;
 	var disabledAttribute = 'data-drag-disabled';
-
 	exports.disabledAttribute = disabledAttribute;
+	var handleAttribute = 'data-drag-handle';
+
+	exports.handleAttribute = handleAttribute;
 	var draggableSelector = '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
 	exports.draggableSelector = draggableSelector;
 	var handleSelector = '[data-drag-handle]';
@@ -935,6 +937,7 @@
 	// TODO: lock scroll height
 	// TODO: refactor: clearer scroll start, scroll finish
 	// TODO: refactor: rename ancestors (it's inclusive of this generation)
+	// TODO: trigger placeholder update when scroll stops
 
 	var DragDropScrolling = (function () {
 	  function DragDropScrolling() {
