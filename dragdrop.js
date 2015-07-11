@@ -54,19 +54,31 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var _constantsJs = __webpack_require__(1);
+	var _animationJs = __webpack_require__(1);
+
+	var animation = _interopRequireWildcard(_animationJs);
+
+	var _canvasJs = __webpack_require__(3);
+
+	var canvas = _interopRequireWildcard(_canvasJs);
+
+	var _constantsJs = __webpack_require__(2);
 
 	var constants = _interopRequireWildcard(_constantsJs);
 
-	var _helpersJs = __webpack_require__(2);
-
-	var helpers = _interopRequireWildcard(_helpersJs);
-
-	var _domJs = __webpack_require__(3);
+	var _domJs = __webpack_require__(4);
 
 	var dom = _interopRequireWildcard(_domJs);
 
-	var _DragDropScrollerJs = __webpack_require__(4);
+	var _helpersJs = __webpack_require__(5);
+
+	var helpers = _interopRequireWildcard(_helpersJs);
+
+	var _sortableJs = __webpack_require__(6);
+
+	var sortable = _interopRequireWildcard(_sortableJs);
+
+	var _DragDropScrollerJs = __webpack_require__(7);
 
 	var _DragDropScrollerJs2 = _interopRequireDefault(_DragDropScrollerJs);
 
@@ -134,8 +146,11 @@
 	  };
 
 	  DragDrop.prototype.dragStart = function dragStart(dragEl, x, y) {
-	    // abort the drag if the element is marked as [data-drag-disabled]
-	    if (dragEl.hasAttribute(constants.disabledAttribute)) return;
+	    // abort the drag if the element or it's parent element is marked as [data-drag-disabled]
+	    if (dragEl.hasAttribute(constants.disabledAttribute) || dragEl.parentElement && dragEl.parentElement.hasAttribute(constants.disabledAttribute)) return;
+
+	    var dragStartEvent = dom.raiseEvent(dragEl, constants.dragStartEvent, {});
+	    if (dragStartEvent.returnValue === false) return;
 
 	    var parentEl = dragEl.parentElement;
 	    var parentIndex = Array.prototype.indexOf.call(parentEl.children, dragEl);
@@ -188,6 +203,7 @@
 	    dom.translate(placeholderEl, 0, 0);
 	    dom.topLeft(placeholderEl, 0, 0);
 	    placeholderEl.classList.add(this.options.placeholderClass);
+	    placeholderEl.setAttribute(constants.placeholderAttribute, true);
 	    parentEl.insertBefore(placeholderEl, dragEl.nextSibling);
 
 	    var orientation = dragEl.getAttribute("data-drag-orientation") || "both";
@@ -195,11 +211,16 @@
 	    this.buildDropZoneCache(parentEl);
 
 	    this.context = {
+	      options: this.options,
 	      dragEl: dragEl,
 	      overlayEl: overlayEl,
+
 	      ghostEl: ghostEl,
 	      ghostWidth: dragElRect.width,
 	      ghostHeight: dragElRect.height,
+	      constrainedX: x,
+	      constrainedY: y,
+
 	      placeholderEl: placeholderEl,
 	      placeholderParentEl: null,
 	      placeholderIndex: null,
@@ -207,27 +228,28 @@
 	      placeholderOffsetLeft: null,
 	      placeholderWidth: null,
 	      placeholderHeight: null,
+
 	      gripTopPercent: gripTopPercent,
 	      gripLeftPercent: gripLeftPercent,
+
 	      parentEl: null,
 	      parentIndex: parentIndex,
 	      offsetTop: offsetTop,
 	      offsetLeft: offsetLeft,
+
 	      originalParentEl: parentEl,
 	      originalParentIndex: parentIndex,
 	      originalOffsetTop: offsetTop,
 	      originalOffsetLeft: offsetLeft,
+
 	      orientation: orientation,
 	      pointerX: x,
-	      pointerY: y,
-	      constrainedX: x,
-	      constrainedY: y
+	      pointerY: y
 	    };
 
 	    this.setDropZone(this.context, parentEl);
 	    this.updatePlaceholder(this.context, false);
 	    this.findDropZone(this.context);
-	    dom.raiseEvent(dragEl, constants.dragStartEvent, {});
 	    this.bindPointerEventsForDragging();
 
 	    // notify plugins
@@ -244,12 +266,12 @@
 
 	    this.findDropZone(context);
 
-	    this.applyContainmentContraint(context);
-
-	    if (this.isSortable(context.parentEl)) this.updateSortableIndex(context);
-	    if (this.isCanvas(context.parentEl)) this.updateCanvasOffsets(context);
+	    if (sortable.isSortable(context.parentEl)) sortable.updateIndex(context);
+	    if (canvas.isCanvas(context.parentEl)) canvas.updateOffsets(context);
 	    this.updatePlaceholder(context);
-	    this.updateGhost(context);
+	    if (this.options.ghostResize) this.updateGhostSize(context);
+	    this.constrainGhostPosition(context);
+	    this.updateGhostPosition(context);
 
 	    // notify plugins
 	    for (var i = 0; i < this.plugins.length; i++) {
@@ -268,13 +290,13 @@
 	    }
 	  };
 
-	  DragDrop.prototype.applyContainmentContraint = function applyContainmentContraint(context) {
-	    var adjustedX = context.pointerX - context.gripLeftPercent * context.placeholderWidth;
-	    var adjustedY = context.pointerY - context.gripTopPercent * context.placeholderHeight;
+	  DragDrop.prototype.constrainGhostPosition = function constrainGhostPosition(context) {
+	    var adjustedX = context.pointerX - context.gripLeftPercent * context.ghostWidth;
+	    var adjustedY = context.pointerY - context.gripTopPercent * context.ghostHeight;
 	    if (this.parentIsContainmentFor(context.parentEl, context.dragEl)) {
 	      var containmentRect = context.parentEl.getBoundingClientRect();
-	      adjustedX = helpers.coerce(adjustedX, containmentRect.left, containmentRect.right - context.placeholderWidth);
-	      adjustedY = helpers.coerce(adjustedY, containmentRect.top, containmentRect.bottom - context.placeholderHeight);
+	      adjustedX = helpers.coerce(adjustedX, containmentRect.left, containmentRect.right - context.ghostWidth);
+	      adjustedY = helpers.coerce(adjustedY, containmentRect.top, containmentRect.bottom - context.ghostHeight);
 	    }
 	    context.constrainedX = adjustedX;
 	    context.constrainedY = adjustedY;
@@ -316,7 +338,6 @@
 	  DragDrop.prototype.findDropZone = function findDropZone(context) {
 	    // walk up the drop zone tree until we find the closest drop zone that includes the dragged item
 	    while (!this.parentIsContainmentFor(context.parentEl, context.dragEl) && !this.positionIsInDropZone(context.parentEl, context.pointerX, context.pointerY)) {
-
 	      var parentDropZoneEl = dom.closest(context.parentEl.parentElement, "body," + constants.dropZoneSelector);
 	      if (!parentDropZoneEl) break;
 	      this.setDropZone(context, parentDropZoneEl);
@@ -329,7 +350,6 @@
 	    var childDropZoneEl = this.getChildDropZoneAtOffset(context.parentEl, offsetTop, offsetLeft);
 	    while (childDropZoneEl) {
 	      this.setDropZone(context, childDropZoneEl);
-
 	      this.buildDropZoneCacheIfRequired(context.parentEl);
 	      offsetLeft = context.pointerX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft, offsetTop = context.pointerY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
 	      childDropZoneEl = this.getChildDropZoneAtOffset(context.parentEl, offsetTop, offsetLeft);
@@ -342,91 +362,33 @@
 	      dom.raiseEvent(context.parentEl, constants.dragLeaveEvent, {});
 	    }
 	    if (newDropZoneEl) {
-	      newDropZoneEl.classList.add(this.options.dropZoneHoverClass);
+	      if (newDropZoneEl !== document.body) newDropZoneEl.classList.add(this.options.dropZoneHoverClass);
 	      dom.raiseEvent(newDropZoneEl, constants.dragEnterEvent, {});
 	    }
 	    context.parentEl = newDropZoneEl;
 	  };
 
+	  DragDrop.prototype.mayAccept = function mayAccept(dragEl, dropZoneEl) {
+	    // check the drop zone is enabled
+	    if (dropZoneEl.hasAttribute(constants.disabledAttribute)) return false;
+
+	    // check the drop zone accepts the dragged element type
+	    var acceptsSelector = dropZoneEl.getAttribute(constants.acceptsAttribute);
+	    if (acceptsSelector !== null) return dragEl.matches(acceptsSelector);
+
+	    return true;
+	  };
+
 	  DragDrop.prototype.parentIsContainmentFor = function parentIsContainmentFor(parentEl, dragEl) {
-	    if (parentEl.hasAttribute(constants.containmentAttribute)) {
-	      var containmentSelector = parentEl.getAttribute(constants.containmentAttribute);
-	      return containmentSelector ? dragEl.matches(containmentSelector) : true;
-	    }
 	    if (dragEl.hasAttribute(constants.containmentAttribute)) {
 	      var containmentSelector = dragEl.getAttribute(constants.containmentAttribute);
 	      return containmentSelector ? placeholderEl.matches(containmentSelector) : true;
 	    }
+	    if (parentEl.hasAttribute(constants.containmentAttribute)) {
+	      var containmentSelector = parentEl.getAttribute(constants.containmentAttribute);
+	      return containmentSelector ? dragEl.matches(containmentSelector) : true;
+	    }
 	    return false;
-	  };
-
-	  // TODO: optimisation, cache layout offsets
-	  // TODO: optimisation, check immediate neighbours prior to binary search
-
-	  DragDrop.prototype.updateSortableIndex = function updateSortableIndex(context) {
-	    var direction = context.parentEl.getAttribute(constants.sortableAttribute) || "vertical";
-
-	    if (context.parentEl.children.length === 0) {
-	      context.parentIndex = 0;
-	      return;
-	    }
-
-	    var offsetParent = null;
-	    for (var i = 0; i < context.parentEl.children.length; i++) {
-	      var childEl = context.parentEl.children[i];
-	      offsetParent = childEl.offsetParent;
-	      if (offsetParent !== null) break;
-	    }
-	    var offsetParentRect = offsetParent.getBoundingClientRect();
-	    var offsetPointerX = context.constrainedX - offsetParentRect.left + offsetParent.scrollLeft;
-	    var offsetPointerY = context.constrainedY - offsetParentRect.top + offsetParent.scrollTop;
-
-	    var newIndex = null;
-	    switch (direction) {
-	      case "horizontal":
-	        newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerX, function (el) {
-	          return el.offsetLeft + el.offsetWidth / 2;
-	        });
-	        break;
-	      case "vertical":
-	        newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerY, function (el) {
-	          return el.offsetTop + el.offsetHeight / 2;
-	        });
-	        break;
-	      case "wrap":
-	        throw new Error("Not implemented");
-	    }
-	    // the parent index will be based on the set of children INCLUDING the placeholder element we need to compensate
-	    if (context.placeholderIndex && newIndex > context.placeholderIndex) newIndex++;
-	    context.parentIndex = newIndex;
-	  };
-
-	  DragDrop.prototype.updateCanvasOffsets = function updateCanvasOffsets(context) {
-	    var offsetLeft = context.constrainedX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft,
-	        offsetTop = context.constrainedY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
-
-	    // snap to drop zone bounds
-	    var snapInBounds = context.parentEl.getAttribute(constants.snapInBoundsAttribute) !== null;
-	    if (snapInBounds) {
-	      var dropZoneOffsets = context.parentEl.getBoundingClientRect();
-	      if (newLeft < dropZoneOffsets.left) newLeft = dropZoneOffsets.left;
-	      if (newTop < dropZoneOffsets.top) newTop = dropZoneOffsets.top;
-	      if (newLeft < dropZoneOffsets.right - context.ghostWidth) newLeft = dropZoneOffsets.right - context.ghostWidth;
-	      if (newTop > dropZoneOffsets.bottom - context.ghostHeight) newTop = dropZoneOffsets.bottom - context.ghostHeight;
-	    }
-
-	    // snap to dropZone grid
-	    var snapToGrid = context.parentEl.getAttribute(constants.snapToGridAttribute) !== null;
-	    if (snapToGrid) {
-	      var cellSizeTokens = snapToGrid.split(",");
-	      var cellW = parseInt(cellSizeTokens[0], 10);
-	      var cellH = parseInt(cellSizeTokens[1], 10) || cellW;
-	      var dropZoneOffsets = context.parentEl.getBoundingClientRect();
-	      newTop = Math.round((newTop - dropZoneOffsets.top) / cellH) * cellH + dropZoneOffsets.top;
-	      newLeft = Math.round((newLeft - dropZoneOffsets.left) / cellW) * cellW + dropZoneOffsets.left;
-	    }
-	    context.offsetLeft = offsetLeft;
-	    context.offsetTop = offsetTop;
 	  };
 
 	  DragDrop.prototype.updatePlaceholder = function updatePlaceholder(context) {
@@ -439,29 +401,35 @@
 	    // TODO: optimisation, recycle old positions
 	    animate = animate && this.options.duration > 0;
 
-	    var newPhParentEl = context.parentEl.matches(constants.dropZoneSelector) ? context.parentEl : null;
+	    var oldParentEl = context.placeholderParentEl;
+	    var newParentEl = context.parentEl.matches(constants.dropZoneSelector) ? context.parentEl : null;
 
 	    // first, remove the old placeholder
-	    if (context.placeholderParentEl && (context.parentEl === null || context.parentEl !== newPhParentEl)) {
-	      if (animate) this.cacheChildOffsets(context.placeholderParentEl, "_old");
+	    if (oldParentEl && (context.parentEl === null || context.parentEl !== newParentEl)) {
+	      if (animate) this.cacheChildOffsets(oldParentEl, "_old");
 	      context.placeholderEl.remove();
-	      if (animate) this.cacheChildOffsets(context.placeholderParentEl, "_new");
-	      if (animate) this.animateElementsBetweenSavedOffsets(context.placeholderParentEl);
+	      if (animate) this.cacheChildOffsets(oldParentEl, "_new");
+	      if (animate) animation.animateElementsBetweenSavedOffsets(context, oldParentEl, { animatedElementLimit: this.options.animatedElementLimit });
 	      context.placeholderWidth = null;
 	      context.placeholderHeight = null;
 	      context.placeholderParentEl = null;
 	    }
 
 	    // insert the new placeholder
-	    if (this.isSortable(newPhParentEl) && (context.placeholderParentEl !== context.parentEl || context.placeholderIndex !== context.parentIndex)) {
+	    if (sortable.isSortable(newParentEl) && (oldParentEl !== newParentEl || context.placeholderIndex !== context.parentIndex)) {
 	      if (animate) this.cacheChildOffsets(context.parentEl, "_old");
-	      context.parentEl.insertBefore(context.placeholderEl, context.parentEl.children[context.parentIndex]);
+	      var oldScrollOffset = [newParentEl.scrollLeft, newParentEl.scrollTop];
+	      context.parentEl.insertBefore(context.placeholderEl, newParentEl.children[context.parentIndex]);
 	      if (animate) this.cacheChildOffsets(context.parentEl, "_new");
-	      if (animate) this.animateElementsBetweenSavedOffsets(context.parentEl);
+	      // restore the old scroll position
+	      newParentEl.scrollLeft = oldScrollOffset[0];
+	      newParentEl.scrollTop = oldScrollOffset[1];
+
+	      if (animate) animation.animateElementsBetweenSavedOffsets(context, newParentEl, { animatedElementLimit: this.options.animatedElementLimit });
 	      context.placeholderParentEl = context.parentEl;
 	    }
 
-	    if (this.isCanvas(newPhParentEl)) {
+	    if (canvas.isCanvas(newParentEl)) {
 	      if (context.placeholderParentEl !== context.parentEl) {
 	        context.parentEl.appendChild(context.placeholderEl);
 	        context.placeholderParentEl = context.parentEl;
@@ -482,15 +450,10 @@
 	    }
 	  };
 
-	  DragDrop.prototype.updateGhost = function updateGhost(context) {
-	    this.updateGhostPosition(context);
-	    if (this.options.ghostResize) this.updateGhostSize(context);
-	  };
-
 	  DragDrop.prototype.updateGhostPosition = function updateGhostPosition(context) {
 	    Velocity(context.ghostEl, {
-	      translateX: context.constrainedX + context.gripLeftPercent * context.placeholderWidth,
-	      translateY: context.constrainedY + context.gripTopPercent * context.placeholderHeight,
+	      translateX: context.constrainedX + context.gripLeftPercent * context.ghostWidth,
+	      translateY: context.constrainedY + context.gripTopPercent * context.ghostHeight,
 	      translateZ: 1
 	    }, { duration: 0 });
 	  };
@@ -524,10 +487,10 @@
 	  DragDrop.prototype.placeDragElInFinalPosition = function placeDragElInFinalPosition() {
 	    this.context.placeholderEl.remove();
 
-	    if (this.isSortable(this.context.parentEl)) {
+	    if (sortable.isSortable(this.context.parentEl)) {
 	      this.context.parentEl.insertBefore(this.context.dragEl, this.context.parentEl.children[this.context.parentIndex]);
 	    }
-	    if (this.isCanvas(this.context.parentEl)) {
+	    if (canvas.isCanvas(this.context.parentEl)) {
 	      dom.topLeft(this.context.dragEl, this.context.offsetTop, this.context.offsetLeft);
 	      this.context.parentEl.appendChild(this.context.dragEl);
 	    }
@@ -564,7 +527,7 @@
 	      if (intermediateDropZoneEl !== null && intermediateDropZoneEl !== el) continue;
 
 	      // if this drop zone is contained within a placeholder, ignore it
-	      if (dom.closest(childDropZoneEl, "." + this.options.placeholderClass)) continue;
+	      if (dom.closest(childDropZoneEl, constants.placeholderSelector)) continue;
 
 	      var childRect = childDropZoneEl.getBoundingClientRect();
 	      el.__dd_childDropZones.push({
@@ -608,14 +571,6 @@
 	    return null;
 	  };
 
-	  DragDrop.prototype.isSortable = function isSortable(el) {
-	    return el && el.matches(constants.sortableSelector);
-	  };
-
-	  DragDrop.prototype.isCanvas = function isCanvas(el) {
-	    return el && el.matches(constants.canvasSelector);
-	  };
-
 	  DragDrop.prototype.positionIsInDropZone = function positionIsInDropZone(el, clientLeft, clientTop) {
 	    this.buildDropZoneCacheIfRequired(el);
 	    var offsetLeft = clientLeft - el.__dd_clientRect.left,
@@ -646,51 +601,6 @@
 	    }
 	  };
 
-	  DragDrop.prototype.animateElementsBetweenSavedOffsets = function animateElementsBetweenSavedOffsets(el) {
-	    var animatedItemCount = 0;
-	    for (var _iterator3 = el.children, _isArray3 = Array.isArray(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {
-	      var _ref3;
-
-	      if (_isArray3) {
-	        if (_i3 >= _iterator3.length) break;
-	        _ref3 = _iterator3[_i3++];
-	      } else {
-	        _i3 = _iterator3.next();
-	        if (_i3.done) break;
-	        _ref3 = _i3.value;
-	      }
-
-	      var childEl = _ref3;
-
-	      if (childEl.matches("." + this.options.placeholderClass)) continue;
-
-	      var oldOffset = childEl._old;
-	      var newOffset = childEl._new;
-
-	      if (!oldOffset || !newOffset || oldOffset.top === newOffset.top && oldOffset.left === newOffset.left) continue;
-
-	      if (++animatedItemCount > this.options.animatedElementLimit) break;
-
-	      // the following line makes the animations smoother in safari
-	      //childEl.style.webkitTransform = 'translate3d(0,' + (oldOffset.top - newOffset.top) + 'px,0)';
-
-	      Velocity(childEl, {
-	        translateX: "+=" + (oldOffset.left - newOffset.left) + "px",
-	        translateY: "+=" + (oldOffset.top - newOffset.top) + "px",
-	        translateZ: 1
-	      }, { duration: 0 });
-
-	      Velocity(childEl, {
-	        translateX: 0,
-	        translateY: 0
-	      }, {
-	        duration: this.options.duration,
-	        easing: this.options.easing,
-	        queue: false
-	      });
-	    }
-	  };
-
 	  return DragDrop;
 	})();
 
@@ -703,6 +613,66 @@
 
 /***/ },
 /* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	exports.__esModule = true;
+	exports.animateElementsBetweenSavedOffsets = animateElementsBetweenSavedOffsets;
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
+	var _constantsJs = __webpack_require__(2);
+
+	var constants = _interopRequireWildcard(_constantsJs);
+
+	function animateElementsBetweenSavedOffsets(context, el, hints) {
+	  var animatedItemCount = 0;
+	  for (var _iterator = el.children, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+	    var _ref;
+
+	    if (_isArray) {
+	      if (_i >= _iterator.length) break;
+	      _ref = _iterator[_i++];
+	    } else {
+	      _i = _iterator.next();
+	      if (_i.done) break;
+	      _ref = _i.value;
+	    }
+
+	    var childEl = _ref;
+
+	    if (childEl.matches(constants.placeholderSelector)) continue;
+
+	    var oldOffset = childEl._old;
+	    var newOffset = childEl._new;
+
+	    if (!oldOffset || !newOffset || oldOffset.top === newOffset.top && oldOffset.left === newOffset.left) continue;
+
+	    if (++animatedItemCount > hints.animatedElementLimit) break;
+
+	    // the following line makes the animations smoother in safari
+	    //childEl.style.webkitTransform = 'translate3d(0,' + (oldOffset.top - newOffset.top) + 'px,0)';
+
+	    Velocity(childEl, {
+	      translateX: '+=' + (oldOffset.left - newOffset.left) + 'px',
+	      translateY: '+=' + (oldOffset.top - newOffset.top) + 'px',
+	      translateZ: 1
+	    }, { duration: 0 });
+
+	    Velocity(childEl, {
+	      translateX: 0,
+	      translateY: 0
+	    }, {
+	      duration: context.options.duration,
+	      easing: context.options.easing,
+	      queue: false
+	    });
+	  }
+	}
+
+/***/ },
+/* 2 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -727,8 +697,10 @@
 	var disabledAttribute = 'data-drag-disabled';
 	exports.disabledAttribute = disabledAttribute;
 	var handleAttribute = 'data-drag-handle';
-
 	exports.handleAttribute = handleAttribute;
+	var placeholderAttribute = 'data-drag-placeholder';
+
+	exports.placeholderAttribute = placeholderAttribute;
 	var draggableSelector = '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
 	exports.draggableSelector = draggableSelector;
 	var handleSelector = '[data-drag-handle]';
@@ -746,8 +718,10 @@
 	var disabledSelector = '[' + disabledAttribute + ']';
 	exports.disabledSelector = disabledSelector;
 	var scrollableSelector = '[' + scrollableAttribute + ']';
-
 	exports.scrollableSelector = scrollableSelector;
+	var placeholderSelector = '[' + placeholderAttribute + ']';
+
+	exports.placeholderSelector = placeholderSelector;
 	var dragStartEvent = 'dragstart';
 	exports.dragStartEvent = dragStartEvent;
 	var dragEndEvent = 'dragend';
@@ -762,55 +736,55 @@
 	exports.dragEvent = dragEvent;
 
 /***/ },
-/* 2 */
-/***/ function(module, exports) {
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	exports.__esModule = true;
-	exports.coerce = coerce;
-	exports.midpointTop = midpointTop;
-	exports.midpointLeft = midpointLeft;
-	exports.fuzzyBinarySearch = fuzzyBinarySearch;
+	exports.isCanvas = isCanvas;
+	exports.updateOffsets = updateOffsets;
 
-	function coerce(value, min, max) {
-	  return value > max ? max : value < min ? min : value;
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+	var _constantsJs = __webpack_require__(2);
+
+	var constants = _interopRequireWildcard(_constantsJs);
+
+	function isCanvas(el) {
+	  return el && el.matches(constants.canvasSelector);
 	}
 
-	function midpointTop(clientRect) {
-	  return clientRect.top + clientRect.height / 2;
-	}
+	function updateOffsets(context) {
+	  var offsetLeft = context.constrainedX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft,
+	      offsetTop = context.constrainedY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
 
-	function midpointLeft(clientRect) {
-	  return clientRect.left + clientRect.width / 2;
-	}
-
-	function fuzzyBinarySearch(elements, value, accessor) {
-	  var lo = 0,
-	      hi = elements.length - 1,
-	      best = null,
-	      bestValue = null;
-
-	  while (lo <= hi) {
-	    var mid = lo + hi >>> 1;
-	    var midValue = accessor(elements[mid]);
-	    if (bestValue === null || Math.abs(midValue - value) < Math.abs(bestValue - value)) {
-	      best = mid;
-	      bestValue = midValue;
-	    }
-	    if (midValue < value) {
-	      lo = mid + 1;continue;
-	    }
-	    if (midValue > value) {
-	      hi = mid - 1;continue;
-	    }
-	    break;
+	  // snap to drop zone bounds
+	  var snapInBounds = context.parentEl.getAttribute(constants.snapInBoundsAttribute) !== null;
+	  if (snapInBounds) {
+	    var dropZoneOffsets = context.parentEl.getBoundingClientRect();
+	    if (newLeft < dropZoneOffsets.left) newLeft = dropZoneOffsets.left;
+	    if (newTop < dropZoneOffsets.top) newTop = dropZoneOffsets.top;
+	    if (newLeft < dropZoneOffsets.right - context.ghostWidth) newLeft = dropZoneOffsets.right - context.ghostWidth;
+	    if (newTop > dropZoneOffsets.bottom - context.ghostHeight) newTop = dropZoneOffsets.bottom - context.ghostHeight;
 	  }
-	  return best;
+
+	  // snap to dropZone grid
+	  var snapToGrid = context.parentEl.getAttribute(constants.snapToGridAttribute) !== null;
+	  if (snapToGrid) {
+	    var cellSizeTokens = snapToGrid.split(",");
+	    var cellW = parseInt(cellSizeTokens[0], 10);
+	    var cellH = parseInt(cellSizeTokens[1], 10) || cellW;
+	    var dropZoneOffsets = context.parentEl.getBoundingClientRect();
+	    newTop = Math.round((newTop - dropZoneOffsets.top) / cellH) * cellH + dropZoneOffsets.top;
+	    newLeft = Math.round((newLeft - dropZoneOffsets.left) / cellW) * cellW + dropZoneOffsets.left;
+	  }
+	  context.offsetLeft = offsetLeft;
+	  context.offsetTop = offsetTop;
 	}
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports) {
 
 	// selectors
@@ -910,10 +884,125 @@
 	function raiseEvent(source, eventName, eventData) {
 	  var event = new CustomEvent(eventName, eventData);
 	  source.dispatchEvent(event);
+	  return event;
 	}
 
 /***/ },
-/* 4 */
+/* 5 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	exports.__esModule = true;
+	exports.coerce = coerce;
+	exports.midpointTop = midpointTop;
+	exports.midpointLeft = midpointLeft;
+	exports.fuzzyBinarySearch = fuzzyBinarySearch;
+
+	function coerce(value, min, max) {
+	  return value > max ? max : value < min ? min : value;
+	}
+
+	function midpointTop(clientRect) {
+	  return clientRect.top + clientRect.height / 2;
+	}
+
+	function midpointLeft(clientRect) {
+	  return clientRect.left + clientRect.width / 2;
+	}
+
+	function fuzzyBinarySearch(elements, value, accessor) {
+	  var lo = 0,
+	      hi = elements.length - 1,
+	      best = null,
+	      bestValue = null;
+
+	  while (lo <= hi) {
+	    var mid = lo + hi >>> 1;
+	    var midValue = accessor(elements[mid]);
+	    if (bestValue === null || Math.abs(midValue - value) < Math.abs(bestValue - value)) {
+	      best = mid;
+	      bestValue = midValue;
+	    }
+	    if (midValue < value) {
+	      lo = mid + 1;continue;
+	    }
+	    if (midValue > value) {
+	      hi = mid - 1;continue;
+	    }
+	    break;
+	  }
+	  return best;
+	}
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+	exports.isSortable = isSortable;
+	exports.updateIndex = updateIndex;
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+	var _constantsJs = __webpack_require__(2);
+
+	var constants = _interopRequireWildcard(_constantsJs);
+
+	var _helpersJs = __webpack_require__(5);
+
+	var helpers = _interopRequireWildcard(_helpersJs);
+
+	function isSortable(el) {
+	  return el && el.matches(constants.sortableSelector);
+	}
+
+	// TODO: optimisation, cache layout offsets
+	// TODO: optimisation, check immediate neighbours prior to binary search
+	// TODO: pay attention to
+
+	function updateIndex(context) {
+	  var direction = context.parentEl.getAttribute(constants.sortableAttribute) || "vertical";
+
+	  if (context.parentEl.children.length === 0) {
+	    context.parentIndex = 0;
+	    return;
+	  }
+
+	  var offsetParent = null;
+	  for (var i = 0; i < context.parentEl.children.length; i++) {
+	    var childEl = context.parentEl.children[i];
+	    offsetParent = childEl.offsetParent;
+	    if (offsetParent !== null) break;
+	  }
+	  var offsetParentRect = offsetParent.getBoundingClientRect();
+	  var offsetPointerX = context.constrainedX - offsetParentRect.left + offsetParent.scrollLeft;
+	  var offsetPointerY = context.constrainedY - offsetParentRect.top + offsetParent.scrollTop;
+
+	  var newIndex = null;
+	  switch (direction) {
+	    case "horizontal":
+	      newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerX, function (el) {
+	        return el.offsetLeft + el.offsetWidth / 2;
+	      });
+	      break;
+	    case "vertical":
+	      newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerY, function (el) {
+	        return el.offsetTop + el.offsetHeight / 2;
+	      });
+	      break;
+	    case "wrap":
+	      throw new Error("Not implemented");
+	  }
+	  // the parent index will be based on the set of children INCLUDING the placeholder element we need to compensate
+	  if (context.placeholderIndex && newIndex > context.placeholderIndex) newIndex++;
+	  context.parentIndex = newIndex;
+	}
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -924,15 +1013,16 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var _constantsJs = __webpack_require__(1);
+	var _constantsJs = __webpack_require__(2);
 
 	var constants = _interopRequireWildcard(_constantsJs);
 
-	var _domJs = __webpack_require__(3);
+	var _domJs = __webpack_require__(4);
 
 	var dom = _interopRequireWildcard(_domJs);
 
 	// TODO: suspend placeholder updates while scrolling is in progress
+	// TODO: slow down as you approach extremity
 	// TODO: adjust scroll speed based on number of items
 	// TODO: lock scroll height
 	// TODO: refactor: clearer scroll start, scroll finish

@@ -33,6 +33,25 @@
       <div class="column">
         <div class="ui-segment">
 
+          <h3>Sortable</h3>
+          <ol data-drag-sortable
+              data-drag-scrollable
+              data-drag-accepts="*"
+              class="vertical">
+            <li>Item 1</li>
+            <li>Item 2</li>
+            <li>Item 3</li>
+            <li>Item 4</li>
+            <li>Item 5</li>
+            <li>Item 6</li>
+            <li>Item 7</li>
+            <li>Item 8</li>
+            <li>Item 9</li>
+            <li>Item 10</li>
+            <li>Item 11</li>
+          </ol>
+
+
           <h3>Sortable with Accepts</h3>
           <ol data-drag-sortable="horizontal"
               data-drag-scrollable
@@ -72,23 +91,6 @@
             <li>Item 10</li>
           </ol>
 
-          <h3>Sortable</h3>
-          <ol data-drag-sortable
-              data-drag-scrollable
-              data-drag-accepts="*"
-              class="vertical">
-            <li>Item 1</li>
-            <li>Item 2</li>
-            <li>Item 3</li>
-            <li>Item 4</li>
-            <li>Item 5</li>
-            <li>Item 6</li>
-            <li>Item 7</li>
-            <li>Item 8</li>
-            <li>Item 9</li>
-            <li>Item 10</li>
-            <li>Item 11</li>
-          </ol>
 
 
           <h3>Sortable</h3>
@@ -103,6 +105,7 @@
           </ol>
 
 
+
           <h3>Horizontal Sortable</h3>
           <ol data-drag-sortable="horizontal"
               data-drag-scrollable
@@ -113,6 +116,37 @@
             <li>Item 4
             <li>Item 5
           </ol>
+
+
+          <h3>Disabled Sortable</h3>
+          <ol data-drag-sortable
+              data-drag-scrollable
+              data-drag-disabled
+              class="vertical">
+            <li>Item 1
+            <li>Item 2
+            <li>Item 3
+            <li>Item 4
+            <li>Item 5
+          </ol>
+
+          <h3>Disabled Sortable Items</h3>
+          <ol data-drag-sortable
+              data-drag-scrollable
+              class="vertical">
+            <li>Item 1
+            <li data-drag-disabled>Item 2
+            <li>Item 3
+            <li data-drag-disabled>Item 4
+            <li>Item 5
+          </ol>
+
+          <h3>Disabled Canvas</h3>
+          <div data-drag-canvas
+               data-drag-disabled>
+          </div>
+
+
 
 
           <h3>Heirarchical Sortable</h3>

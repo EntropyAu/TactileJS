@@ -79,5 +79,6 @@ export function cancelEvent(e) {
 export function raiseEvent(source, eventName, eventData) {
   let event = new CustomEvent(eventName, eventData);
   source.dispatchEvent(event);
+  return event;
 }
 

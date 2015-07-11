@@ -30,11 +30,16 @@ ol {
   margin: 8px;
   padding: 0;
   transition: border 250ms linear;
-  min-height: 40px;
+  min-height: 42px;
 }
 [data-drag-canvas] {
   border: 1px solid transparent;
 }
+
+[data-drag-disabled] {
+  opacity: 0.5;
+}
+
 ol.vertical {
   max-height: 300px;
   overflow-y: auto;

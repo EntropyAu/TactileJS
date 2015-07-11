@@ -5,6 +5,9 @@ module.exports = {
         path: __dirname,
         filename: 'DragDrop.js'
     },
+    watchOptions: {
+        poll: 250
+    },
     module: {
         loaders: [
             {

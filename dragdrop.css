@@ -11,12 +11,23 @@
 [data-drag-sortable] > *,
 [data-drag-canvas] > * {
   cursor: default;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
+[data-drag-disabled] {
+  cursor: default;
 }
 
 [data-drag-canvas] > * {
   position: absolute;
   display: inline-block;
   margin: 0;
+}
+
+[data-drag-canvas] {
+  min-width: 40px;
+  min-height: 40px;
 }
 
 [data-drag-sortable] > * {
@@ -50,8 +61,14 @@
   cursor: default;
 }
 
+[data-drag-disabled] > * {
+  cursor: default;
+}
+
 [data-drag-handle] {
-  cursor: pointer;
+  cursor: hand;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
 }
 
 [data-drag-sortable="horizontal"] {
@@ -70,11 +87,11 @@
 
 /* TODO figure out a different way of applying these classes */
 /* performance of * is problematic */
-.dd-drag-placeholder {
+[data-drag-placeholder] {
+  position: relative;
+  z-index: -1;
   opacity: 0.1;
   box-shadow: none !important;
-  z-index: -1;
-  position: relative;
 }
 
 .dd-drag-hover > * {
@@ -114,6 +131,11 @@
      -moz-backface-visibility: hidden;
       -ms-backface-visibility: hidden;
           backface-visibility: hidden;
+  cursor: hand;
+  cursor: -webkit-grabbing;
+  cursor: -moz-grabbing;
+  cursor: -ms-grabbing;
+  cursor: grabbing;
   box-shadow: 0 0 0 rgba(0,0,0,0.2);
   will-change: transform;
 }

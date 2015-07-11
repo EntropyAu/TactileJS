@@ -2,6 +2,7 @@ import * as constants from "./constants.js";
 import * as dom from "./dom.js";
 
 // TODO: suspend placeholder updates while scrolling is in progress
+// TODO: slow down as you approach extremity
 // TODO: adjust scroll speed based on number of items
 // TODO: lock scroll height
 // TODO: refactor: clearer scroll start, scroll finish
