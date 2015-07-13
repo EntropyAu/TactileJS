@@ -44,572 +44,180 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 
 	exports.__esModule = true;
 
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var _animationJs = __webpack_require__(1);
+	var _DragJs = __webpack_require__(1);
 
-	var animation = _interopRequireWildcard(_animationJs);
+	var _DragJs2 = _interopRequireDefault(_DragJs);
 
-	var _canvasJs = __webpack_require__(3);
+	var _DraggableJs = __webpack_require__(6);
 
-	var canvas = _interopRequireWildcard(_canvasJs);
+	var _DraggableJs2 = _interopRequireDefault(_DraggableJs);
 
-	var _constantsJs = __webpack_require__(2);
+	var _libDomJs = __webpack_require__(2);
 
-	var constants = _interopRequireWildcard(_constantsJs);
+	var dom = _interopRequireWildcard(_libDomJs);
 
-	var _domJs = __webpack_require__(4);
+	var _libEventsJs = __webpack_require__(14);
 
-	var dom = _interopRequireWildcard(_domJs);
+	var events = _interopRequireWildcard(_libEventsJs);
 
-	var _helpersJs = __webpack_require__(5);
+	var _libMathJs = __webpack_require__(4);
 
-	var helpers = _interopRequireWildcard(_helpersJs);
+	var math = _interopRequireWildcard(_libMathJs);
 
-	var _sortableJs = __webpack_require__(6);
+	var defaultOptions = {
+	  cancel: 'input,textarea,a,button,select',
+	  helper: {
+	    resize: true,
+	    shadowSize: 14
+	  },
+	  pickup: {
+	    delay: 400,
+	    distance: 10
+	  },
+	  css: {
+	    placeholder: 'dd-drag-placeholder',
+	    containerOver: 'dd-drag-hover'
+	  },
+	  scroll: {
+	    delay: 1000,
+	    sensitivity: 40,
+	    speed: 2
+	  },
+	  animation: {
+	    duration: 150,
+	    easing: 'ease-in-out',
+	    elementLimit: 25,
+	    animateResize: true
+	  }
+	};
 
-	var sortable = _interopRequireWildcard(_sortableJs);
+	var DragManager = (function () {
+	  function DragManager() {
+	    _classCallCheck(this, DragManager);
 
-	var _DragDropScrollerJs = __webpack_require__(7);
+	    this.options = defaultOptions;
+	    this.pendingDrags = {};
+	    this.drags = {};
 
-	var _DragDropScrollerJs2 = _interopRequireDefault(_DragDropScrollerJs);
-
-	// conventions
-	// all client positions are expressed as x,y
-	// all offset positions are expressed as l,t
-
-	var DragDrop = (function () {
-	  function DragDrop() {
-	    _classCallCheck(this, DragDrop);
-
-	    this.context = null;
-	    this.plugins = [];
-	    this.options = {
-	      placeholderClass: "dd-drag-placeholder",
-	      ghostClass: "dd-drag-ghost",
-	      overlayClass: "dd-drag-overlay",
-	      dropZoneHoverClass: "dd-drag-hover",
-	      duration: 150,
-	      easing: "ease-in-out",
-	      ghostResize: true,
-	      ghostResizeAnimated: true,
-	      ghostShadowSize: 20,
-	      animatedElementLimit: 10
-	    };
-	    var onPointerDown = this.onPointerDown.bind(this);
-	    document.addEventListener("mousedown", onPointerDown, false);
+	    this.onPointerDownListener = this.onPointerDown.bind(this);
+	    this.onPointerMoveListener = this.onPointerMove.bind(this);
+	    this.onPointerUpListener = this.onPointerUp.bind(this);
+	    this.bindPointerEvents();
 	  }
 
-	  DragDrop.prototype.registerPlugin = function registerPlugin(plugin) {
-	    this.plugins.push(plugin);
+	  DragManager.prototype.bindPointerEvents = function bindPointerEvents() {
+	    window.addEventListener(events.pointerDownEvent, this.onPointerDownListener, true);
 	  };
 
-	  DragDrop.prototype.onPointerDown = function onPointerDown(e) {
-	    if (e.which !== 1) return;
+	  DragManager.prototype.unbindPointerEvents = function unbindPointerEvents() {
+	    window.removeEventListener(events.pointerDownEvent, this.onPointerDownListener);
+	  };
 
-	    var dragEl = null;
-	    var handleOrDragEl = dom.closest(e.target, constants.handleSelector + "," + constants.draggableSelector);
-	    if (!handleOrDragEl) return;
+	  DragManager.prototype.bindPointerEventsForDragging = function bindPointerEventsForDragging() {
+	    window.addEventListener(events.pointerMoveEvent, this.onPointerMoveListener, true);
+	    window.addEventListener(events.pointerUpEvent, this.onPointerUpListener, false);
+	  };
 
-	    if (handleOrDragEl.hasAttribute(constants.handleAttribute)) {
-	      // the pointer is over a handle element,
-	      // ascend the DOM to find the associated draggable item
-	      dragEl = dom.closest(handleOrDragEl, constants.draggableSelector);
-	      if (dragEl === null) return;
+	  DragManager.prototype.unbindPointerEventsForDragging = function unbindPointerEventsForDragging() {
+	    window.removeEventListener(events.pointerMoveEvent, this.onPointerMoveListener, true);
+	    window.removeEventListener(events.pointerUpEvent, this.onPointerUpListener, false);
+	  };
+
+	  /*******************/
+	  /* EVENT LISTENERS */
+	  /*******************/
+
+	  DragManager.prototype.onPointerDown = function onPointerDown(e) {
+	    if (e.which !== 0 && e.which !== 1) return;
+	    if (dom.ancestors(e.target, this.options.cancel).length > 0) return;
+
+	    var pointerXY = events.pointerEventXY(e);
+	    var pointerId = events.pointerEventId(e);
+
+	    var draggable = _DraggableJs2['default'].closest(e.target);
+	    if (!draggable) return false;
+
+	    dom.clearSelection();
+
+	    if (this.options.pickup.delay === null || this.options.pickup.delay === 0) {
+	      events.cancelEvent(e);
+	      this.drags[pointerId] = new _DragJs2['default'](draggable, pointerXY, defaultOptions);
+	      document.body.setAttribute('data-drag-in-progress', '');
 	    } else {
-	      // if the item contains a handle (which was not the the pointer down spot) then ignore
-	      // TODO need to generate permutations of descendant item handle selector
-	      if (handleOrDragEl.querySelectorAll(constants.handleSelector).length > handleOrDragEl.querySelectorAll(constants.draggableSelector + " " + constants.handleSelector).length) return;
-	      dragEl = handleOrDragEl;
-	    }
-
-	    this.dragStart(dragEl, e.clientX, e.clientY);
-	    dom.cancelEvent(e);
-	  };
-
-	  DragDrop.prototype.onPointerMove = function onPointerMove(e) {
-	    this.dragMove(this.context, e.clientX, e.clientY);
-	    dom.cancelEvent(e);
-	  };
-
-	  DragDrop.prototype.onPointerUp = function onPointerUp(e) {
-	    this.unbindPointerEventsForDragging();
-	    this.dragEnd(this.context);
-	  };
-
-	  DragDrop.prototype.dragStart = function dragStart(dragEl, x, y) {
-	    // abort the drag if the element or it's parent element is marked as [data-drag-disabled]
-	    if (dragEl.hasAttribute(constants.disabledAttribute) || dragEl.parentElement && dragEl.parentElement.hasAttribute(constants.disabledAttribute)) return;
-
-	    var dragStartEvent = dom.raiseEvent(dragEl, constants.dragStartEvent, {});
-	    if (dragStartEvent.returnValue === false) return;
-
-	    var parentEl = dragEl.parentElement;
-	    var parentIndex = Array.prototype.indexOf.call(parentEl.children, dragEl);
-
-	    var dragElRect = dragEl.getBoundingClientRect();
-	    var parentElRect = parentEl.getBoundingClientRect();
-	    var offsetTop = dragElRect.top - parentElRect.top;
-	    var offsetLeft = dragElRect.left - parentElRect.left;
-	    var pointerX = x;
-	    var pointerY = y;
-
-	    // record the offset of the grip point on the drag item
-	    var gripTop = y - dragElRect.top;
-	    var gripLeft = x - dragElRect.left;
-	    var gripTopPercent = gripTop / dragElRect.height;
-	    var gripLeftPercent = gripLeft / dragElRect.width;
-
-	    parentEl.removeChild(dragEl);
-
-	    // create the overlay (which contains the ghost)
-	    var overlayEl = document.createElement("div");
-	    overlayEl.classList.add(this.options.overlayClass);
-	    document.body.appendChild(overlayEl);
-
-	    // create the ghost (the copy of the item that follows the pointer)
-	    var ghostEl = dragEl.cloneNode(true);
-	    ghostEl.removeAttribute("id");
-	    dom.topLeft(ghostEl, -gripTop, -gripLeft);
-	    ghostEl.classList.add(this.options.ghostClass);
-	    ghostEl.style.width = dragElRect.width + "px";
-	    ghostEl.style.height = dragElRect.height + "px";
-	    Velocity(ghostEl, { translateX: pointerX, translateY: pointerY, boxShadowBlur: 0 }, { duration: 0 });
-	    overlayEl.appendChild(ghostEl);
-
-	    // animate the ghost 'lifting up' from the original position
-	    Velocity(ghostEl, {
-	      rotateZ: -1,
-	      boxShadowBlur: this.options.ghostShadowSize
-	    }, {
-	      duration: this.options.duration,
-	      easing: this.options.easing
-	    });
-
-	    // apply focus to the ghost to clear any in-progress selections
-	    ghostEl.focus();
-
-	    // create the placeholder element
-	    var placeholderEl = dragEl.cloneNode(true);
-	    placeholderEl.removeAttribute("id");
-	    dom.translate(placeholderEl, 0, 0);
-	    dom.topLeft(placeholderEl, 0, 0);
-	    placeholderEl.classList.add(this.options.placeholderClass);
-	    placeholderEl.setAttribute(constants.placeholderAttribute, true);
-	    parentEl.insertBefore(placeholderEl, dragEl.nextSibling);
-
-	    var orientation = dragEl.getAttribute("data-drag-orientation") || "both";
-
-	    this.buildDropZoneCache(parentEl);
-
-	    this.context = {
-	      options: this.options,
-	      dragEl: dragEl,
-	      overlayEl: overlayEl,
-
-	      ghostEl: ghostEl,
-	      ghostWidth: dragElRect.width,
-	      ghostHeight: dragElRect.height,
-	      constrainedX: x,
-	      constrainedY: y,
-
-	      placeholderEl: placeholderEl,
-	      placeholderParentEl: null,
-	      placeholderIndex: null,
-	      placeholderOffsetTop: null,
-	      placeholderOffsetLeft: null,
-	      placeholderWidth: null,
-	      placeholderHeight: null,
-
-	      gripTopPercent: gripTopPercent,
-	      gripLeftPercent: gripLeftPercent,
-
-	      parentEl: null,
-	      parentIndex: parentIndex,
-	      offsetTop: offsetTop,
-	      offsetLeft: offsetLeft,
-
-	      originalParentEl: parentEl,
-	      originalParentIndex: parentIndex,
-	      originalOffsetTop: offsetTop,
-	      originalOffsetLeft: offsetLeft,
-
-	      orientation: orientation,
-	      pointerX: x,
-	      pointerY: y
-	    };
-
-	    this.setDropZone(this.context, parentEl);
-	    this.updatePlaceholder(this.context, false);
-	    this.findDropZone(this.context);
-	    this.bindPointerEventsForDragging();
-
-	    // notify plugins
-	    for (var i = 0; i < this.plugins.length; i++) {
-	      if (this.plugins[i].dragStart) this.plugins[i].dragStart(this.context);
-	    }
-	  };
-
-	  DragDrop.prototype.dragMove = function dragMove(context, x, y) {
-	    context.pointerX = x;
-	    context.pointerY = y;
-
-	    dom.raiseEvent(context.dragEl, constants.dragEvent, {});
-
-	    this.findDropZone(context);
-
-	    if (sortable.isSortable(context.parentEl)) sortable.updateIndex(context);
-	    if (canvas.isCanvas(context.parentEl)) canvas.updateOffsets(context);
-	    this.updatePlaceholder(context);
-	    if (this.options.ghostResize) this.updateGhostSize(context);
-	    this.constrainGhostPosition(context);
-	    this.updateGhostPosition(context);
-
-	    // notify plugins
-	    for (var i = 0; i < this.plugins.length; i++) {
-	      if (this.plugins[i].dragMove) this.plugins[i].dragMove(this.context);
-	    }
-	  };
-
-	  DragDrop.prototype.applyDirectionConstraint = function applyDirectionConstraint(context) {
-	    switch (context.orientation) {
-	      case "vertical":
-	        adjustedX = context.originalOffsetLeft;break;
-	      case "horizontal":
-	        adjustedY = context.originalOffsetTop;break;
-	      case "both":
-	        break;
-	    }
-	  };
-
-	  DragDrop.prototype.constrainGhostPosition = function constrainGhostPosition(context) {
-	    var adjustedX = context.pointerX - context.gripLeftPercent * context.ghostWidth;
-	    var adjustedY = context.pointerY - context.gripTopPercent * context.ghostHeight;
-	    if (this.parentIsContainmentFor(context.parentEl, context.dragEl)) {
-	      var containmentRect = context.parentEl.getBoundingClientRect();
-	      adjustedX = helpers.coerce(adjustedX, containmentRect.left, containmentRect.right - context.ghostWidth);
-	      adjustedY = helpers.coerce(adjustedY, containmentRect.top, containmentRect.bottom - context.ghostHeight);
-	    }
-	    context.constrainedX = adjustedX;
-	    context.constrainedY = adjustedY;
-	  };
-
-	  DragDrop.prototype.dragEnd = function dragEnd(context) {
-
-	    if (context.parentEl) context.parentEl.classList.remove(this.options.dropZoneHoverClass);
-
-	    // notify plugins
-	    for (var i = 0; i < this.plugins.length; i++) {
-	      if (this.plugins[i].dragEnd) this.plugins[i].dragEnd(this.context);
-	    }if (context.placeholderParentEl) {
-	      dom.raiseEvent(context.dragEl, constants.dropEvent, {});
-	      var placeholderRect = context.placeholderEl.getBoundingClientRect();
-	      var targetProps = {
-	        translateX: [placeholderRect.left, "ease-out"],
-	        translateY: [placeholderRect.top, "ease-out"],
-	        top: [0, "ease-out"],
-	        left: [0, "ease-out"],
-	        rotateZ: 0,
-	        boxShadowBlur: 0
+	      var onPickupTimeoutHandler = function onPickupTimeoutHandler() {
+	        this.onPickUpTimeout(pointerId);
 	      };
-	      if (this.options.animateGhostSize) {
-	        targetProps.width = [placeholderRect.width, "ease-out"];
-	        targetProps.height = [placeholderRect.height, "ease-out"];
+	      this.pendingDrags[pointerId] = {
+	        draggable: draggable,
+	        pointerXY: pointerXY,
+	        timerId: setTimeout(onPickupTimeoutHandler.bind(this), this.options.pickup.delay)
+	      };
+	    }
+	    this.bindPointerEventsForDragging();
+	  };
+
+	  DragManager.prototype.onPickUpTimeout = function onPickUpTimeout(pointerId) {
+	    if (this.pendingDrags[pointerId]) {
+	      var pendingDrag = this.pendingDrags[pointerId];
+	      this.drags[pointerId] = new _DragJs2['default'](pendingDrag.draggable, pendingDrag.pointerXY, this.options);
+	      document.body.setAttribute('data-drag-in-progress', '');
+	      delete this.pendingDrags[pointerId];
+	    }
+	  };
+
+	  DragManager.prototype.onPointerMove = function onPointerMove(e) {
+	    var pointerXY = events.pointerEventXY(e);
+	    var pointerId = events.pointerEventId(e);
+
+	    if (this.drags[pointerId]) {
+	      var drag = this.drags[pointerId];
+	      events.cancelEvent(e);
+	      drag.move(pointerXY);
+	    }
+	    if (this.pendingDrags[pointerId]) {
+	      var pendingDrag = this.pendingDrags[pointerId];
+	      // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
+	      if (this.options.pickup.distance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickup.distance) clearTimeout(pendingDrag.timerId);
+	      this.drags[pointerId] = new _DragJs2['default'](pendingDrag.draggable, pendingDrag.pointerXY, this.options);
+	      document.body.setAttribute('data-drag-in-progress', '');
+	      delete this.pendingDrags[pointerId];
+	    }
+	  };
+
+	  DragManager.prototype.onPointerUp = function onPointerUp(e) {
+	    var pointerId = events.pointerEventId(e);
+
+	    if (this.drags[pointerId]) {
+	      events.cancelEvent(e);
+	      this.drags[pointerId].end();
+	      delete this.drags[pointerId];
+	      if (Object.keys(this.drags).length == 0) {
+	        document.body.removeAttribute('data-drag-in-progress');
+	        this.unbindPointerEventsForDragging();
 	      }
-	      Velocity(context.ghostEl, targetProps, {
-	        duration: this.options.duration,
-	        easing: this.options.easing,
-	        complete: this.placeDragElInFinalPosition.bind(this)
-	      });
-	    } else {
-	      this.placeDragElInFinalPosition();
 	    }
-	    dom.raiseEvent(context.dragEl, constants.dragEndEvent, {});
-	  };
-
-	  DragDrop.prototype.findDropZone = function findDropZone(context) {
-	    // walk up the drop zone tree until we find the closest drop zone that includes the dragged item
-	    while (!this.parentIsContainmentFor(context.parentEl, context.dragEl) && !this.positionIsInDropZone(context.parentEl, context.pointerX, context.pointerY)) {
-	      var parentDropZoneEl = dom.closest(context.parentEl.parentElement, "body," + constants.dropZoneSelector);
-	      if (!parentDropZoneEl) break;
-	      this.setDropZone(context, parentDropZoneEl);
-	    }
-
-	    // walk down the drop zone tree to the lowest level dropZone
-	    this.buildDropZoneCacheIfRequired(context.parentEl);
-	    var offsetLeft = context.pointerX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft,
-	        offsetTop = context.pointerY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
-	    var childDropZoneEl = this.getChildDropZoneAtOffset(context.parentEl, offsetTop, offsetLeft);
-	    while (childDropZoneEl) {
-	      this.setDropZone(context, childDropZoneEl);
-	      this.buildDropZoneCacheIfRequired(context.parentEl);
-	      offsetLeft = context.pointerX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft, offsetTop = context.pointerY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
-	      childDropZoneEl = this.getChildDropZoneAtOffset(context.parentEl, offsetTop, offsetLeft);
+	    if (this.pendingDrags[pointerId]) {
+	      clearTimeout(this.pendingDrags[pointerId].timerId);
 	    }
 	  };
 
-	  DragDrop.prototype.setDropZone = function setDropZone(context, newDropZoneEl) {
-	    if (context.parentEl) {
-	      context.parentEl.classList.remove(this.options.dropZoneHoverClass);
-	      dom.raiseEvent(context.parentEl, constants.dragLeaveEvent, {});
-	    }
-	    if (newDropZoneEl) {
-	      if (newDropZoneEl !== document.body) newDropZoneEl.classList.add(this.options.dropZoneHoverClass);
-	      dom.raiseEvent(newDropZoneEl, constants.dragEnterEvent, {});
-	    }
-	    context.parentEl = newDropZoneEl;
-	  };
-
-	  DragDrop.prototype.mayAccept = function mayAccept(dragEl, dropZoneEl) {
-	    // check the drop zone is enabled
-	    if (dropZoneEl.hasAttribute(constants.disabledAttribute)) return false;
-
-	    // check the drop zone accepts the dragged element type
-	    var acceptsSelector = dropZoneEl.getAttribute(constants.acceptsAttribute);
-	    if (acceptsSelector !== null) return dragEl.matches(acceptsSelector);
-
-	    return true;
-	  };
-
-	  DragDrop.prototype.parentIsContainmentFor = function parentIsContainmentFor(parentEl, dragEl) {
-	    if (dragEl.hasAttribute(constants.containmentAttribute)) {
-	      var containmentSelector = dragEl.getAttribute(constants.containmentAttribute);
-	      return containmentSelector ? placeholderEl.matches(containmentSelector) : true;
-	    }
-	    if (parentEl.hasAttribute(constants.containmentAttribute)) {
-	      var containmentSelector = parentEl.getAttribute(constants.containmentAttribute);
-	      return containmentSelector ? dragEl.matches(containmentSelector) : true;
-	    }
-	    return false;
-	  };
-
-	  DragDrop.prototype.updatePlaceholder = function updatePlaceholder(context) {
-	    var animate = arguments[1] === undefined ? true : arguments[1];
-
-	    // check if we have any work to do...
-	    if (context.parentIndex === context.placeholderIndex && context.parentEl === context.placeholderParentEl && context.offsetTop === context.placeholderOffsetTop && context.offsetLeft === context.placeholderOffsetLeft) return;
-
-	    // TODO: optimisation, update both old and new before triggering animation avoid two layout passes
-	    // TODO: optimisation, recycle old positions
-	    animate = animate && this.options.duration > 0;
-
-	    var oldParentEl = context.placeholderParentEl;
-	    var newParentEl = context.parentEl.matches(constants.dropZoneSelector) ? context.parentEl : null;
-
-	    // first, remove the old placeholder
-	    if (oldParentEl && (context.parentEl === null || context.parentEl !== newParentEl)) {
-	      if (animate) this.cacheChildOffsets(oldParentEl, "_old");
-	      context.placeholderEl.remove();
-	      if (animate) this.cacheChildOffsets(oldParentEl, "_new");
-	      if (animate) animation.animateElementsBetweenSavedOffsets(context, oldParentEl, { animatedElementLimit: this.options.animatedElementLimit });
-	      context.placeholderWidth = null;
-	      context.placeholderHeight = null;
-	      context.placeholderParentEl = null;
-	    }
-
-	    // insert the new placeholder
-	    if (sortable.isSortable(newParentEl) && (oldParentEl !== newParentEl || context.placeholderIndex !== context.parentIndex)) {
-	      if (animate) this.cacheChildOffsets(context.parentEl, "_old");
-	      var oldScrollOffset = [newParentEl.scrollLeft, newParentEl.scrollTop];
-	      context.parentEl.insertBefore(context.placeholderEl, newParentEl.children[context.parentIndex]);
-	      if (animate) this.cacheChildOffsets(context.parentEl, "_new");
-	      // restore the old scroll position
-	      newParentEl.scrollLeft = oldScrollOffset[0];
-	      newParentEl.scrollTop = oldScrollOffset[1];
-
-	      if (animate) animation.animateElementsBetweenSavedOffsets(context, newParentEl, { animatedElementLimit: this.options.animatedElementLimit });
-	      context.placeholderParentEl = context.parentEl;
-	    }
-
-	    if (canvas.isCanvas(newParentEl)) {
-	      if (context.placeholderParentEl !== context.parentEl) {
-	        context.parentEl.appendChild(context.placeholderEl);
-	        context.placeholderParentEl = context.parentEl;
-	      }
-	      dom.translate(context.placeholderEl, context.offsetLeft, context.offsetTop);
-	      context.placeholderOffsetLeft = context.offsetLeft;
-	      context.placeholderOffsetTop = context.offsetTop;
-	    } else {
-	      dom.translate(context.placeholderEl, 0, 0);
-	    }
-
-	    context.placeholderIndex = context.parentIndex;
-
-	    // measure the width and height of the item for use later
-	    if (context.placeholderParentEl) {
-	      context.placeholderWidth = context.placeholderEl.offsetWidth;
-	      context.placeholderHeight = context.placeholderEl.offsetHeight;
-	    }
-	  };
-
-	  DragDrop.prototype.updateGhostPosition = function updateGhostPosition(context) {
-	    Velocity(context.ghostEl, {
-	      translateX: context.constrainedX + context.gripLeftPercent * context.ghostWidth,
-	      translateY: context.constrainedY + context.gripTopPercent * context.ghostHeight,
-	      translateZ: 1
-	    }, { duration: 0 });
-	  };
-
-	  DragDrop.prototype.updateGhostSize = function updateGhostSize(context) {
-	    // do nothing if the placeholder is not currently visible
-	    if (!context.placeholderParentEl) return;
-	    // do nothing if the ghost and placeholder are the same size
-	    if (context.ghostWidth === context.placeholderWidth && context.ghostHeight === context.placeholderHeight) return;
-
-	    var velocityOptions = this.options.ghostResizeAnimated ? {
-	      duration: this.options.duration,
-	      easing: "linear",
-	      queue: false
-	    } : {
-	      duration: 0,
-	      queue: false
-	    };
-
-	    Velocity(context.ghostEl, {
-	      width: context.placeholderWidth,
-	      height: context.placeholderHeight,
-	      top: -context.gripTopPercent * context.placeholderHeight,
-	      left: -context.gripLeftPercent * context.placeholderWidth
-	    }, velocityOptions);
-
-	    context.ghostWidth = context.placeholderWidth;
-	    context.ghostHeight = context.placeholderHeight;
-	  };
-
-	  DragDrop.prototype.placeDragElInFinalPosition = function placeDragElInFinalPosition() {
-	    this.context.placeholderEl.remove();
-
-	    if (sortable.isSortable(this.context.parentEl)) {
-	      this.context.parentEl.insertBefore(this.context.dragEl, this.context.parentEl.children[this.context.parentIndex]);
-	    }
-	    if (canvas.isCanvas(this.context.parentEl)) {
-	      dom.topLeft(this.context.dragEl, this.context.offsetTop, this.context.offsetLeft);
-	      this.context.parentEl.appendChild(this.context.dragEl);
-	    }
-	    if (!this.context.parentEl) {
-	      dom.topLeft(this.context.dragEl, this.context.originalOffsetTop, this.context.originalOffsetLeft);
-	      this.context.originalDropZone.insertBefore(this.context.dragEl, this.context.originalAfterEl);
-	    }
-	    this.context.overlayEl.remove();
-	    this.context = null;
-	  };
-
-	  DragDrop.prototype.buildDropZoneCache = function buildDropZoneCache(el) {
-	    el.__dd_clientRect = el.getBoundingClientRect();;
-	    el.__dd_scrollTop = el.scrollTop;
-	    el.__dd_scrollLeft = el.scrollLeft;
-	    el.__dd_childDropZones = [];
-
-	    for (var _iterator = el.querySelectorAll(constants.dropZoneSelector), _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-	      var _ref;
-
-	      if (_isArray) {
-	        if (_i >= _iterator.length) break;
-	        _ref = _iterator[_i++];
-	      } else {
-	        _i = _iterator.next();
-	        if (_i.done) break;
-	        _ref = _i.value;
-	      }
-
-	      var childDropZoneEl = _ref;
-
-	      // if the descendant dropZone is embedded within another descendant dropZone let's ignore it.
-	      var intermediateDropZoneEl = dom.closest(childDropZoneEl.parentElement, constants.dropZoneSelector + ",body");
-	      if (intermediateDropZoneEl !== null && intermediateDropZoneEl !== el) continue;
-
-	      // if this drop zone is contained within a placeholder, ignore it
-	      if (dom.closest(childDropZoneEl, constants.placeholderSelector)) continue;
-
-	      var childRect = childDropZoneEl.getBoundingClientRect();
-	      el.__dd_childDropZones.push({
-	        el: childDropZoneEl,
-	        top: childRect.top - el.__dd_clientRect.top + el.__dd_scrollTop,
-	        left: childRect.left - el.__dd_clientRect.left + el.__dd_scrollLeft,
-	        width: childRect.width,
-	        height: childRect.height
-	      });
-	    }
-	  };
-
-	  DragDrop.prototype.buildDropZoneCacheIfRequired = function buildDropZoneCacheIfRequired(el) {
-	    if (!el.__dd_clientRect) this.buildDropZoneCache(el);
-	  };
-
-	  DragDrop.prototype.clearDropZoneCache = function clearDropZoneCache(el) {
-	    delete el.__dd_clientRect;
-	    delete el.__dd_scrollTop;
-	    delete el.__dd_scrollLeft;
-	    delete el.__dd_childDropZones;
-	  };
-
-	  DragDrop.prototype.getChildDropZoneAtOffset = function getChildDropZoneAtOffset(el, offsetTop, offsetLeft) {
-	    for (var _iterator2 = el.__dd_childDropZones, _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
-	      var _ref2;
-
-	      if (_isArray2) {
-	        if (_i2 >= _iterator2.length) break;
-	        _ref2 = _iterator2[_i2++];
-	      } else {
-	        _i2 = _iterator2.next();
-	        if (_i2.done) break;
-	        _ref2 = _i2.value;
-	      }
-
-	      var childDropZone = _ref2;
-
-	      if (offsetTop >= childDropZone.top && offsetTop <= childDropZone.top + childDropZone.height && offsetLeft >= childDropZone.left && offsetLeft <= childDropZone.left + childDropZone.width) return childDropZone.el;
-	    }
-	    return null;
-	  };
-
-	  DragDrop.prototype.positionIsInDropZone = function positionIsInDropZone(el, clientLeft, clientTop) {
-	    this.buildDropZoneCacheIfRequired(el);
-	    var offsetLeft = clientLeft - el.__dd_clientRect.left,
-	        offsetTop = clientTop - el.__dd_clientRect.top;
-	    return offsetTop >= 0 && offsetTop <= el.__dd_clientRect.height && offsetLeft >= 0 && offsetLeft <= el.__dd_clientRect.width;
-	  };
-
-	  DragDrop.prototype.bindPointerEventsForDragging = function bindPointerEventsForDragging() {
-	    this.onPointerMoveBound = this.onPointerMove.bind(this);
-	    this.onPointerUpBound = this.onPointerUp.bind(this);
-	    document.addEventListener("mousemove", this.onPointerMoveBound, false);
-	    document.addEventListener("mouseup", this.onPointerUpBound, false);
-	  };
-
-	  DragDrop.prototype.unbindPointerEventsForDragging = function unbindPointerEventsForDragging() {
-	    document.removeEventListener("mousemove", this.onPointerMoveBound);
-	    document.removeEventListener("mouseup", this.onPointerUpBound);
-	  };
-
-	  // WARNING: function may trigger layout refresh
-	  // optimisation: don't need to cache all; only cache those likely impacted by offset
-
-	  DragDrop.prototype.cacheChildOffsets = function cacheChildOffsets(el, propertyName) {
-	    // don't use babel.io for..of here, as it prevents optimisation
-	    for (var i = 0; i < el.children.length; i++) {
-	      var childEl = el.children[i];
-	      childEl[propertyName] = { top: childEl.offsetTop, left: childEl.offsetLeft };
-	    }
-	  };
-
-	  return DragDrop;
+	  return DragManager;
 	})();
 
-	exports["default"] = DragDrop;
+	exports['default'] = DragManager;
 
-	window.dragDrop = new DragDrop();
-
-	dragDrop.registerPlugin(new _DragDropScrollerJs2["default"]());
-	module.exports = exports["default"];
+	window.dragManager = new DragManager();
+	module.exports = exports['default'];
 
 /***/ },
 /* 1 */
@@ -618,173 +226,165 @@
 	'use strict';
 
 	exports.__esModule = true;
-	exports.animateElementsBetweenSavedOffsets = animateElementsBetweenSavedOffsets;
 
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
-	var _constantsJs = __webpack_require__(2);
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-	var constants = _interopRequireWildcard(_constantsJs);
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	function animateElementsBetweenSavedOffsets(context, el, hints) {
-	  var animatedItemCount = 0;
-	  for (var _iterator = el.children, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-	    var _ref;
+	var _ContainerJs = __webpack_require__(5);
 
-	    if (_isArray) {
-	      if (_i >= _iterator.length) break;
-	      _ref = _iterator[_i++];
-	    } else {
-	      _i = _iterator.next();
-	      if (_i.done) break;
-	      _ref = _i.value;
-	    }
+	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
 
-	    var childEl = _ref;
+	var _ContainerFactoryJs = __webpack_require__(8);
 
-	    if (childEl.matches(constants.placeholderSelector)) continue;
+	var _ContainerFactoryJs2 = _interopRequireDefault(_ContainerFactoryJs);
 
-	    var oldOffset = childEl._old;
-	    var newOffset = childEl._new;
+	var _HelperJs = __webpack_require__(7);
 
-	    if (!oldOffset || !newOffset || oldOffset.top === newOffset.top && oldOffset.left === newOffset.left) continue;
+	var _HelperJs2 = _interopRequireDefault(_HelperJs);
 
-	    if (++animatedItemCount > hints.animatedElementLimit) break;
+	var _libEventsJs = __webpack_require__(14);
 
-	    // the following line makes the animations smoother in safari
-	    //childEl.style.webkitTransform = 'translate3d(0,' + (oldOffset.top - newOffset.top) + 'px,0)';
+	var events = _interopRequireWildcard(_libEventsJs);
 
-	    Velocity(childEl, {
-	      translateX: '+=' + (oldOffset.left - newOffset.left) + 'px',
-	      translateY: '+=' + (oldOffset.top - newOffset.top) + 'px',
-	      translateZ: 1
-	    }, { duration: 0 });
+	var _libMathJs = __webpack_require__(4);
 
-	    Velocity(childEl, {
-	      translateX: 0,
-	      translateY: 0
-	    }, {
-	      duration: context.options.duration,
-	      easing: context.options.easing,
-	      queue: false
-	    });
+	var math = _interopRequireWildcard(_libMathJs);
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var Drag = (function () {
+	  function Drag(draggable, pointerXY, options) {
+	    _classCallCheck(this, Drag);
+
+	    this.options = options;
+	    this.pointerXY = pointerXY;
+	    this.constrainedXY = null;
+	    this.pointerEl = null;
+	    this.helper = null;
+
+	    this.draggable = draggable;
+	    this.target = null;
+	    this.source = null;
+	    this.revertOnCancel = true;
+
+	    this.initialize();
 	  }
-	}
+
+	  Drag.prototype.initialize = function initialize() {
+	    this.helper = new _HelperJs2['default'](this);
+	    this.pointerEl = dom.elementFromPoint(this.pointerXY);
+	    this.draggable.removeOriginal();
+	    this.updateConstrainedPosition();
+	    this.helper.setPosition(this.constrainedXY);
+	    this.updateTargetContainer();
+	    if (this.target) {
+	      this.target.setPointerXY(this.constrainedXY);
+	      this.target.updatePlaceholder();
+	    }
+	    events.raiseEvent(this.draggable.el, 'dragstart', this);
+	  };
+
+	  Drag.prototype.move = function move(pointerXY) {
+	    this.pointerXY = pointerXY;
+
+	    this.updateConstrainedPosition();
+	    this.helper.setPosition(this.constrainedXY);
+
+	    function asyncTargetUpdate() {
+	      this.pointerEl = dom.elementFromPoint(pointerXY);
+	      this.updateTargetContainer();
+	      if (this.target) {
+	        this.target.setPointerXY(this.constrainedXY);
+	        this.target.updatePlaceholder();
+	      }
+	      events.raiseEvent(this.draggable.el, 'drag', this);
+	    }
+	    setTimeout(asyncTargetUpdate.bind(this), 0);
+	    //scroll.autoScroll(drag);
+	  };
+
+	  Drag.prototype.end = function end() {
+	    if (this.target) this.drop();else this.cancel();
+	    events.raiseEvent(this.draggable.el, 'dragend', this);
+	    this.dispose();
+	  };
+
+	  Drag.prototype.drop = function drop() {
+	    events.raiseEvent(this.draggable.el, 'drop', this);
+
+	    var placeholderRect = this.target.placeholder.el.getBoundingClientRect();
+	    this.helper.animateToRect(placeholderRect, function () {});
+	  };
+
+	  Drag.prototype.cancel = function cancel() {
+	    this.draggable.restoreOriginal();
+	  };
+
+	  Drag.prototype.dispose = function dispose() {
+	    if (this.target) this.target.dragLeave();
+
+	    this.helper.dispose();
+	    this.helper = null;
+	  };
+
+	  Drag.prototype.applyDirectionConstraint = function applyDirectionConstraint(drag) {
+	    switch (drag.orientation) {
+	      case 'vertical':
+	        adjustedX = drag.originalOffsetLeft;break;
+	      case 'horizontal':
+	        adjustedY = drag.originalOffsetTop;break;
+	      case 'both':
+	        break;
+	    }
+	  };
+
+	  Drag.prototype.updateConstrainedPosition = function updateConstrainedPosition() {
+	    if (this.target && this.target.contains(this.draggable)) {
+	      var constrained = [this.pointerXY[0] - this.helper.gripOffset[0] * this.helper.size[0], this.pointerXY[1] - this.helper.gripOffset[1] * this.helper.size[1]];
+	      var rect = this.target.el.getBoundingClientRect();
+	      constrained[0] = math.coerce(constrained[0], rect.left, rect.right - this.helper.size[0]);
+	      constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - this.helper.size[1]);
+	      this.constrainedXY = [constrained[0] + this.helper.gripOffset[0] * this.helper.size[0], constrained[1] + this.helper.gripOffset[1] * this.helper.size[1]];
+	    } else {
+	      this.constrainedXY = this.pointerXY;
+	    }
+	  };
+
+	  Drag.prototype.updateTargetContainer = function updateTargetContainer() {
+	    var containerEl = _ContainerFactoryJs2['default'].closest(this.pointerEl);
+	    if (containerEl === (this.target ? this.target.el : null)) return;
+	    var container = _ContainerFactoryJs2['default'].makeContainer(containerEl, this);
+
+	    if (this.target) this._leaveTarget(this.target);
+	    if (container && container.accepts(this.draggable)) this._enterTarget(container);
+	  };
+
+	  Drag.prototype._leaveTarget = function _leaveTarget(container) {
+	    container.dragLeave();
+	    events.raiseEvent(container.el, 'dragleave', this);
+	    this.target = null;
+	  };
+
+	  Drag.prototype._enterTarget = function _enterTarget(container) {
+	    container.dragEnter();
+	    events.raiseEvent(container.el, 'dragenter', this);
+	    this.helper.setSizeAndScale(container.placeholderSize, container.placeholderScale);
+	    this.target = container;
+	  };
+
+	  return Drag;
+	})();
+
+	exports['default'] = Drag;
+	module.exports = exports['default'];
 
 /***/ },
 /* 2 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	exports.__esModule = true;
-	var acceptsAttribute = 'data-drag-accepts';
-	exports.acceptsAttribute = acceptsAttribute;
-	var canvasAttribute = 'data-drag-canvas';
-	exports.canvasAttribute = canvasAttribute;
-	var containmentAttribute = 'data-drag-containment';
-	exports.containmentAttribute = containmentAttribute;
-	var droppableAttribute = 'data-drag-droppable';
-	exports.droppableAttribute = droppableAttribute;
-	var snapInBoundsAttribute = 'data-drag-snap-in-bounds';
-	exports.snapInBoundsAttribute = snapInBoundsAttribute;
-	var snapToGridAttribute = 'data-drag-snap-to-grid';
-	exports.snapToGridAttribute = snapToGridAttribute;
-	var scrollableAttribute = 'data-drag-scrollable';
-	exports.scrollableAttribute = scrollableAttribute;
-	var sortableAttribute = 'data-drag-sortable';
-	exports.sortableAttribute = sortableAttribute;
-	var disabledAttribute = 'data-drag-disabled';
-	exports.disabledAttribute = disabledAttribute;
-	var handleAttribute = 'data-drag-handle';
-	exports.handleAttribute = handleAttribute;
-	var placeholderAttribute = 'data-drag-placeholder';
-
-	exports.placeholderAttribute = placeholderAttribute;
-	var draggableSelector = '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
-	exports.draggableSelector = draggableSelector;
-	var handleSelector = '[data-drag-handle]';
-	exports.handleSelector = handleSelector;
-	var sortableSelector = '[' + sortableAttribute + ']';
-	exports.sortableSelector = sortableSelector;
-	var canvasSelector = '[' + canvasAttribute + ']';
-	exports.canvasSelector = canvasSelector;
-	var valueSelector = '[data-drag-value]';
-	exports.valueSelector = valueSelector;
-	var droppableSelector = '[' + droppableAttribute + ']';
-	exports.droppableSelector = droppableSelector;
-	var dropZoneSelector = '[data-drag-sortable],[data-drag-droppable],[data-drag-canvas]';
-	exports.dropZoneSelector = dropZoneSelector;
-	var disabledSelector = '[' + disabledAttribute + ']';
-	exports.disabledSelector = disabledSelector;
-	var scrollableSelector = '[' + scrollableAttribute + ']';
-	exports.scrollableSelector = scrollableSelector;
-	var placeholderSelector = '[' + placeholderAttribute + ']';
-
-	exports.placeholderSelector = placeholderSelector;
-	var dragStartEvent = 'dragstart';
-	exports.dragStartEvent = dragStartEvent;
-	var dragEndEvent = 'dragend';
-	exports.dragEndEvent = dragEndEvent;
-	var dragLeaveEvent = 'dragleave';
-	exports.dragLeaveEvent = dragLeaveEvent;
-	var dragEnterEvent = 'dragenter';
-	exports.dragEnterEvent = dragEnterEvent;
-	var dropEvent = 'drop';
-	exports.dropEvent = dropEvent;
-	var dragEvent = 'drag';
-	exports.dragEvent = dragEvent;
-
-/***/ },
-/* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	exports.__esModule = true;
-	exports.isCanvas = isCanvas;
-	exports.updateOffsets = updateOffsets;
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
-
-	var _constantsJs = __webpack_require__(2);
-
-	var constants = _interopRequireWildcard(_constantsJs);
-
-	function isCanvas(el) {
-	  return el && el.matches(constants.canvasSelector);
-	}
-
-	function updateOffsets(context) {
-	  var offsetLeft = context.constrainedX - context.parentEl.__dd_clientRect.left + context.parentEl.scrollLeft,
-	      offsetTop = context.constrainedY - context.parentEl.__dd_clientRect.top + context.parentEl.scrollTop;
-
-	  // snap to drop zone bounds
-	  var snapInBounds = context.parentEl.getAttribute(constants.snapInBoundsAttribute) !== null;
-	  if (snapInBounds) {
-	    var dropZoneOffsets = context.parentEl.getBoundingClientRect();
-	    if (newLeft < dropZoneOffsets.left) newLeft = dropZoneOffsets.left;
-	    if (newTop < dropZoneOffsets.top) newTop = dropZoneOffsets.top;
-	    if (newLeft < dropZoneOffsets.right - context.ghostWidth) newLeft = dropZoneOffsets.right - context.ghostWidth;
-	    if (newTop > dropZoneOffsets.bottom - context.ghostHeight) newTop = dropZoneOffsets.bottom - context.ghostHeight;
-	  }
-
-	  // snap to dropZone grid
-	  var snapToGrid = context.parentEl.getAttribute(constants.snapToGridAttribute) !== null;
-	  if (snapToGrid) {
-	    var cellSizeTokens = snapToGrid.split(",");
-	    var cellW = parseInt(cellSizeTokens[0], 10);
-	    var cellH = parseInt(cellSizeTokens[1], 10) || cellW;
-	    var dropZoneOffsets = context.parentEl.getBoundingClientRect();
-	    newTop = Math.round((newTop - dropZoneOffsets.top) / cellH) * cellH + dropZoneOffsets.top;
-	    newLeft = Math.round((newLeft - dropZoneOffsets.left) / cellW) * cellW + dropZoneOffsets.left;
-	  }
-	  context.offsetLeft = offsetLeft;
-	  context.offsetTop = offsetTop;
-	}
-
-/***/ },
-/* 4 */
 /***/ function(module, exports) {
 
 	// selectors
@@ -792,19 +392,31 @@
 	'use strict';
 
 	exports.__esModule = true;
+	exports.indexOf = indexOf;
+	exports.isChild = isChild;
 	exports.closest = closest;
 	exports.ancestors = ancestors;
+	exports.clientScale = clientScale;
 	exports.translate = translate;
-	exports.translate3d = translate3d;
 	exports.topLeft = topLeft;
+	exports.transformOrigin = transformOrigin;
+	exports.elementFromPoint = elementFromPoint;
+	exports.elementFromPointViaSelection = elementFromPointViaSelection;
+	exports.clearSelection = clearSelection;
 	exports.canScrollDown = canScrollDown;
 	exports.canScrollUp = canScrollUp;
 	exports.canScrollRight = canScrollRight;
 	exports.canScrollLeft = canScrollLeft;
 	exports.canScrollVertical = canScrollVertical;
 	exports.canScrollHorizontal = canScrollHorizontal;
-	exports.cancelEvent = cancelEvent;
-	exports.raiseEvent = raiseEvent;
+
+	function indexOf(el) {
+	  return Array.prototype.indexOf.call(el.parentElement.children, el);
+	}
+
+	function isChild(el, childEl) {
+	  return Array.prototype.indexOf.call(el.children, childEl) !== -1;
+	}
 
 	function closest(el, selector) {
 	  if (el === null) return;
@@ -823,6 +435,11 @@
 	  return ancestors;
 	}
 
+	function clientScale(el) {
+	  var rect = el.getBoundingClientRect();
+	  return [rect.width / el.offsetWidth, rect.height / el.offsetHeight];
+	}
+
 	// vendor
 
 	var vendorTransform = null;
@@ -837,13 +454,57 @@
 	  el.style[vendorTransform] = 'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(0)';
 	}
 
-	function translate3d(el, x, y, z) {
-	  el.style[vendorTransform] = 'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(' + z + 'px)';
-	}
-
 	function topLeft(el, t, l) {
 	  el.style.top = t + 'px';
 	  el.style.left = l + 'px';
+	}
+
+	function transformOrigin(el, _ref) {
+	  var t = _ref[0];
+	  var l = _ref[1];
+
+	  el.style.transformOrigin = l + 'px ' + t + 'px';
+	}
+
+	function elementFromPoint(xy) {
+	  return document.elementFromPoint(xy[0], xy[1]);
+	}
+
+	function elementFromPointViaSelection(xy) {
+	  var node = null;
+	  // webkit
+	  if (document.caretRangeFromPoint) {
+	    var range = document.caretRangeFromPoint(xy[0], xy[1]);
+	    if (range) node = range.startContainer;
+	  }
+	  // mozilla
+	  if (document.caretPositionFromPoint) {
+	    var range = document.caretPositionFromPoint(xy[0], xy[1]);
+	    if (range) node = range.offsetNode;
+	  }
+	  // internet explorer
+	  if (document.createTextRange) {
+	    var range = document.createTextRange();
+	    range.moveToPoint(xy[0], xy[1]);
+	    return node = range.parentElement();
+	  }
+	  if (node && node.parentElement && !(node instanceof Element)) node = node.parentElement;
+	  return node;
+	}
+
+	function clearSelection() {
+	  if (window.getSelection) {
+	    if (window.getSelection().empty) {
+	      // Chrome
+	      window.getSelection().empty();
+	    } else if (window.getSelection().removeAllRanges) {
+	      // Firefox
+	      window.getSelection().removeAllRanges();
+	    }
+	  } else if (document.selection) {
+	    // IE?
+	    document.selection.empty();
+	  }
 	}
 
 	// utilities
@@ -872,7 +533,786 @@
 	  return el.scrollWidth > el.clientWidth;
 	}
 
-	// events
+/***/ },
+/* 3 */,
+/* 4 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	exports.__esModule = true;
+	exports.coerce = coerce;
+	exports.midpointTop = midpointTop;
+	exports.midpointLeft = midpointLeft;
+	exports.distance = distance;
+
+	function coerce(value, min, max) {
+	  return value > max ? max : value < min ? min : value;
+	}
+
+	function midpointTop(clientRect) {
+	  return clientRect.top + clientRect.height / 2;
+	}
+
+	function midpointLeft(clientRect) {
+	  return clientRect.left + clientRect.width / 2;
+	}
+
+	function distance(p1, p2) {
+	  return Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));
+	}
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	exports.__esModule = true;
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var Container = (function () {
+	  function Container(el, drag) {
+	    _classCallCheck(this, Container);
+
+	    this.el = el;
+	    this.drag = drag;
+	    this.placeholder = null;
+	    this.placeholderSize = [0, 0];
+	    this.placeholderScale = 1;
+	    this.options = drag.options;
+	  }
+
+	  Container.matches = function matches(el) {
+	    return el ? el.matches(this.selector) : false;
+	  };
+
+	  Container.prototype.dragEnter = function dragEnter() {
+	    this.el.classList.add('dd-drag-over');
+	    this.updatePosition(this.drag.constrainedXY);
+	    this.insertPlaceholder();
+	  };
+
+	  Container.prototype.setPointerXY = function setPointerXY(constrainedXY) {
+	    this.updatePosition(constrainedXY);
+	    this.updatePlaceholder();
+	  };
+
+	  Container.prototype.dragLeave = function dragLeave() {
+	    this.el.classList.remove('dd-drag-over');
+	    this.removePlaceholder();
+	  };
+
+	  Container.prototype.accepts = function accepts(draggable) {
+	    if (this.el.hasAttribute('data-drag-disabled')) return false;
+	    var acceptsSelector = this.el.getAttribute('data-drag-accepts');
+	    return acceptsSelector ? draggable.el.matches(acceptsSelector) : true;
+	  };
+
+	  Container.prototype.contains = function contains(draggable) {
+	    // draggable is contained by this
+	    if (draggable.el.hasAttribute('data-drag-containment')) {
+	      var containmentSelector = draggable.el.getAttribute('data-drag-containment');
+	      return containmentSelector ? this.el.matches(containmentSelector) : true;
+	    }
+	    // this contains draggable
+	    if (this.el.hasAttribute('data-drag-containment')) {
+	      var containmentSelector = this.el.getAttribute('data-drag-containment');
+	      return containmentSelector ? draggable.el.matches(containmentSelector) : true;
+	    }
+	    return false;
+	  };
+
+	  return Container;
+	})();
+
+	exports['default'] = Container;
+	module.exports = exports['default'];
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var Draggable = (function () {
+	  function Draggable(el) {
+	    _classCallCheck(this, Draggable);
+
+	    this.el = el;
+	    this.originalParentEl = el.parentElement;
+	    this.originalIndex = dom.indexOf(el);
+	    this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
+	    this.originalOffset = [this.el.offsetLeft, this.el.offsetTop];
+	    this.originalScale = dom.clientScale(el);
+	  }
+
+	  Draggable.closest = function closest(el) {
+	    var handleOrDragEl = dom.closest(el, Draggable.handleOrDraggableSelector);
+	    if (!handleOrDragEl) {
+	      return null;
+	    }
+
+	    // if the pointer is over a handle element, ascend the DOM to find the
+	    // associated draggable item
+	    if (handleOrDragEl.hasAttribute('data-drag-handle')) {
+	      var _dragEl = dom.closest(handleOrDragEl, this.draggableSelector);
+	      return _dragEl ? new Draggable(_dragEl) : null;
+	    }
+
+	    // if the item contains a handle (which was not the the pointer down spot)
+	    // then ignore
+	    if (handleOrDragEl.querySelectorAll(this.handleSelector).length > handleOrDragEl.querySelectorAll(this.handleOrDraggableSelector).length) {
+	      return null;
+	    }
+
+	    var dragEl = handleOrDragEl;
+	    return dragEl ? new Draggable(dragEl) : null;
+	  };
+
+	  Draggable.prototype.removeOriginal = function removeOriginal() {
+	    this.el.remove();
+	  };
+
+	  Draggable.prototype.restoreOriginal = function restoreOriginal() {
+	    dom.topLeft(this.el, this.originalOffset[1], this.originalOffset[0]);
+	    this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
+	  };
+
+	  _createClass(Draggable, [{
+	    key: 'enabled',
+	    get: function get() {
+	      return !(this.el.hasAttribute('data-drag-disabled') || this.el.parentElement && this.el.parentElement.hasAttribute('data-drag-disabled'));
+	    }
+	  }], [{
+	    key: 'handleSelector',
+	    get: function get() {
+	      return '[data-drag-handle]';
+	    }
+	  }, {
+	    key: 'draggableSelector',
+	    get: function get() {
+	      return '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
+	    }
+	  }, {
+	    key: 'handleOrDraggableSelector',
+	    get: function get() {
+	      return '[data-drag-handle],[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
+	    }
+	  }]);
+
+	  return Draggable;
+	})();
+
+	exports['default'] = Draggable;
+	module.exports = exports['default'];
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	exports.__esModule = true;
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var Helper = (function () {
+	  function Helper(drag) {
+	    _classCallCheck(this, Helper);
+
+	    this.drag = drag;
+	    this.el = null;
+	    this.overlayEl = null;
+	    this.gripOffset = null;
+	    this.size = null;
+	    this.initialize();
+	  }
+
+	  Helper.prototype.initialize = function initialize() {
+	    this.overlayEl = document.createElement('div');
+	    this.overlayEl.setAttribute('data-drag-overlay', '');
+
+	    this.el = this.drag.draggable.el.cloneNode(true);
+	    this.el.removeAttribute('id');
+	    this.el.setAttribute('data-drag-helper', '');
+
+	    var rect = this.drag.draggable.el.getBoundingClientRect();
+	    this.gripOffset = [(this.drag.pointerXY[0] - rect.left) / rect.width, (this.drag.pointerXY[1] - rect.top) / rect.height];
+
+	    this.overlayEl.appendChild(this.el);
+	    document.body.appendChild(this.overlayEl);
+
+	    this.setPosition(this.drag.pointerXY);
+	    this.setSizeAndScale(this.drag.draggable.originalSize, this.drag.draggable.originalScale, false);
+
+	    this.el.focus();
+
+	    if (window['Velocity']) {
+	      Velocity(this.el, {
+	        rotateZ: -1,
+	        boxShadowBlur: this.drag.options.helper.shadowSize
+	      }, {
+	        duration: this.drag.options.animation.duration,
+	        easing: this.drag.options.animation.easing
+	      });
+	    }
+	  };
+
+	  Helper.prototype.setPosition = function setPosition(positionXY) {
+	    if (window['Velocity']) {
+	      Velocity(this.el, {
+	        translateX: positionXY[0],
+	        translateY: positionXY[1],
+	        translateZ: 0
+	      }, {
+	        duration: 0,
+	        queue: false
+	      });
+	    } else {
+	      dom.translate(this.el, positionXY[0], positionXY[1]);
+	    }
+	  };
+
+	  Helper.prototype.setSizeAndScale = function setSizeAndScale(size, scale) {
+	    var animate = arguments[2] === undefined ? true : arguments[2];
+
+	    if (this.size && this.scale && this.size[0] === size[0] && this.size[1] === size[1] && this.scale[0] === scale[0] && this.scale[1] === scale[1]) return;
+
+	    if (window['Velocity']) {
+	      var velocityOptions = animate && this.drag.options.animation.animateResize ? {
+	        duration: this.drag.options.animation.duration,
+	        easing: 'linear',
+	        queue: false
+	      } : {
+	        duration: 0,
+	        queue: false
+	      };
+	      Velocity(this.el, {
+	        width: size[0],
+	        height: size[1],
+	        left: -this.gripOffset[0] * size[0],
+	        top: -this.gripOffset[1] * size[1],
+	        transformOriginX: this.gripOffset[0] * size[0],
+	        transformOriginY: this.gripOffset[1] * size[1],
+	        scaleX: scale[0],
+	        scaleY: scale[1]
+	      }, velocityOptions);
+	    } else {
+	      this.el.style.width = size[0] + 'px';
+	      this.el.style.height = size[1] + 'px';
+	      this.el.style.left = -this.gripOffset[0] * size[0] + 'px';
+	      this.el.style.top = -this.gripOffset[1] * size[1] + 'px';
+	      dom.transformOrigin(this.el, [-this.gripOffset[0] * size[0], -this.gripOffset[1] * size[1]]);
+	    }
+	    this.size = size;
+	  };
+
+	  Helper.prototype.animateToRect = function animateToRect(rect, callback) {
+	    var targetProps = {
+	      translateX: [rect.left, 'ease-out'],
+	      translateY: [rect.top, 'ease-out'],
+	      top: [0, 'ease-out'],
+	      left: [0, 'ease-out'],
+	      rotateZ: 0,
+	      boxShadowBlur: 0
+	    };
+	    if (this.drag.options.animation.animateResize) {
+	      targetProps.width = [rect.width, 'ease-out'];
+	      targetProps.height = [rect.height, 'ease-out'];
+	    }
+	    Velocity(this.el, targetProps, {
+	      duration: this.drag.options.animation.duration,
+	      easing: this.drag.options.animation.easing,
+	      complete: callback
+	    });
+	  };
+
+	  Helper.prototype.dispose = function dispose(drag) {
+	    this.overlayEl.remove();
+	    this.el.remove();
+	  };
+
+	  return Helper;
+	})();
+
+	exports['default'] = Helper;
+	module.exports = exports['default'];
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _CanvasContainerJs = __webpack_require__(9);
+
+	var _CanvasContainerJs2 = _interopRequireDefault(_CanvasContainerJs);
+
+	var _DroppableContainerJs = __webpack_require__(10);
+
+	var _DroppableContainerJs2 = _interopRequireDefault(_DroppableContainerJs);
+
+	var _SortableContainerJs = __webpack_require__(11);
+
+	var _SortableContainerJs2 = _interopRequireDefault(_SortableContainerJs);
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var ContainerFactory = (function () {
+	  function ContainerFactory() {
+	    _classCallCheck(this, ContainerFactory);
+	  }
+
+	  ContainerFactory.closest = function closest(el) {
+	    return dom.closest(el, this.selector);
+	  };
+
+	  ContainerFactory.makeContainer = function makeContainer(el, drag) {
+	    if (_CanvasContainerJs2['default'].matches(el)) return new _CanvasContainerJs2['default'](el, drag);
+	    if (_DroppableContainerJs2['default'].matches(el)) return new _DroppableContainerJs2['default'](el, drag);
+	    if (_SortableContainerJs2['default'].matches(el)) return new _SortableContainerJs2['default'](el, drag);
+	    return null;
+	  };
+
+	  _createClass(ContainerFactory, null, [{
+	    key: 'selector',
+	    get: function get() {
+	      return '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]';
+	    }
+	  }]);
+
+	  return ContainerFactory;
+	})();
+
+	exports['default'] = ContainerFactory;
+	module.exports = exports['default'];
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+
+	var _ContainerJs = __webpack_require__(5);
+
+	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
+
+	var _PlaceholderJs = __webpack_require__(15);
+
+	var _PlaceholderJs2 = _interopRequireDefault(_PlaceholderJs);
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var CanvasContainer = (function (_Container) {
+	  function CanvasContainer(el, drag) {
+	    _classCallCheck(this, CanvasContainer);
+
+	    _Container.call(this, el, drag);
+	    this.offset = [0, 0];
+	    this.grid = null;
+	    this.initialize();
+	  }
+
+	  _inherits(CanvasContainer, _Container);
+
+	  CanvasContainer.prototype.initialize = function initialize() {
+	    var snapToGrid = this.el.getAttribute("data-drag-canvas-snap-to-grid") || "";
+	    var cellSizeTokens = snapToGrid.split(",");
+	    this.grid = [parseInt(cellSizeTokens[0], 10) || 1, parseInt(cellSizeTokens[1], 10) || parseInt(cellSizeTokens[0], 10) || 1];
+	  };
+
+	  CanvasContainer.prototype.updatePosition = function updatePosition(constrainedXY) {
+	    // TODO cache if possible
+	    var rect = this.el.getBoundingClientRect();
+	    var l = constrainedXY[0] - rect.left + this.el.scrollLeft - this.drag.helper.gripOffset[0] * this.drag.helper.size[0],
+	        t = constrainedXY[1] - rect.top + this.el.scrollTop - this.drag.helper.gripOffset[1] * this.drag.helper.size[1];
+
+	    t = Math.round((t - rect.top) / this.grid[1]) * this.grid[1] + rect.top;
+	    l = Math.round((l - rect.left) / this.grid[0]) * this.grid[0] + rect.left;
+	    this.offset = [l, t];
+	  };
+
+	  CanvasContainer.prototype.insertPlaceholder = function insertPlaceholder() {
+	    if (!this.placeholder) {
+	      this.placeholder = new _PlaceholderJs2["default"](this.drag);
+	      dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
+	      this.el.appendChild(this.placeholder.el);
+	      this.placeholderSize = this.placeholder.size;
+	      this.placeholderScale = this.placeholder.scale;
+	    }
+	  };
+
+	  CanvasContainer.prototype.updatePlaceholder = function updatePlaceholder() {
+	    dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
+	  };
+
+	  CanvasContainer.prototype.removePlaceholder = function removePlaceholder() {
+	    this.placeholder.el.remove();
+	    this.placeholder = null;
+	  };
+
+	  _createClass(CanvasContainer, null, [{
+	    key: "selector",
+	    get: function get() {
+	      return "[data-drag-canvas]";
+	    }
+	  }]);
+
+	  return CanvasContainer;
+	})(_ContainerJs2["default"]);
+
+	exports["default"] = CanvasContainer;
+	module.exports = exports["default"];
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+
+	var _ContainerJs = __webpack_require__(5);
+
+	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
+
+	var DroppableContainer = (function (_Container) {
+	  function DroppableContainer() {
+	    _classCallCheck(this, DroppableContainer);
+
+	    _Container.apply(this, arguments);
+	  }
+
+	  _inherits(DroppableContainer, _Container);
+
+	  DroppableContainer.prototype.updateTarget = function updateTarget(drag) {};
+
+	  _createClass(DroppableContainer, null, [{
+	    key: "selector",
+	    get: function get() {
+	      return "[data-drag-droppable]";
+	    }
+	  }]);
+
+	  return DroppableContainer;
+	})(_ContainerJs2["default"]);
+
+	exports["default"] = DroppableContainer;
+	module.exports = exports["default"];
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+
+	var _ContainerJs = __webpack_require__(5);
+
+	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
+
+	var _PlaceholderJs = __webpack_require__(15);
+
+	var _PlaceholderJs2 = _interopRequireDefault(_PlaceholderJs);
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var _libAnimationJs = __webpack_require__(13);
+
+	var animation = _interopRequireWildcard(_libAnimationJs);
+
+	var SortableContainer = (function (_Container) {
+	  function SortableContainer(el, drag) {
+	    _classCallCheck(this, SortableContainer);
+
+	    _Container.call(this, el, drag);
+	    this.index = 0;
+	    this.initialize();
+	  }
+
+	  _inherits(SortableContainer, _Container);
+
+	  SortableContainer.prototype.initialize = function initialize() {
+	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
+	  };
+
+	  SortableContainer.prototype.updatePosition = function updatePosition(constrainedXY) {
+	    if (this.el.children.length === 0) {
+	      this.index = 0;
+	      return;
+	    }
+	    var newIndex = this.index;
+	    // we'll use selection APIs rather than elementAtPoint,
+	    // as it returns the closest sibling to the area being selected
+	    var closestChildEl = dom.elementFromPointViaSelection(constrainedXY);
+	    while (closestChildEl && !dom.isChild(this.el, closestChildEl)) closestChildEl = closestChildEl.parentElement;
+	    if (closestChildEl) {
+	      var closestChildRect = closestChildEl.getBoundingClientRect();
+	      newIndex = dom.indexOf(closestChildEl);
+
+	      if (this.direction === "vertical" && constrainedXY[1] > closestChildRect.top + closestChildRect.height / 2) newIndex++;
+	      if ((this.direction === "wrap" || this.direction === "horizontal") && constrainedXY[0] > closestChildRect.left + closestChildRect.width / 2) newIndex++;
+	    }
+
+	    this.index = newIndex;
+	  };
+
+	  SortableContainer.prototype.insertPlaceholder = function insertPlaceholder() {
+	    var _this = this;
+
+	    this.placeholder = new _PlaceholderJs2["default"](this.drag);
+	    var mutation = function mutation() {
+	      return _this.el.insertBefore(_this.placeholder.el, _this.el.children[_this.index]);
+	    };
+	    if (this.options.animation) animation.animateDomMutation(this.el, mutation, {
+	      duration: this.options.animation.duration,
+	      easing: this.options.animation.easing,
+	      startIndex: this.index,
+	      maxElementsToAnimate: this.options.animation.elementLimit,
+	      animateParentSize: true
+	    });else mutation();
+	    this.placeholderSize = this.placeholder.size;
+	    this.placeholderScale = this.placeholder.scale;
+	  };
+
+	  SortableContainer.prototype.updatePlaceholder = function updatePlaceholder() {
+	    var _this2 = this;
+
+	    var newIndex = this.index,
+	        oldIndex = dom.indexOf(this.placeholder.el);
+	    if (oldIndex !== newIndex && oldIndex !== newIndex - 1) {
+	      var mutation = function mutation() {
+	        return _this2.el.insertBefore(_this2.placeholder.el, _this2.el.children[newIndex]);
+	      };
+	      if (this.options.animation) animation.animateDomMutation(this.el, mutation, {
+	        duration: this.options.animation.duration,
+	        easing: this.options.animation.easing,
+	        startIndex: Math.min(oldIndex, newIndex) - 1,
+	        endIndex: Math.max(oldIndex, newIndex) + 1,
+	        maxElementsToAnimate: this.options.animation.elementLimit
+	      });else mutation();
+	    }
+	  };
+
+	  SortableContainer.prototype.removePlaceholder = function removePlaceholder(drag) {
+	    var _this3 = this;
+
+	    var mutation = function mutation() {
+	      return _this3.placeholder.el.remove();
+	    };
+	    if (this.options.animation) animation.animateDomMutation(this.el, mutation, {
+	      duration: this.options.animation.duration,
+	      easing: this.options.animation.easing,
+	      startIndex: this.index,
+	      maxElementsToAnimate: this.options.animation.elementLimit,
+	      animateParentSize: true
+	    });else mutation();
+	    this.placeholder.dispose();
+	    this.placeholder = null;
+	  };
+
+	  _createClass(SortableContainer, null, [{
+	    key: "selector",
+	    get: function get() {
+	      return "[data-drag-sortable]";
+	    }
+	  }]);
+
+	  return SortableContainer;
+	})(_ContainerJs2["default"]);
+
+	exports["default"] = SortableContainer;
+	module.exports = exports["default"];
+
+/***/ },
+/* 12 */,
+/* 13 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	exports.__esModule = true;
+	exports.animateDomMutation = animateDomMutation;
+
+	function animateDomMutation(el, mutationFunction, options) {
+	  var startIndex = options.startIndex || 0;
+	  var endIndex = Math.min(options.endIndex || el.children.length, startIndex + options.maxElementsToAnimate);
+	  var easing = options.easing || 'ease-in-out';
+	  var duration = options.duration || 400;
+	  var originalStyleHeight = null,
+	      originalStyleWidth = null,
+	      oldSize = null,
+	      newSize = null;
+
+	  var oldOffsets = childOffsetMap(el, startIndex, endIndex);
+	  if (options.animateParentSize) {
+	    originalStyleHeight = '';
+	    originalStyleWidth = '';
+	    el.style.width = '';
+	    el.style.height = '';
+	    oldSize = [el.offsetWidth, el.offsetHeight];
+	  }
+	  mutationFunction();
+	  var newOffsets = childOffsetMap(el, startIndex, endIndex);
+	  if (options.animateParentSize) {
+	    newSize = [el.offsetWidth, el.offsetHeight];
+	  }
+
+	  animateBetweenOffsets(el, oldOffsets, newOffsets, startIndex, endIndex, duration, easing);
+
+	  if (options.animateParentSize) {
+	    animateSize(el, oldSize, newSize, originalStyleWidth, originalStyleHeight, duration, easing);
+	  }
+	}
+
+	function animateSize(el, oldSize, newSize, originalStyleWidth, originalStyleHeight, duration, easing) {
+	  function onComplete() {
+	    console.log('COMPLETE');
+	    el.style.width = originalStyleWidth;
+	    el.style.height = originalStyleHeight;
+	  }
+	  Velocity(el, {
+	    width: [newSize[0], oldSize[0]],
+	    height: [newSize[1], oldSize[1]]
+	  }, {
+	    duration: duration,
+	    easing: easing,
+	    queue: false,
+	    complete: onComplete
+	  });
+	}
+
+	function animateBetweenOffsets(el, oldOffsets, newOffsets, startIndex, endIndex, duration, easing) {
+	  for (var i = startIndex; i < endIndex + 1; i++) {
+	    var childEl = el.children[i];
+	    if (!childEl) continue;
+
+	    //if (childEl.matches('[data-drag-placeholder]')) continue;
+
+	    var oldOffset = oldOffsets.get(childEl);
+	    var newOffset = newOffsets.get(childEl);
+	    if (!oldOffset || !newOffset || oldOffset[0] === newOffset[0] && oldOffset[1] === newOffset[1]) continue;
+
+	    // the following line makes the animations smoother in safari
+	    //childEl.style.webkitTransform = 'translate3d(0,' + (oldOffset.top - newOffset.top) + 'px,0)';
+
+	    Velocity(childEl, {
+	      translateX: '+=' + (oldOffset[0] - newOffset[0]) + 'px',
+	      translateY: '+=' + (oldOffset[1] - newOffset[1]) + 'px',
+	      translateZ: 0
+	    }, { duration: 0 });
+
+	    Velocity(childEl, {
+	      translateX: 0,
+	      translateY: 0
+	    }, {
+	      duration: duration,
+	      easing: easing,
+	      queue: false
+	    });
+	  }
+	}
+
+	function childOffsetMap(el, startIndex, endIndex) {
+	  var map = new Map();
+	  for (var i = startIndex; i < endIndex; i++) {
+	    var childEl = el.children[i];
+	    if (childEl) map.set(childEl, [childEl.offsetLeft, childEl.offsetTop]);
+	  }
+	  return map;
+	}
+
+/***/ },
+/* 14 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	exports.__esModule = true;
+	exports.cancelEvent = cancelEvent;
+	exports.raiseEvent = raiseEvent;
+	exports.pointerEventXY = pointerEventXY;
+	exports.pointerEventId = pointerEventId;
+	var pointerDownEvent = document['ontouchstart'] !== undefined ? 'touchstart' : 'mousedown';
+	exports.pointerDownEvent = pointerDownEvent;
+	var pointerMoveEvent = document['ontouchmove'] !== undefined ? 'touchmove' : 'mousemove';
+	exports.pointerMoveEvent = pointerMoveEvent;
+	var pointerUpEvent = document['ontouchend'] !== undefined ? 'touchend' : 'mouseup';
+
+	exports.pointerUpEvent = pointerUpEvent;
 
 	function cancelEvent(e) {
 	  e.stopPropagation();
@@ -887,252 +1327,74 @@
 	  return event;
 	}
 
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	exports.__esModule = true;
-	exports.coerce = coerce;
-	exports.midpointTop = midpointTop;
-	exports.midpointLeft = midpointLeft;
-	exports.fuzzyBinarySearch = fuzzyBinarySearch;
-
-	function coerce(value, min, max) {
-	  return value > max ? max : value < min ? min : value;
+	function pointerEventXY(e) {
+	  var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+	  var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+	  return [clientX, clientY];
 	}
 
-	function midpointTop(clientRect) {
-	  return clientRect.top + clientRect.height / 2;
-	}
-
-	function midpointLeft(clientRect) {
-	  return clientRect.left + clientRect.width / 2;
-	}
-
-	function fuzzyBinarySearch(elements, value, accessor) {
-	  var lo = 0,
-	      hi = elements.length - 1,
-	      best = null,
-	      bestValue = null;
-
-	  while (lo <= hi) {
-	    var mid = lo + hi >>> 1;
-	    var midValue = accessor(elements[mid]);
-	    if (bestValue === null || Math.abs(midValue - value) < Math.abs(bestValue - value)) {
-	      best = mid;
-	      bestValue = midValue;
-	    }
-	    if (midValue < value) {
-	      lo = mid + 1;continue;
-	    }
-	    if (midValue > value) {
-	      hi = mid - 1;continue;
-	    }
-	    break;
-	  }
-	  return best;
+	function pointerEventId(e) {
+	  return e.touchId ? e.touchId : 0;
 	}
 
 /***/ },
-/* 6 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
-
-	exports.__esModule = true;
-	exports.isSortable = isSortable;
-	exports.updateIndex = updateIndex;
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
-
-	var _constantsJs = __webpack_require__(2);
-
-	var constants = _interopRequireWildcard(_constantsJs);
-
-	var _helpersJs = __webpack_require__(5);
-
-	var helpers = _interopRequireWildcard(_helpersJs);
-
-	function isSortable(el) {
-	  return el && el.matches(constants.sortableSelector);
-	}
-
-	// TODO: optimisation, cache layout offsets
-	// TODO: optimisation, check immediate neighbours prior to binary search
-	// TODO: pay attention to
-
-	function updateIndex(context) {
-	  var direction = context.parentEl.getAttribute(constants.sortableAttribute) || "vertical";
-
-	  if (context.parentEl.children.length === 0) {
-	    context.parentIndex = 0;
-	    return;
-	  }
-
-	  var offsetParent = null;
-	  for (var i = 0; i < context.parentEl.children.length; i++) {
-	    var childEl = context.parentEl.children[i];
-	    offsetParent = childEl.offsetParent;
-	    if (offsetParent !== null) break;
-	  }
-	  var offsetParentRect = offsetParent.getBoundingClientRect();
-	  var offsetPointerX = context.constrainedX - offsetParentRect.left + offsetParent.scrollLeft;
-	  var offsetPointerY = context.constrainedY - offsetParentRect.top + offsetParent.scrollTop;
-
-	  var newIndex = null;
-	  switch (direction) {
-	    case "horizontal":
-	      newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerX, function (el) {
-	        return el.offsetLeft + el.offsetWidth / 2;
-	      });
-	      break;
-	    case "vertical":
-	      newIndex = helpers.fuzzyBinarySearch(context.parentEl.children, offsetPointerY, function (el) {
-	        return el.offsetTop + el.offsetHeight / 2;
-	      });
-	      break;
-	    case "wrap":
-	      throw new Error("Not implemented");
-	  }
-	  // the parent index will be based on the set of children INCLUDING the placeholder element we need to compensate
-	  if (context.placeholderIndex && newIndex > context.placeholderIndex) newIndex++;
-	  context.parentIndex = newIndex;
-	}
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
+	'use strict';
 
 	exports.__esModule = true;
 
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
-	var _constantsJs = __webpack_require__(2);
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var constants = _interopRequireWildcard(_constantsJs);
+	var _libDomJs = __webpack_require__(2);
 
-	var _domJs = __webpack_require__(4);
+	var dom = _interopRequireWildcard(_libDomJs);
 
-	var dom = _interopRequireWildcard(_domJs);
+	var Placeholder = (function () {
+	  function Placeholder(drag) {
+	    _classCallCheck(this, Placeholder);
 
-	// TODO: suspend placeholder updates while scrolling is in progress
-	// TODO: slow down as you approach extremity
-	// TODO: adjust scroll speed based on number of items
-	// TODO: lock scroll height
-	// TODO: refactor: clearer scroll start, scroll finish
-	// TODO: refactor: rename ancestors (it's inclusive of this generation)
-	// TODO: trigger placeholder update when scroll stops
-
-	var DragDropScrolling = (function () {
-	  function DragDropScrolling() {
-	    _classCallCheck(this, DragDropScrolling);
-
-	    this.options = {
-	      scrollDelay: 1000,
-	      scrollDistance: 40,
-	      scrollSpeed: 2
-	    };
+	    this.drag = drag;
+	    this.el = null;
+	    this.initialize();
 	  }
 
-	  // event handlers
-
-	  DragDropScrolling.prototype.dragStart = function dragStart(context) {
-	    context.scrollAnimationFrame = null;
-	    context.scrollEl = null;
-	    context.scrollDx = null;
-	    context.scrollDy = null;
+	  Placeholder.prototype.initialize = function initialize(draggable) {
+	    this.el = this.drag.draggable.el.cloneNode(true);
+	    this.el.removeAttribute('id');
+	    this.el.classList.add(this.drag.options.css.placeholder);
+	    this.el.setAttribute('data-drag-placeholder', '');
+	    dom.translate(this.el, 0, 0);
+	    dom.topLeft(this.el, 0, 0);
 	  };
 
-	  DragDropScrolling.prototype.dragMove = function dragMove(context) {
-	    this.tryScroll(context);
+	  Placeholder.prototype.dispose = function dispose() {
+	    this.el.remove();
+	    this.el = null;
 	  };
 
-	  DragDropScrolling.prototype.dragEnd = function dragEnd(context) {
-	    this.stopScroll(context);
-	  };
-
-	  // internal methods
-
-	  DragDropScrolling.prototype.tryScroll = function tryScroll(context) {
-	    var _getScrollZoneUnderPointer = this.getScrollZoneUnderPointer(context);
-
-	    context.scrollEl = _getScrollZoneUnderPointer[0];
-	    context.scrollDx = _getScrollZoneUnderPointer[1];
-	    context.scrollDy = _getScrollZoneUnderPointer[2];
-
-	    if (context.scrollEl) this.startScroll(context);
-	    if (!context.scrollEl) this.stopScroll(context);
-	  };
-
-	  DragDropScrolling.prototype.startScroll = function startScroll(context) {
-	    var self = this;
-	    context.scrollAnimationFrame = requestAnimationFrame(function () {
-	      self.continueScroll(context);
-	    });
-	  };
-
-	  DragDropScrolling.prototype.continueScroll = function continueScroll(context) {
-	    if (context && context.scrollEl) {
-	      var scrollEl = context.scrollEl;
-	      scrollEl.scrollTopF = scrollEl.scrollTopF !== undefined ? scrollEl.scrollTopF + context.scrollDy : scrollEl.scrollTop + context.scrollDy;
-	      scrollEl.scrollLeftF = scrollEl.scrollLeftF !== undefined ? scrollEl.scrollLeftF + context.scrollDx : scrollEl.scrollLeft + context.scrollDx;
-	      scrollEl.scrollTop = scrollEl.scrollTopF;
-	      scrollEl.scrollLeft = scrollEl.scrollLeftF;
-	      this.tryScroll(context);
+	  _createClass(Placeholder, [{
+	    key: 'size',
+	    get: function get() {
+	      return [this.el.offsetWidth, this.el.offsetHeight];
 	    }
-	  };
-
-	  DragDropScrolling.prototype.stopScroll = function stopScroll(context) {
-	    if (context.scrollAnimationFrame) {
-	      cancelAnimationFrame(context.scrollAnimationFrame);
-	      context.scrollAnimationFrame = null;
+	  }, {
+	    key: 'scale',
+	    get: function get() {
+	      return dom.clientScale(this.el);
 	    }
-	  };
+	  }]);
 
-	  DragDropScrolling.prototype.getScrollZoneUnderPointer = function getScrollZoneUnderPointer(context) {
-	    var scrollEls = Array.prototype.reverse.apply(dom.ancestors(context.parentEl, constants.scrollableSelector));
-
-	    for (var i = 0; i < scrollEls.length; i++) {
-	      var scrollEl = scrollEls[i];
-	      var scrollableRect = scrollEl.getBoundingClientRect(); // cache this
-	      var dx = 0;
-	      var dy = 0;
-
-	      if (scrollEl.getAttribute(constants.scrollableAttribute) !== "vertical") {
-	        var hScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.width / 3);
-	        if (context.pointerX > scrollableRect.right - hScrollDistance && dom.canScrollRight(scrollEl)) dx = this.calculateScrollSpeed(context.pointerX, [scrollableRect.right - hScrollDistance, scrollableRect.right], [0, +this.options.scrollSpeed]);
-	        if (context.pointerX < scrollableRect.left + hScrollDistance && dom.canScrollLeft(scrollEl)) dx = this.calculateScrollSpeed(context.pointerX, [scrollableRect.left + hScrollDistance, scrollableRect.left], [0, -this.options.scrollSpeed]);
-	      }
-
-	      if (scrollEl.getAttribute(constants.scrollableAttribute) !== "horizontal") {
-	        var vScrollDistance = Math.min(this.options.scrollDistance, scrollableRect.height / 3);
-	        if (context.pointerY > scrollableRect.bottom - vScrollDistance && dom.canScrollDown(scrollEl)) dy = this.calculateScrollSpeed(context.pointerY, [scrollableRect.bottom - vScrollDistance, scrollableRect.bottom], [0, +this.options.scrollSpeed]);
-	        if (context.pointerY < scrollableRect.top + vScrollDistance && dom.canScrollUp(scrollEl)) dy = this.calculateScrollSpeed(context.pointerY, [scrollableRect.top + vScrollDistance, scrollableRect.top], [0, -this.options.scrollSpeed]);
-	      }
-
-	      if (dx !== 0 || dy !== 0) {
-	        return [scrollEl, dx, dy];
-	      }
-	    }
-	    return [null, null, null];
-	  };
-
-	  DragDropScrolling.prototype.calculateScrollSpeed = function calculateScrollSpeed(pointer, domain, range) {
-	    var a = (pointer - domain[0]) / (domain[1] - domain[0]);
-	    return a * (range[1] - range[0]) + range[0];
-	  };
-
-	  return DragDropScrolling;
+	  return Placeholder;
 	})();
 
-	exports["default"] = DragDropScrolling;
-	module.exports = exports["default"];
+	exports['default'] = Placeholder;
+	module.exports = exports['default'];
 
 /***/ }
 /******/ ]);

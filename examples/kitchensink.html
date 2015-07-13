@@ -5,9 +5,10 @@
   <script type="text/javascript" src="../DragDrop.js"></script>
   <link rel="stylesheet" type="text/css" href="vendor/semantic.min.css">
   <link rel="stylesheet" type="text/css" href="kitchensink.css">
-  <link rel="stylesheet" type="text/css" href="../dragdrop.css">
+  <link rel="stylesheet" type="text/css" href="../css/core.css">
+  <link rel="stylesheet" type="text/css" href="../css/default.css">
 </head>
-<body>
+<body data-drag-scrollable>
   <div class="ui fixed inverted menu">
     <div class="ui container">
       <div href="#" class="header item">
@@ -38,6 +39,26 @@
               data-drag-scrollable
               data-drag-accepts="*"
               class="vertical">
+            <li>Item 1</li>
+            <li>Item 2</li>
+            <li>Item 3</li>
+            <li>Item 4</li>
+            <li>Item 5</li>
+            <li>Item 6</li>
+            <li>Item 7</li>
+            <li>Item 8</li>
+            <li>Item 9</li>
+            <li>Item 10</li>
+            <li>Item 11</li>
+          </ol>
+
+
+          <h3>Sortable with Padding</h3>
+          <ol data-drag-sortable
+              data-drag-scrollable
+              data-drag-accepts="*"
+              class="vertical"
+              style="padding:40px">
             <li>Item 1</li>
             <li>Item 2</li>
             <li>Item 3</li>
@@ -92,18 +113,32 @@
           </ol>
 
 
+          <h3>Scaled and Translated Sortable</h3>
+          <div style="transform: scale(0.5) translateX(-50%) translateY(-50%)">
+            <h2>Odd item sizes</h2>
+            <ol data-drag-sortable="vertical"
+                class="vertical">
+              <li>Item 1 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
+              <li>Item 2
+              <li>Item 3
+              <li>Item 4 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
+              <li>Item 5 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
+            </ol>
+          </div>
+
+
+
 
           <h3>Sortable</h3>
           <h2>Odd item sizes</h2>
           <ol data-drag-sortable="vertical"
               class="vertical">
-            <li>Item 1 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf</li>
-            <li>Item 2</li>
-            <li>Item 3</li>
-            <li>Item 4 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf</li>
-            <li>Item 5 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf</li>
+            <li>Item 1 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
+            <li>Item 2
+            <li>Item 3
+            <li>Item 4 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
+            <li>Item 5 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
           </ol>
-
 
 
           <h3>Horizontal Sortable</h3>
@@ -116,6 +151,62 @@
             <li>Item 4
             <li>Item 5
           </ol>
+
+          <h3>Wrapped Sortable</h3>
+          <h5>Inline</h5>
+          <span>Hello there
+            <ol data-drag-sortable="wrap"
+                data-drag-scrollable
+                style="display: inline">
+              <li>Item 1
+              <li>Item 2
+            </ol>this is inline
+          </span>
+          <h5>Left Aligned</h5>
+          <ol data-drag-sortable="wrap"
+              data-drag-scrollable
+              style="text-align: left">
+            <li>Item 1
+            <li>Item 2
+            <li>Item 3
+            <li>Item 4
+            <li>Item 5
+            <li>Item 6
+            <li>Item 7
+            <li>Item 8
+            <li>Item 9
+          </ol>
+
+          <h5>Center Aligned</h5>
+          <ol data-drag-sortable="wrap"
+              data-drag-scrollable
+              style="text-align: center">
+            <li>Item 1
+            <li>Item 2
+            <li>Item 3
+            <li>Item 4
+            <li>Item 5
+            <li>Item 6
+            <li>Item 7
+            <li>Item 8
+            <li>Item 9
+          </ol>
+
+          <h5>Right Aligned</h5>
+          <ol data-drag-sortable="wrap"
+              data-drag-scrollable
+              style="text-align: right">
+            <li>Item 1
+            <li>Item 2
+            <li>Item 3
+            <li>Item 4
+            <li>Item 5
+            <li>Item 6
+            <li>Item 7
+            <li>Item 8
+            <li>Item 9
+          </ol>
+
 
 
           <h3>Disabled Sortable</h3>
@@ -203,21 +294,149 @@
 
                  data-drag-scope=".slider"></div>
           </div>
+          <h3>Slider</h3>
+          <h4>Horizontal</h4>
+          <div class="slider horizontal"
+               data-drag-canvas
+               data-drag-snap-to-grid="20,20"
+               data-drag-snap-to-bounds
+               data-drag-container>
+            <div class="slider-handle"
+                 data-drag-orientation="horizontal"></div>
+          </div>
+          <h4>Vertical</h4>
+          <div class="slider vertical"
+               data-drag-canvas
+               data-drag-snap-to-grid="20,20"
+               data-drag-snap-to-bounds
+               data-drag-container>
+            <div class="slider-handle"
+                 data-drag-orientation="horizontal"></div>
+          </div>
 
         </div>
       </div>
     </div>
+  </div>
+  <div class="ui one column grid">
 
-    <div class="slider"
-         style="width:200px; height:20px; background:#DDD; position:relative"
-         data-drag-canvas
-         data-drag-snap-to-grid="20,20"
-         data-drag-snap-to-bounds>
-      <div style="width:20px; height:20px; background:red; border-radius:10px; position:absolute; top: 0; left: 0;"
-
-           data-drag-scope=".slider"
-           data-drag-orientation="horizontal"></div>
+    <div class="column" style="margin:auto; max-width:600px">
+      <h2>Attributes</h2>
+      <table class="ui table">
+        <thead>
+          <tr>
+            <th>Attribute</th>
+            <th>Applies to</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="ui label teal">data-drag-draggable</span></td>
+            <td>Draggable elements</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-sortable[=horizontal|vertical|wrap]</span></td>
+            <td>Sortable containers</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-canvas</span></td>
+            <td>Canvas containers</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-canvas-snap-to-bounds</span></td>
+            <td>Canvas containers</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-canvas-snap-to-grid</span></td>
+            <td>Canvas containers</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-droppable</span></td>
+            <td>Droppable containers</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-scrollable[=horizontal|vertical|both]</span></td>
+            <td>Any</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-accepts[=<em>selector</em>]</span></td>
+            <td>Containers</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-handle</span></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-containment</span></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">data-drag-disabled</span></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+
+
+    <div class="column" style="margin:auto; max-width:600px">
+      <h2>Events</h2>
+      <table class="ui table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Target</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="ui label teal">dragstart</span></td>
+            <td>Dragged element</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">drag</span></td>
+            <td>Dragged element</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">drop</span></td>
+            <td>Dragged element</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">dragend</span></td>
+            <td>Dragged element</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">dragenter</span></td>
+            <td>Container element</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><span class="ui label teal">dragleave</span></td>
+            <td>Container element</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+
   </div>
 
 </body>

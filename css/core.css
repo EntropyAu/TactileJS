@@ -1,0 +1,183 @@
+[data-drag-sortable],
+[data-drag-canvas] {
+  position: relative;
+  z-index: 0;
+}
+
+[data-drag-sortable] > *,
+[data-drag-canvas] > * {
+  cursor:      default;
+  cursor: -webkit-grab;
+  cursor:    -moz-grab;
+  cursor:     -ms-grab;
+  cursor:         grab;
+}
+
+[data-drag-disabled],
+[data-drag-disabled] > * {
+  cursor: default;
+}
+
+[data-drag-canvas] > * {
+  position: absolute;
+  display: inline-block;
+  margin: 0;
+}
+
+[data-drag-canvas] {
+  min-width: 1px;
+  min-height: 1px;
+}
+
+[data-drag-sortable] > * {
+  -webkit-backface-visibility: hidden;
+     -moz-backface-visibility: hidden;
+      -ms-backface-visibility: hidden;
+          backface-visibility: hidden;
+  will-change: transform;
+}
+
+[data-drag-scrollable] {
+  -webkit-overflow-scrolling: scroll;
+  position: relative;
+}
+
+[data-drag-scrollable='both'] {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+[data-drag-scrollable='horizontal'] {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+[data-drag-scrollable='vertical'] {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+[data-drag-disabled] {
+  cursor: default;
+}
+
+[data-drag-disabled] > * {
+  cursor: default;
+}
+
+[data-drag-handle] {
+  cursor: hand;
+  cursor: -webkit-grab;
+  cursor:    -moz-grab;
+  cursor:     -ms-grab;
+  cursor:         grab;
+}
+
+[data-drag-sortable='horizontal'] {
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+[data-drag-sortable='horizontal'] > * {
+  display: inline-block;
+}
+
+[data-drag-sortable='vertical'] {
+  overflow-x: hidden;
+}
+
+[data-drag-sortable='wrap'] > * {
+  overflow-x: hidden;
+  display: inline-block;
+  white-space: wrap;
+}
+
+body[data-drag-in-progress] {
+  cursor: move;
+  cursor: -webkit-grabbing;
+  cursor:    -moz-grabbing;
+  cursor:     -ms-grabbing;
+  cursor:         grabbing;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
+body[data-drag-in-progress] > * {
+  -webkit-pointer-events: none !important;
+     -moz-pointer-events: none !important;
+      -ms-pointer-events: none !important;
+          pointer-events: none !important;
+}
+
+body[data-drag-in-progress] [data-drag-sortable] *,
+body[data-drag-in-progress] [data-drag-droppable] *,
+body[data-drag-in-progress] [data-drag-canvas] * {
+  -webkit-pointer-events: none !important;
+     -moz-pointer-events: none !important;
+      -ms-pointer-events: none !important;
+          pointer-events: none !important;
+}
+
+body[data-drag-in-progress] [data-drag-sortable],
+body[data-drag-in-progress] [data-drag-droppable],
+body[data-drag-in-progress] [data-drag-sortable] > *,
+body[data-drag-in-progress] [data-drag-droppable] > *,
+body[data-drag-in-progress] [data-drag-canvas] {
+  -webkit-pointer-events: all !important;
+     -moz-pointer-events: all !important;
+      -ms-pointer-events: all !important;
+          pointer-events: all !important;
+}
+body[data-drag-in-progress] [data-drag-sortable] {
+  -webkit-user-select: all;
+     -moz-user-select: all;
+      -ms-user-select: all;
+          user-select: all;
+}
+body[data-drag-in-progress] [data-drag-sortable] > * > * {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+[data-drag-placeholder] {
+  position: relative;
+  z-index: -1;
+  opacity: 0.1;
+  box-shadow: none !important;
+}
+
+.dd-drag-hover > * {
+  -webkit-backface-visibility: hidden;
+     -moz-backface-visibility: hidden;
+      -ms-backface-visibility: hidden;
+          backface-visibility: hidden;
+  will-change: transform;
+}
+
+[data-drag-overlay] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  overflow: hidden;
+  z-index: 10000;
+}
+
+[data-drag-helper] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0 !important;
+  overflow: hidden;
+  -webkit-backface-visibility: hidden;
+     -moz-backface-visibility: hidden;
+      -ms-backface-visibility: hidden;
+          backface-visibility: hidden;
+  box-shadow: 0 0 0 rgba(0,0,0,0.2);
+  will-change: transform;
+}

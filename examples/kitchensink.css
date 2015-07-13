@@ -24,46 +24,8 @@
 [data-drag-accepts=".orange"] { border: 1px solid #f2711c; }
 [data-drag-accepts=".yellow"] { border: 1px solid #fbbd08; }
 
-ol {
-  list-style: none;
-  border: 1px solid transparent;
-  margin: 8px;
-  padding: 0;
-  transition: border 250ms linear;
-  min-height: 42px;
-}
-[data-drag-canvas] {
-  border: 1px solid transparent;
-}
 
-[data-drag-disabled] {
-  opacity: 0.5;
-}
-
-ol.vertical {
-  max-height: 300px;
-  overflow-y: auto;
-  max-width: 500px;
-}
-ol.horizontal {
-  max-width: 500px;
-  overflow-y: hidden;
-  overflow-x: auto;
-}
-li, ol li {
-  list-style: none;
-  overfow: hidden;
-  background: #f2f3f5;
-  margin: 4px;
-  padding: 4px 8px;
-  box-sizing: border-box;
-}
-ol ol {
-  border-left: 1px solid #2185d0;
-}
-
-.dd-drag-hover {
-  position: relative;
+.dd-drag-over {
   border: 1px solid #35BDB2;
 }
 
@@ -73,4 +35,27 @@ body {
 
 .main.container {
   margin-top: 7em;
+}
+
+.slider {
+  width:30px;
+  height:30px;
+  background: #f2f3f5;
+  border-radius: 15px;
+}
+.slider.horizontal {
+  width: 200px;
+}
+.slider.vertical {
+  height: 200px;
+}
+
+.slider-handle {
+  width: 30px;
+  height: 30px;
+  background: black;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
