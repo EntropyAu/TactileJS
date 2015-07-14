@@ -18,7 +18,8 @@
 
 .dd-drag-over[data-drag-canvas],
 .dd-drag-over[data-drag-sortable] {
-  border: 1px solid #35BDB2;
+  /* disabled due to ios impact */
+  /*border: 1px solid #35BDB2;*/
 }
 
 
@@ -27,11 +28,20 @@ li, ol li {
   overfow: hidden;
   background: #f2f3f5;
   padding: 4px 8px;
-  margin: 4px 0;
   box-sizing: border-box;
 }
+ol[data-drag-sortable] {
+  border: 1px solid #EEE;
+}
+ol[data-drag-sortable] > li {
+  margin: 0 0 4px 0;
+}
+ol[data-drag-sortable] > li:last-of-type {
+  margin: 0 0 0 0;
+}
+
 ol[data-drag-sortable] ol[data-drag-sortable] {
-  border-left: 1px solid #2185d0;
+  border-left: 2px solid #2185d0;
 }
 
 ol[data-drag-sortable="vertical"] {
@@ -39,7 +49,7 @@ ol[data-drag-sortable="vertical"] {
 }
 
 ol[data-drag-sortable="vertical"] li {
-  margin: 4px 0;
+  margin: 0 0 4px 0;
 }
 
 ol[data-drag-sortable="horizontal"] {
@@ -48,11 +58,11 @@ ol[data-drag-sortable="horizontal"] {
 }
 
 ol[data-drag-sortable="horizontal"] li {
-  margin: 0 4px;
+  margin: 0 4px 0 0;
 }
 
 ol[data-drag-sortable="wrap"] {
-  overflow: auto;
+  overflow: hidden;
 }
 
 ol[data-drag-sortable="wrap"] li {

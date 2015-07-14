@@ -57,8 +57,16 @@ export default class Draggable {
     this.el.remove();
   }
 
+  clean() {
+    this.el.removeAttribute('data-drag-placeholder');
+    this.el.classList.remove('dd-drag-placeholder');
+    this.el.style.webkitTransform = '';
+    this.el.style.transform = '';
+    this.el.style.visibility = 'visible';
+  }
+
   restoreOriginal() {
-    dom.topLeft(this.el, this.originalOffset[1], this.originalOffset[0]);
+    dom.topLeft(this.el, this.originalOffset);
     this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
   }
 

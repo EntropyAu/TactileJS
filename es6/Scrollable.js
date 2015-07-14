@@ -2,7 +2,7 @@ import * as dom from "./lib/dom.js";
 
 // TODO: suspend placeholder updates while scrolling is in progress
 // TODO: slow down as you approach extremity
-// TODO: adjust scroll speed based on number of items
+// TODO: adjust scroll maxV based on number of items
 // TODO: lock scroll height
 // TODO: refactor: clearer scroll start, scroll finish
 // TODO: refactor: rename ancestors (it's inclusive of this generation)
@@ -12,95 +12,66 @@ export default class Scrollable {
 
   static get selector() { return '[data-drag-scrollable]'; }
 
-  constructor(drag) {
-    drag.scroll = {
-      el: null,
-      offset: null,
-      velocity: null,
-      requestId: null
-    }
+  static get closest(el) { return dom.closest(el, selector()); }
+
+  static scale(v, d, r) { return (v-d[0]) / (d[1]-d[0]) * (r[1]-r[0]) + r[0]; }
+
+  constructor(drag, el) {
+    this.el = el;
+    this.velocity = [0,0];
+    this.offset = [0,0];
+    this.direction = 'both';
+    this.options = drag.options;
+    this.initialize();
   }
 
-  autoScroll(drag) {
-    [drag.scroll.el, drag.scroll.velocity] = getScrollZoneUnderPointer(drag);
-    if (drag.scroll.el) startScroll(drag);
-    else cancelScroll(drag);
+  initialize() {
+    this.direction = scrollEl.getAttribute('data-drag-scrollable') || 'both';
+    this.bounds = this.el.getBoundingClientRect();
+  }
+
+
+  startScroll() {
+    this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
+    this.offset = [this.el.scrollLeft, this.el.scrollTop];
+  }
+
+
+  continueScroll() {
+    this.offset = [this.offset[0] + this.velocity[0],
+                   this.offset[1] + this.velocity[1]];
+
+    if (this.velocity[0] !== 0) this.el.scrollLeft = this.offset[0];
+    if (this.velocity[1] !== 0) this.el.scrollTop  = this.offset[1];
+    this.continueScroll();
   }
 
 
   cancelScroll(drag) {
-    if (!drag.scroll.requestId) return;
-    cancelAnimationFrame(drag.scroll.requestId);
-    drag.scroll.requestId = null;
-    drag.scroll.offset = null;
+    cancelAnimationFrame(this.requestId);
+    this.requestId = null;
   }
 
 
-  function startScroll(drag) {
-    if (drag.scroll.requestId) return;
-    const self = this;
-    drag.scroll.requestId = requestAnimationFrame(function() { self.continueScroll(drag) });
-    drag.scroll.offset = [drag.scroll.el.scrollLeft, drag.scroll.el.scrollTop];
-  }
+  velocityForPoint(xy) {
+    const sensitivity = this.options.scrollSensitivity;
+    const maxV = this.options.scrollSpeed;
+    const b = this.bounds;
 
-
-  function continueScroll(drag) {
-    if (!drag.scroll.el) return;
-
-    const scroll = drag.scroll;
-    scroll.offset = [scroll.offset[0] + scroll.velocity[0],
-                     scroll.offset[1] + scroll.velocity[1]];
-
-    if (scroll.velocity[0] !== 0) scroll.el.scrollLeft = scroll.offset[0];
-    if (scroll.velocity[1] !== 0) scroll.el.scrollTop  = scroll.offset[1];
-    autoScroll(drag);
-  }
-
-
-  function getScrollZoneUnderPointer(drag) {
-    var scrollEls = Array.prototype.reverse.apply(dom.ancestors(drag.target.containerEl, '[data-drag-scrollable]'));
-
-    for (let i = 0; i < scrollEls.length; i++) {
-      let scrollEl = scrollEls[i];
-      let rect = scrollEl.getBoundingClientRect();  // cache this
-      let dx = 0;
-      let dy = 0;
-      let scrollable = scrollEl.getAttribute('data-drag-scrollable')
-
-      if (scrollable !== 'vertical') {
-        let hSensitivity = Math.min(this.options.scroll.sensitivity, rect.width / 3);
-        if (drag.pointer[0] > rect.right - hSensitivity && dom.canScrollRight(scrollEl))
-          dx = calculateScrollSpeed(drag.pointer[0],
-                                   [ rect.right - hSensitivity, rect.right ],
-                                   [ 0, +this.options.scroll.speed ]);
-        if (drag.pointer[0] < rect.left + hSensitivity && dom.canScrollLeft(scrollEl))
-          dx = calculateScrollSpeed(drag.pointer[0],
-                                   [ rect.left + hSensitivity, rect.left ],
-                                   [ 0, -this.options.scroll.speed ]);
-      }
-
-      if (scrollable !== 'horizontal') {
-        let vSensitivity = Math.min(this.options.scroll.sensitivity, rect.height / 3);
-        if (drag.pointer[1] > rect.bottom - vSensitivity && dom.canScrollDown(scrollEl))
-          dy = calculateScrollSpeed(drag.pointer[1],
-                                   [ rect.bottom - vSensitivity, rect.bottom ],
-                                   [ 0, +this.options.scroll.speed ]);
-        if (drag.pointer[1] < rect.top + vSensitivity && dom.canScrollUp(scrollEl))
-          dy = calculateScrollSpeed(drag.pointer[1],
-                                   [ rect.top + vSensitivity, rect.top ],
-                                   [ 0, -this.options.scroll.speed ]);
-      }
-
-      if (dx !== 0 || dy !== 0) {
-        return [scrollEl, [dx, dy]];
-      }
+    let v = [0,0];
+    if (this.direction !== 'vertical') {
+      const hs = Math.min(sensitivity, b.width / 3);
+      if (xy[0] > b.right - hs && dom.canScrollRight(scrollEl)) v[0] = scale(xy[0], [b.right-hs, b.right], [0, +maxV]);
+      if (xy[0] < b.left + hs && dom.canScrollLeft(scrollEl)) v[0] = scale(xy[0], [b.left+hs, b.left], [0, -maxV]);
     }
-    return [null, null, null];
+
+    if (this.direction !== 'horizontal') {
+      const vs = Math.min(sensitivity, b.height / 3);
+      if (xy[1] > b.bottom - vs && dom.canScrollDown(scrollEl)) v[1] = scale(xy[1], [b.bottom-vs, b.bottom], [0, +maxV]);
+      if (xy[1] < b.top + vs && dom.canScrollUp(scrollEl)) v[1] = scale(xy[1], [b.top+vs, b.top], [0, -maxV]);
+    }
+    return v;
   }
 
 
-  function calculateScrollSpeed(pointer, domain, range) {
-    let a = (pointer - domain[0]) / (domain[1] - domain[0]);
-    return a * (range[1] - range[0]) + range[0];
-  }
 }

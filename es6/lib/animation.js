@@ -1,7 +1,7 @@
 export function animateDomMutation(el, mutationFunction, options) {
   const startIndex = options.startIndex || 0;
-  const endIndex   = Math.min(options.endIndex || el.children.length,
-                              startIndex + options.maxElementsToAnimate);
+  const endIndex   = Math.min(options.endIndex || el.children.length + 1,
+                              startIndex + options.elementLimit);
   const easing     = options.easing     || 'ease-in-out';
   const duration   = options.duration   || 400;
   let originalStyleHeight = null,
@@ -46,7 +46,6 @@ export function animateDomMutation(el, mutationFunction, options) {
 
 function animateSize(el, oldSize, newSize, originalStyleWidth, originalStyleHeight, duration, easing) {
   function onComplete() {
-    console.log("COMPLETE")
     el.style.width = originalStyleWidth;
     el.style.height = originalStyleHeight;
   }
@@ -96,7 +95,7 @@ function animateBetweenOffsets(el, oldOffsets, newOffsets, startIndex, endIndex,
 
 
 function childOffsetMap(el, startIndex, endIndex) {
-  const map = new Map();
+  const map = new WeakMap();
   for (let i = startIndex; i < endIndex; i++) {
     let childEl = el.children[i];
     if (childEl) map.set(childEl, [childEl.offsetLeft, childEl.offsetTop]);

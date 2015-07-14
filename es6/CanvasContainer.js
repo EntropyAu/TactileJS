@@ -14,8 +14,8 @@ export default class CanvasContainer extends Container {
   }
 
   initialize() {
-    let snapToGrid = this.el.getAttribute('data-drag-canvas-snap-to-grid') || '';
-    let cellSizeTokens = snapToGrid.split(',');
+    let grid = this.el.getAttribute('data-drag-grid') || '';
+    let cellSizeTokens = grid.split(',');
     this.grid = [parseInt(cellSizeTokens[0], 10) || 1,
                  parseInt(cellSizeTokens[1], 10) || parseInt(cellSizeTokens[0], 10) || 1];
   }
@@ -33,11 +33,13 @@ export default class CanvasContainer extends Container {
   }
 
 
-  insertPlaceholder() {
+  insertPlaceholder(originalEl) {
     if (!this.placeholder) {
-      this.placeholder = new Placeholder(this.drag);
+      this.placeholder = new Placeholder(this.drag, originalEl);
       dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
-      this.el.appendChild(this.placeholder.el);
+      if (!originalEl) {
+        this.el.appendChild(this.placeholder.el);
+      }
       this.placeholderSize = this.placeholder.size;
       this.placeholderScale = this.placeholder.scale;
     }
@@ -50,7 +52,15 @@ export default class CanvasContainer extends Container {
 
 
   removePlaceholder() {
-    this.placeholder.el.remove();
-    this.placeholder = null;
+    this.placeholder.el.style.visibility = 'hidden';
+  }
+
+
+  dropDraggable(draggable) {
+    this.placeholder.dispose();
+    draggable.clean();
+    dom.topLeft(draggable.el, this.offset);
+    this.el.appendChild(draggable.el);
+    console.log(draggable.el);
   }
 }

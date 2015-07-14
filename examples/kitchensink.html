@@ -18,16 +18,15 @@
     </div>
   </div>
 
-  <div class="ui main text container" style="margin-right:300px">
+  <script>
+  function items(count) {
+    var itemHtml = [];
+    for (var i = 0; i < count; i++) itemHtml.push("<li>Item " + (i+1) + "</li>");
+    document.write(itemHtml.join(''));
+  }
+  </script>
 
-  <!--
-    <div class="ui dividing right rail">
-      <h4 class="ui header">Menu</h4>
-      <div class="ui vertical following fluid accordion text menu">
-        <a class="item">Constraints</a>
-      </div>
-    </div>
-  -->
+  <div class="ui main text container" style="margin-right:300px">
 
     <h1>Kitchen Sink</h1>
     <div class="ui two column stackable grid">
@@ -38,19 +37,7 @@
           <ol data-drag-sortable
               data-drag-scrollable
               data-drag-accepts="*"
-              class="vertical">
-            <li>Item 1</li>
-            <li>Item 2</li>
-            <li>Item 3</li>
-            <li>Item 4</li>
-            <li>Item 5</li>
-            <li>Item 6</li>
-            <li>Item 7</li>
-            <li>Item 8</li>
-            <li>Item 9</li>
-            <li>Item 10</li>
-            <li>Item 11</li>
-          </ol>
+              class="vertical"><script>items(10)</script></ol>
 
 
           <h3>Sortable with Padding</h3>
@@ -58,19 +45,7 @@
               data-drag-scrollable
               data-drag-accepts="*"
               class="vertical"
-              style="padding:40px">
-            <li>Item 1</li>
-            <li>Item 2</li>
-            <li>Item 3</li>
-            <li>Item 4</li>
-            <li>Item 5</li>
-            <li>Item 6</li>
-            <li>Item 7</li>
-            <li>Item 8</li>
-            <li>Item 9</li>
-            <li>Item 10</li>
-            <li>Item 11</li>
-          </ol>
+              style="padding:40px"><script>items(10)</script></ol>
 
 
           <h3>Sortable with Accepts</h3>
@@ -99,22 +74,11 @@
           <ol data-drag-sortable
               data-drag-containment
               data-drag-scrollable
-              class="vertical">
-            <li>Item 1</li>
-            <li>Item 2</li>
-            <li>Item 3</li>
-            <li>Item 4</li>
-            <li>Item 5</li>
-            <li>Item 6</li>
-            <li>Item 7</li>
-            <li>Item 8</li>
-            <li>Item 9</li>
-            <li>Item 10</li>
-          </ol>
+              class="vertical"><script>items(10)</script></ol>
 
 
           <h3>Scaled and Translated Sortable</h3>
-          <div style="transform: scale(0.5) translateX(-50%) translateY(-50%)">
+          <div class="scale50">
             <h2>Odd item sizes</h2>
             <ol data-drag-sortable="vertical"
                 class="vertical">
@@ -144,68 +108,29 @@
           <h3>Horizontal Sortable</h3>
           <ol data-drag-sortable="horizontal"
               data-drag-scrollable
-              class="horizontal">
-            <li>Item 1
-            <li>Item 2
-            <li>Item 3
-            <li>Item 4
-            <li>Item 5
-          </ol>
+              class="horizontal"><script type="text/javascript">items(5)</script></ol>
 
           <h3>Wrapped Sortable</h3>
           <h5>Inline</h5>
           <span>Hello there
             <ol data-drag-sortable="wrap"
                 data-drag-scrollable
-                style="display: inline">
-              <li>Item 1
-              <li>Item 2
-            </ol>this is inline
+                style="display: inline"><script type="text/javascript">items(2)</script></ol>this is inline
           </span>
           <h5>Left Aligned</h5>
           <ol data-drag-sortable="wrap"
               data-drag-scrollable
-              style="text-align: left">
-            <li>Item 1
-            <li>Item 2
-            <li>Item 3
-            <li>Item 4
-            <li>Item 5
-            <li>Item 6
-            <li>Item 7
-            <li>Item 8
-            <li>Item 9
-          </ol>
+              style="text-align: left"><script type="text/javascript">items(8)</script></ol>
 
           <h5>Center Aligned</h5>
           <ol data-drag-sortable="wrap"
               data-drag-scrollable
-              style="text-align: center">
-            <li>Item 1
-            <li>Item 2
-            <li>Item 3
-            <li>Item 4
-            <li>Item 5
-            <li>Item 6
-            <li>Item 7
-            <li>Item 8
-            <li>Item 9
-          </ol>
+              style="text-align: center"><script type="text/javascript">items(8)</script></ol>
 
           <h5>Right Aligned</h5>
           <ol data-drag-sortable="wrap"
               data-drag-scrollable
-              style="text-align: right">
-            <li>Item 1
-            <li>Item 2
-            <li>Item 3
-            <li>Item 4
-            <li>Item 5
-            <li>Item 6
-            <li>Item 7
-            <li>Item 8
-            <li>Item 9
-          </ol>
+              style="text-align: right"><script type="text/javascript">items(8)</script></ol>
 
 
 
@@ -213,13 +138,7 @@
           <ol data-drag-sortable
               data-drag-scrollable
               data-drag-disabled
-              class="vertical">
-            <li>Item 1
-            <li>Item 2
-            <li>Item 3
-            <li>Item 4
-            <li>Item 5
-          </ol>
+              class="vertical"><script>items(5)</script></ol>
 
           <h3>Disabled Sortable Items</h3>
           <ol data-drag-sortable
@@ -266,8 +185,8 @@
               data-drag-scrollable
               style="max-height:250px; overflow:auto">
             <script>
-              for (var i = 0; i < 1000; i++)
-                document.write("<li>Item " + i + "</li>")
+              //for (var i = 0; i < 1000; i++)
+                //document.write("<li>Item " + i + "</li>")
             </script>
           </ol>
 
@@ -286,7 +205,7 @@
       <div class="column">
         <div class="ui-segment">
           <h3>Canvas</h3>
-          <div style="width:400px; height:400px; background:#EEE; position:relative" data-drag-canvas>
+          <div style="height:400px; background:#EEE; position:relative" data-drag-canvas data-drag-accepts="*">
             <div style="width:20px; height:20px; background:red; border-radius:10px; top: 20px; left: 40px;"
 
                  data-drag-scope=".slider"></div>
@@ -298,18 +217,14 @@
           <h4>Horizontal</h4>
           <div class="slider horizontal"
                data-drag-canvas
-               data-drag-snap-to-grid="20,20"
-               data-drag-snap-to-bounds
-               data-drag-container>
+               data-drag-capture>
             <div class="slider-handle"
                  data-drag-orientation="horizontal"></div>
           </div>
           <h4>Vertical</h4>
           <div class="slider vertical"
                data-drag-canvas
-               data-drag-snap-to-grid="20,20"
-               data-drag-snap-to-bounds
-               data-drag-container>
+               data-drag-capture>
             <div class="slider-handle"
                  data-drag-orientation="horizontal"></div>
           </div>

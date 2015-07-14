@@ -4,7 +4,7 @@
   z-index: 0;
 }
 
-[data-drag-sortable] > *,
+ol[data-drag-sortable] > li,
 [data-drag-canvas] > * {
   cursor:      default;
   cursor: -webkit-grab;
@@ -12,6 +12,28 @@
   cursor:     -ms-grab;
   cursor:         grab;
 }
+
+ol[data-drag-sortable] > li {
+  will-change: transform;
+}
+
+.not-ios ol[data-drag-sortable] > li {
+  -webkit-backface-visibility: hidden;
+     -moz-backface-visibility: hidden;
+      -ms-backface-visibility: hidden;
+          backface-visibility: hidden;
+  -webkit-transform: translateX(0) translateY(0) translateZ(0);
+     -moz-transform: translateX(0) translateY(0) translateZ(0);
+      -ms-transform: translateX(0) translateY(0) translateZ(0);
+          transform: translateX(0) translateY(0) translateZ(0);
+  -webkit-transition: -webkit-transform 100ms ease-in-out;
+     -moz-transition:    -moz-transform 100ms ease-in-out;
+      -ms-transition:     -ms-transform 100ms ease-in-out;
+          transition:         transform 100ms ease-in-out;
+  will-change: transform;
+}
+
+
 
 [data-drag-disabled],
 [data-drag-disabled] > * {
@@ -29,30 +51,22 @@
   min-height: 1px;
 }
 
-[data-drag-sortable] > * {
-  -webkit-backface-visibility: hidden;
-     -moz-backface-visibility: hidden;
-      -ms-backface-visibility: hidden;
-          backface-visibility: hidden;
-  will-change: transform;
-}
-
-[data-drag-scrollable] {
+ol[data-drag-scrollable] {
   -webkit-overflow-scrolling: scroll;
   position: relative;
 }
 
-[data-drag-scrollable='both'] {
+ol[data-drag-scrollable='both'] {
   overflow-x: auto;
   overflow-y: auto;
 }
 
-[data-drag-scrollable='horizontal'] {
+ol[data-drag-scrollable='horizontal'] {
   overflow-x: auto;
   overflow-y: hidden;
 }
 
-[data-drag-scrollable='vertical'] {
+ol[data-drag-scrollable='vertical'] {
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -78,15 +92,15 @@
   white-space: nowrap;
 }
 
-[data-drag-sortable='horizontal'] > * {
+ol[data-drag-sortable='horizontal'] > li {
   display: inline-block;
 }
 
-[data-drag-sortable='vertical'] {
+ol[data-drag-sortable='vertical'] {
   overflow-x: hidden;
 }
 
-[data-drag-sortable='wrap'] > * {
+ol[data-drag-sortable='wrap'] > li {
   overflow-x: hidden;
   display: inline-block;
   white-space: wrap;
@@ -120,9 +134,9 @@ body[data-drag-in-progress] [data-drag-canvas] * {
           pointer-events: none !important;
 }
 
-body[data-drag-in-progress] [data-drag-sortable],
+body[data-drag-in-progress] ol[data-drag-sortable],
 body[data-drag-in-progress] [data-drag-droppable],
-body[data-drag-in-progress] [data-drag-sortable] > *,
+body[data-drag-in-progress] ol[data-drag-sortable] > li,
 body[data-drag-in-progress] [data-drag-droppable] > *,
 body[data-drag-in-progress] [data-drag-canvas] {
   -webkit-pointer-events: all !important;
@@ -130,20 +144,19 @@ body[data-drag-in-progress] [data-drag-canvas] {
       -ms-pointer-events: all !important;
           pointer-events: all !important;
 }
-body[data-drag-in-progress] [data-drag-sortable] {
+body[data-drag-in-progress] ol[data-drag-sortable] {
   -webkit-user-select: all;
      -moz-user-select: all;
       -ms-user-select: all;
           user-select: all;
 }
-body[data-drag-in-progress] [data-drag-sortable] > * > * {
+body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
   -webkit-user-select: none;
      -moz-user-select: none;
       -ms-user-select: none;
           user-select: none;
 }
 [data-drag-placeholder] {
-  position: relative;
   z-index: -1;
   opacity: 0.1;
   box-shadow: none !important;
@@ -172,12 +185,31 @@ body[data-drag-in-progress] [data-drag-sortable] > * > * {
   position: absolute;
   top: 0;
   left: 0;
-  margin: 0 !important;
+  margin: 0;
   overflow: hidden;
   -webkit-backface-visibility: hidden;
      -moz-backface-visibility: hidden;
       -ms-backface-visibility: hidden;
           backface-visibility: hidden;
-  box-shadow: 0 0 0 rgba(0,0,0,0.2);
+  box-shadow: 0 0 16px rgba(0,0,0,0.2);
   will-change: transform;
 }
+
+.ios [data-drag-helper] {
+  /* IMPORTANT - transition smooths on iOS but not in Chrome */
+  -webkit-transition: -webkit-transform 10ms linear;
+     -moz-transition:    -moz-transform 10ms linear;
+      -ms-transition:     -ms-transform 10ms linear;
+          transition:         transform 10ms linear;
+}
+
+[data-drag-helper],
+[data-drag-helper] *
+body[data-drag-in-progress] [data-drag-helper],
+body[data-drag-in-progress] [data-drag-helper] * {
+  -webkit-pointer-events: none !important;
+     -moz-pointer-events: none !important;
+      -ms-pointer-events: none !important;
+          pointer-events: none !important;
+}
+

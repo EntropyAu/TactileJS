@@ -1,6 +1,8 @@
 import Container from './Container.js';
 import ContainerFactory from './ContainerFactory.js';
 import Helper from './Helper.js';
+import Placeholder from './Placeholder.js';
+import ScrollManager from './ScrollManager.js';
 import * as events from './lib/events.js';
 import * as math from './lib/math.js';
 import * as dom from './lib/dom.js';
@@ -15,7 +17,7 @@ export default class Drag {
 
     this.draggable = draggable;
     this.target = null;
-    this.source = null;
+    this.knownTargets = new WeakMap();
     this.revertOnCancel = true;
 
     this.initialize();
@@ -24,36 +26,27 @@ export default class Drag {
 
   initialize() {
     this.helper = new Helper(this);
-    this.pointerEl = dom.elementFromPoint(this.pointerXY);
-    this.draggable.removeOriginal();
     this.updateConstrainedPosition();
-    this.helper.setPosition(this.constrainedXY);
-    this.updateTargetContainer();
-    if (this.target) {
-      this.target.setPointerXY(this.constrainedXY);
-      this.target.updatePlaceholder();
-    }
+    this.pointerEl = dom.elementFromPoint(this.pointerXY);
+    this.updateTargetContainer(true);
     events.raiseEvent(this.draggable.el, 'dragstart', this)
   }
 
 
   move(pointerXY) {
     this.pointerXY = pointerXY;
-
     this.updateConstrainedPosition();
-    this.helper.setPosition(this.constrainedXY);
 
-    function asyncTargetUpdate() {
-      this.pointerEl = dom.elementFromPoint(pointerXY);
-      this.updateTargetContainer();
-      if (this.target) {
-        this.target.setPointerXY(this.constrainedXY);
-        this.target.updatePlaceholder();
-      }
-      events.raiseEvent(this.draggable.el, 'drag', this);
+    this.pointerEl = dom.elementFromPoint(pointerXY);
+    this.updateTargetContainer();
+    if (this.target) {
+      this.target.setPointerXY(this.constrainedXY);
     }
-    setTimeout(asyncTargetUpdate.bind(this), 0);
-    //scroll.autoScroll(drag);
+    // updates
+    this.helper.setPosition(this.constrainedXY);
+    events.raiseEvent(this.draggable.el, 'drag', this);
+
+    ScrollManager.update(this.pointerXY, this.pointerEl);
   }
 
 
@@ -66,9 +59,10 @@ export default class Drag {
 
   drop() {
     events.raiseEvent(this.draggable.el, 'drop', this)
-
     let placeholderRect = this.target.placeholder.el.getBoundingClientRect();
-    this.helper.animateToRect(placeholderRect, function() {});
+    this.helper.animateToRect(placeholderRect, function() {
+      this.target.dropDraggable(this.draggable);
+    }.bind(this));
   }
 
   cancel() {
@@ -76,7 +70,9 @@ export default class Drag {
   }
 
   dispose() {
-    if (this.target) this.target.dragLeave();
+    if (this.target) {
+      this.target.el.classList.remove('dd-drag-over');
+    }
 
     this.helper.dispose();
     this.helper = null;
@@ -93,7 +89,7 @@ export default class Drag {
 
 
   updateConstrainedPosition() {
-    if (this.target && this.target.contains(this.draggable)) {
+    if (this.target && this.target.captures(this.draggable)) {
       let constrained = [this.pointerXY[0] - this.helper.gripOffset[0] * this.helper.size[0],
                          this.pointerXY[1] - this.helper.gripOffset[1] * this.helper.size[1]];
       let rect = this.target.el.getBoundingClientRect();
@@ -106,27 +102,41 @@ export default class Drag {
     }
   }
 
-  updateTargetContainer() {
-    let containerEl = ContainerFactory.closest(this.pointerEl);
+  updateTargetContainer(removeOriginal = false) {
+    if (this.target && this.target.captures(this.draggable)) return;
+    let placeholderEl = Placeholder.closest(this.pointerEl);
+    let containerEl = ContainerFactory.closest(placeholderEl ? placeholderEl.parentElement : this.pointerEl);
     if (containerEl === (this.target ? this.target.el : null)) return;
-    let container = ContainerFactory.makeContainer(containerEl, this);
 
     if (this.target) this._leaveTarget(this.target);
-    if (container && container.accepts(this.draggable)) this._enterTarget(container);
+
+    if (containerEl) {
+      let container = this.knownTargets.get(containerEl);
+      if (!container) {
+        container = ContainerFactory.makeContainer(containerEl, this);
+        this.knownTargets.set(containerEl, container);
+      }
+      if (container.accepts(this.draggable)) this._enterTarget(container, removeOriginal);
+    }
   }
 
-  _leaveTarget(container) {
-    container.dragLeave();
-    events.raiseEvent(container.el, 'dragleave', this);
-    this.target = null;
-  }
-
-  _enterTarget(container) {
-    container.dragEnter();
+  _enterTarget(container, removeOriginal) {
+    console.log("_enterTarget", container);
+    container.updatePosition(this.constrainedXY)
+    container.insertPlaceholder(removeOriginal ? this.draggable.el : null);
     events.raiseEvent(container.el, 'dragenter', this);
     this.helper.setSizeAndScale(
       container.placeholderSize,
       container.placeholderScale);
+    container.el.classList.add('dd-drag-over');
     this.target = container;
+  }
+
+  _leaveTarget(container) {
+    console.log("_leaveTarget", container);
+    container.removePlaceholder();
+    events.raiseEvent(container.el, 'dragleave', this);
+    container.el.classList.remove('dd-drag-over');
+    this.target = null;
   }
 }

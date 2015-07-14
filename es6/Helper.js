@@ -7,7 +7,9 @@ export default class Helper {
     this.el = null;
     this.overlayEl = null;
     this.gripOffset = null;
-    this.size = null;
+    this.size = [0,0];
+    this.scale = [1,1];
+    this.position = [0,0];
     this.initialize();
   }
 
@@ -34,7 +36,7 @@ export default class Helper {
 
     this.el.focus()
 
-    if (window['Velocity']) {
+    if (this.drag.options.animatePickup && window['Velocity']) {
       Velocity(this.el, {
         rotateZ: -1,
         boxShadowBlur: this.drag.options.helper.shadowSize
@@ -47,20 +49,9 @@ export default class Helper {
 
 
   setPosition(positionXY) {
-    if (window['Velocity']) {
-      Velocity(this.el, {
-        translateX: positionXY[0],
-        translateY: positionXY[1],
-        translateZ: 0
-      }, {
-        duration: 0,
-        queue: false
-      });
-    } else {
-      dom.translate(this.el, positionXY[0], positionXY[1]);
-    }
+    this.position = positionXY;
+    this.updateTransform();
   }
-
 
 
   setSizeAndScale(size, scale, animate = true) {
@@ -70,8 +61,9 @@ export default class Helper {
       && this.scale[0] === scale[0]
       && this.scale[1] === scale[1]) return;
 
-    if (window['Velocity']) {
-      const velocityOptions = animate && this.drag.options.animation.animateResize
+    /*
+    if (animate && window['Velocity']) {
+      const velocityOptions = this.drag.options.animation.animateResize
                             ? {
                                 duration: this.drag.options.animation.duration,
                                 easing: 'linear',
@@ -92,18 +84,34 @@ export default class Helper {
         scaleY: scale[1]
       }, velocityOptions);
     } else {
+      */
       this.el.style.width = size[0] + 'px';
       this.el.style.height = size[1] + 'px';
       this.el.style.left = (-this.gripOffset[0] * size[0]) + 'px';
       this.el.style.top = (-this.gripOffset[1] * size[1]) + 'px';
-      dom.transformOrigin(this.el, [(-this.gripOffset[0] * size[0]), (-this.gripOffset[1] * size[1])]);
-    }
+      dom.transformOrigin(this.el, [-this.gripOffset[0], -this.gripOffset[1]]);
+      this.scale = scale;
+      this.updateTransform();
+    //}
     this.size = size;
+  }
+
+
+  updateTransform() {
+    dom.transform(this.el, {
+      translateX: this.position[0],
+      translateY: this.position[1],
+      translateZ: 0,
+      scaleX: this.scale[0],
+      scaleY: this.scale[1],
+      rotateZ: -1
+    });
   }
 
 
 
   animateToRect(rect, callback) {
+    return callback();
     let targetProps = {
       translateX: [rect.left, 'ease-out'],
       translateY: [rect.top, 'ease-out'],

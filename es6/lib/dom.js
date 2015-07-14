@@ -1,5 +1,7 @@
 // selectors
 
+
+
 export function indexOf(el) {
   return Array.prototype.indexOf.call(el.parentElement.children, el);
 }
@@ -39,19 +41,34 @@ setTimeout(function() {
   if (document.body.style.mozTransform !== undefined) vendorTransform = 'mozTransform';
   if (document.body.style.msTransform !== undefined) vendorTransform = 'msTransform';
   if (document.body.style.transform !== undefined) vendorTransform = 'transform';
+  var iOS = (navigator.userAgent.match(/iPad|iPhone|iPod/g) ? true : false );
+  document.body.classList.toggle('ios', iOS);
+  document.body.classList.toggle('not-ios', !iOS);
 });
 
 export function translate(el, x, y) {
   el.style[vendorTransform] = `translateX(${x}px) translateY(${y}px) translateZ(0)`;
 }
 
-export function topLeft(el, t, l) {
+export function transform(el, options) {
+  let transform = [];
+  if (options.translateX) transform.push(`translateX(${options.translateX}px)`);
+  if (options.translateY) transform.push(`translateY(${options.translateY}px)`);
+  if (options.translateZ) transform.push(`translateZ(${options.translateZ}px)`);
+  if (options.scaleX) transform.push(`scaleX(${options.scaleX})`);
+  if (options.scaleY) transform.push(`scaleY(${options.scaleY})`);
+  if (options.rotateZ) transform.push(`rotateZ(${options.rotateZ}deg)`);
+  el.style[vendorTransform] = transform.join(' ');
+}
+
+export function topLeft(el, [l, t]) {
   el.style.top = `${t}px`;
   el.style.left = `${l}px`;
 }
 
 export function transformOrigin(el, [t, l]) {
-  el.style.transformOrigin = `${l}px ${t}px`;
+  el.style.transformOrigin = `${l}% ${t}%`;
+  el.style.webkitTransformOrigin = `${l}% ${t}%`;
 }
 
 export function elementFromPoint(xy) {
