@@ -1,6 +1,5 @@
 import Drag from './Drag.js';
 import Draggable from './Draggable.js';
-import ScrollManager from './ScrollManager.js';
 import * as dom from './lib/dom.js';
 import * as events from './lib/events.js';
 import * as math from './lib/math.js';
@@ -8,24 +7,17 @@ import * as math from './lib/math.js';
 
 const defaultOptions = {
   cancel: 'input,textarea,a,button,select',
-  helper: {
-    resize: true,
-    shadowSize: 14
-  },
+  helperResize: true,
   animatePickup: false,
-  pickup: {
-    delay: 0,
-    distance: 0
-  },
+  pickupDelay: 0,
+  pickupDistance: 0,
   css: {
     placeholder: 'dd-drag-placeholder',
     containerOver: 'dd-drag-hover',
   },
-  scroll: {
-    delay: 1000,
-    sensitivity: 40,
-    speed: 2
-  },
+  scrollDelay: 500,
+  scrollSensitivity: 50,
+  scrollSpeed: 0.5,
   animation: false
   /*{
     duration: 250,
@@ -88,7 +80,7 @@ export default class DragManager {
 
     dom.clearSelection();
 
-    if (this.options.pickup.delay === null || this.options.pickup.delay === 0) {
+    if (this.options.pickupDelay === null || this.options.pickupDelay === 0) {
       events.cancelEvent(e);
       document.body.setAttribute('data-drag-in-progress', '');
       this.drags[pointerId] = new Drag(draggable, pointerXY, defaultOptions);
@@ -99,7 +91,7 @@ export default class DragManager {
       this.pendingDrags[pointerId] = {
         draggable: draggable,
         pointerXY: pointerXY,
-        timerId: setTimeout(onPickupTimeoutHandler.bind(this), this.options.pickup.delay)
+        timerId: setTimeout(onPickupTimeoutHandler.bind(this), this.options.pickupDelay)
       };
     }
     this.bindPointerEventsForDragging(e.target)
@@ -128,7 +120,7 @@ export default class DragManager {
     if (this.pendingDrags[pointerId]) {
       let pendingDrag = this.pendingDrags[pointerId];
       // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
-      if (this.options.pickup.distance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickup.distance)
+      if (this.options.pickupDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickupDistance)
       clearTimeout(pendingDrag.timerId);
       document.body.setAttribute('data-drag-in-progress', '');
       this.drags[pointerId] = new Drag(pendingDrag.draggable, pendingDrag.pointerXY, this.options);

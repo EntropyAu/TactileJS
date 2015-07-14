@@ -62,10 +62,6 @@
 
 	var _DraggableJs2 = _interopRequireDefault(_DraggableJs);
 
-	var _ScrollManagerJs = __webpack_require__(16);
-
-	var _ScrollManagerJs2 = _interopRequireDefault(_ScrollManagerJs);
-
 	var _libDomJs = __webpack_require__(2);
 
 	var dom = _interopRequireWildcard(_libDomJs);
@@ -80,24 +76,17 @@
 
 	var defaultOptions = {
 	  cancel: 'input,textarea,a,button,select',
-	  helper: {
-	    resize: true,
-	    shadowSize: 14
-	  },
+	  helperResize: true,
 	  animatePickup: false,
-	  pickup: {
-	    delay: 0,
-	    distance: 0
-	  },
+	  pickupDelay: 0,
+	  pickupDistance: 0,
 	  css: {
 	    placeholder: 'dd-drag-placeholder',
 	    containerOver: 'dd-drag-hover'
 	  },
-	  scroll: {
-	    delay: 1000,
-	    sensitivity: 40,
-	    speed: 2
-	  },
+	  scrollDelay: 500,
+	  scrollSensitivity: 50,
+	  scrollSpeed: 0.5,
 	  animation: false
 	  /*{
 	    duration: 250,
@@ -160,7 +149,7 @@
 
 	    dom.clearSelection();
 
-	    if (this.options.pickup.delay === null || this.options.pickup.delay === 0) {
+	    if (this.options.pickupDelay === null || this.options.pickupDelay === 0) {
 	      events.cancelEvent(e);
 	      document.body.setAttribute('data-drag-in-progress', '');
 	      this.drags[pointerId] = new _DragJs2['default'](draggable, pointerXY, defaultOptions);
@@ -171,7 +160,7 @@
 	      this.pendingDrags[pointerId] = {
 	        draggable: draggable,
 	        pointerXY: pointerXY,
-	        timerId: setTimeout(onPickupTimeoutHandler.bind(this), this.options.pickup.delay)
+	        timerId: setTimeout(onPickupTimeoutHandler.bind(this), this.options.pickupDelay)
 	      };
 	    }
 	    this.bindPointerEventsForDragging(e.target);
@@ -198,7 +187,7 @@
 	    if (this.pendingDrags[pointerId]) {
 	      var pendingDrag = this.pendingDrags[pointerId];
 	      // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
-	      if (this.options.pickup.distance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickup.distance) clearTimeout(pendingDrag.timerId);
+	      if (this.options.pickupDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickupDistance) clearTimeout(pendingDrag.timerId);
 	      document.body.setAttribute('data-drag-in-progress', '');
 	      this.drags[pointerId] = new _DragJs2['default'](pendingDrag.draggable, pendingDrag.pointerXY, this.options);
 	      delete this.pendingDrags[pointerId];
@@ -260,9 +249,9 @@
 
 	var _PlaceholderJs2 = _interopRequireDefault(_PlaceholderJs);
 
-	var _ScrollManagerJs = __webpack_require__(16);
+	var _ScrollableJs = __webpack_require__(17);
 
-	var _ScrollManagerJs2 = _interopRequireDefault(_ScrollManagerJs);
+	var _ScrollableJs2 = _interopRequireDefault(_ScrollableJs);
 
 	var _libEventsJs = __webpack_require__(14);
 
@@ -306,20 +295,32 @@
 	    this.pointerXY = pointerXY;
 	    this.updateConstrainedPosition();
 
-	    this.pointerEl = dom.elementFromPoint(pointerXY);
-	    this.updateTargetContainer();
-	    if (this.target) {
-	      this.target.setPointerXY(this.constrainedXY);
+	    if (!this.scroller || !this.scroller.updateVelocity(this.pointerXY)) {
+	      this.pointerEl = dom.elementFromPoint(pointerXY);
+	      this.updateTargetContainer();
+	      if (this.target) this.target.setPointerXY(this.constrainedXY);
+	      events.raiseEvent(this.draggable.el, 'drag', this);
+	      this.updateScroll();
 	    }
-	    // updates
 	    this.helper.setPosition(this.constrainedXY);
-	    events.raiseEvent(this.draggable.el, 'drag', this);
+	  };
 
-	    _ScrollManagerJs2['default'].update(this.pointerXY, this.pointerEl);
+	  Drag.prototype.updateScroll = function updateScroll() {
+	    this.scroller = false;
+	    var scrollEls = dom.ancestors(this.pointerEl, _ScrollableJs2['default'].selector);
+	    scrollEls.every((function (scrollEl) {
+	      var scrollable = new _ScrollableJs2['default'](this, scrollEl);
+	      if (scrollable.tryScroll(this.pointerXY)) {
+	        this.scroller = scrollable;
+	        return false;
+	      }
+	      return true;
+	    }).bind(this));
 	  };
 
 	  Drag.prototype.end = function end() {
 	    if (this.target) this.drop();else this.cancel();
+	    if (this.scroller) this.scroller.cancelScroll();
 	    events.raiseEvent(this.draggable.el, 'dragend', this);
 	    this.dispose();
 	  };
@@ -389,17 +390,17 @@
 	  };
 
 	  Drag.prototype._enterTarget = function _enterTarget(container, removeOriginal) {
-	    console.log('_enterTarget', container);
 	    container.updatePosition(this.constrainedXY);
 	    container.insertPlaceholder(removeOriginal ? this.draggable.el : null);
 	    events.raiseEvent(container.el, 'dragenter', this);
-	    this.helper.setSizeAndScale(container.placeholderSize, container.placeholderScale);
+	    if (this.options.helperResize) {
+	      this.helper.setSizeAndScale(container.placeholderSize, container.placeholderScale);
+	    }
 	    container.el.classList.add('dd-drag-over');
 	    this.target = container;
 	  };
 
 	  Drag.prototype._leaveTarget = function _leaveTarget(container) {
-	    console.log('_leaveTarget', container);
 	    container.removePlaceholder();
 	    events.raiseEvent(container.el, 'dragleave', this);
 	    container.el.classList.remove('dd-drag-over');
@@ -1043,7 +1044,6 @@
 	    var rect = this.el.getBoundingClientRect();
 	    var l = constrainedXY[0] - rect.left + this.el.scrollLeft - this.drag.helper.gripOffset[0] * this.drag.helper.size[0],
 	        t = constrainedXY[1] - rect.top + this.el.scrollTop - this.drag.helper.gripOffset[1] * this.drag.helper.size[1];
-
 	    t = Math.round((t - rect.top) / this.grid[1]) * this.grid[1] + rect.top;
 	    l = Math.round((l - rect.left) / this.grid[0]) * this.grid[0] + rect.left;
 	    this.offset = [l, t];
@@ -1074,7 +1074,6 @@
 	    draggable.clean();
 	    dom.topLeft(draggable.el, this.offset);
 	    this.el.appendChild(draggable.el);
-	    console.log(draggable.el);
 	  };
 
 	  _createClass(CanvasContainer, null, [{
@@ -1209,7 +1208,7 @@
 	    }
 
 	    if (closestEl) {
-	      if (closestEl === this.placeholder.el) return;
+	      if (this.placeholder && closestEl === this.placeholder.el) return;
 	      this.index = this.childEls.indexOf(closestEl);
 	      var closestRect = closestEl.getBoundingClientRect();
 
@@ -1561,41 +1560,135 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 16 */
-/***/ function(module, exports) {
+/* 16 */,
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 
 	exports.__esModule = true;
 
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-	var ScrollManager = (function () {
-	  function ScrollManager() {
-	    _classCallCheck(this, ScrollManager);
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
-	    this.scrollable = null;
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _libDomJs = __webpack_require__(2);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	// TODO: slow down as you approach extremity
+	// TODO: adjust scroll maxV based on number of items
+	// TODO: refactor: clearer scroll start, scroll finish
+	// TODO: refactor: rename ancestors (it's inclusive of this generation)
+	// TODO: trigger placeholder update when scroll stops
+
+	var Scrollable = (function () {
+	  function Scrollable(drag, el) {
+	    _classCallCheck(this, Scrollable);
+
+	    this.el = el;
+	    this.velocity = [0, 0];
+	    this.offset = [0, 0];
+	    this.direction = 'both';
+	    this.lastUpdate = null;
+	    this.options = drag.options;
+	    this.initialize();
 	  }
 
-	  ScrollManager.prototype.update = function update(pointerXY, pointerEl) {
-	    var scrollableEl = Scrollable.closest(pointerEl);
+	  Scrollable.closest = function closest(el) {
+	    return dom.closest(el, this.selector);
 	  };
 
-	  ScrollManager.prototype.getClosestScrollZone = function getClosestScrollZone(pointerXY, pointerEl) {
-	    var scrollEls = Array.prototype.reverse.apply(dom.ancestors(drag.target.containerEl, Scrollable.selector()));
-	    scrollEls.forEach(function (scrollEl) {
-	      var scrollable = new Scrollable(scrollEl);
-	      var velocity = scrollable.velocityForPoint(pointerXY);
-	      if (velocity[0] !== 0 || velocity[1] !== 0) return false;
+	  Scrollable.scale = function scale(v, d, r) {
+	    return (v - d[0]) / (d[1] - d[0]) * (r[1] - r[0]) + r[0];
+	  };
+
+	  Scrollable.prototype.initialize = function initialize() {
+	    this.direction = this.el.getAttribute('data-drag-scrollable') || 'both';
+	    if (this.el.tagName === 'BODY') {
+	      this.bounds = {
+	        left: 0,
+	        top: 0,
+	        width: document.documentElement.clientWidth,
+	        height: document.documentElement.clientHeight,
+	        right: document.documentElement.clientWidth,
+	        bottom: document.documentElement.clientHeight
+	      };
+	    } else {
+	      this.bounds = this.el.getBoundingClientRect();
+	    }
+	  };
+
+	  Scrollable.prototype.tryScroll = function tryScroll(pointerXY) {
+	    this.updateVelocity(pointerXY);
+	    if (this.velocity[0] !== 0 || this.velocity[1] !== 0) {
+	      this.startScroll();
 	      return true;
-	    });
+	    }
+	    return false;
 	  };
 
-	  return ScrollManager;
+	  Scrollable.prototype.startScroll = function startScroll() {
+	    this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
+	    this.offset = [this.el.scrollLeft, this.el.scrollTop];
+	  };
+
+	  Scrollable.prototype.continueScroll = function continueScroll() {
+	    var currentUpdate = new Date();
+	    var elapsedTimeMs = this.lastUpdate ? currentUpdate - this.lastUpdate : 16;
+	    this.requestId = null;
+	    this.offset = [this.offset[0] + this.velocity[0] * elapsedTimeMs, this.offset[1] + this.velocity[1] * elapsedTimeMs];
+
+	    if (this.velocity[0] !== 0) this.el.scrollLeft = this.offset[0];
+	    if (this.velocity[1] !== 0) this.el.scrollTop = this.offset[1];
+	    if (this.velocity[0] !== 0 || this.velocity[1] !== 0) this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
+	    this.lastUpdate = currentUpdate;
+	  };
+
+	  Scrollable.prototype.cancelScroll = function cancelScroll() {
+	    cancelAnimationFrame(this.requestId);
+	    this.requestId = null;
+	    this.lastUpdate = null;
+	  };
+
+	  Scrollable.prototype.updateVelocity = function updateVelocity(xy) {
+	    var sensitivity = this.options.scrollSensitivity;
+	    var maxV = this.options.scrollSpeed;
+	    var b = this.bounds;
+
+	    var v = [0, 0];
+	    if (xy[0] >= this.bounds.left && xy[0] <= this.bounds.right && xy[1] >= this.bounds.top && xy[1] <= this.bounds.bottom) {
+
+	      if (this.direction !== 'vertical') {
+	        var hs = Math.min(sensitivity, b.width / 3);
+	        if (xy[0] > b.right - hs && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right - hs, b.right], [0, +maxV]);
+	        if (xy[0] < b.left + hs && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left + hs, b.left], [0, -maxV]);
+	      }
+
+	      if (this.direction !== 'horizontal') {
+	        var vs = Math.min(sensitivity, b.height / 3);
+	        if (xy[1] > b.bottom - vs && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom - vs, b.bottom], [0, +maxV]);
+	        if (xy[1] < b.top + vs && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top + vs, b.top], [0, -maxV]);
+	      }
+	    }
+	    this.velocity = v;
+	    return this.velocity[0] !== 0 || this.velocity[1] !== 0;
+	  };
+
+	  _createClass(Scrollable, null, [{
+	    key: 'selector',
+	    get: function get() {
+	      return '[data-drag-scrollable]';
+	    }
+	  }]);
+
+	  return Scrollable;
 	})();
 
-	exports["default"] = new ScrollManager();
-	module.exports = exports["default"];
+	exports['default'] = Scrollable;
+	module.exports = exports['default'];
 
 /***/ }
 /******/ ]);

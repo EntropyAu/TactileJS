@@ -37,7 +37,13 @@
           <ol data-drag-sortable
               data-drag-scrollable
               data-drag-accepts="*"
-              class="vertical"><script>items(10)</script></ol>
+              style="max-height:200px"
+              class="vertical"><script>items(40)</script></ol>
+
+          <h3>Horizontal Sortable</h3>
+          <ol data-drag-sortable="horizontal"
+              data-drag-scrollable
+              class="horizontal"><script type="text/javascript">items(10)</script></ol>
 
 
           <h3>Sortable with Padding</h3>
@@ -58,15 +64,9 @@
             <li class='lime'>Item 4
             <li class='green'>Item 5
           </ol>
-          <ol data-drag-sortable
-              data-drag-accepts=".red">
-          </ol>
-          <ol data-drag-sortable
-              data-drag-accepts=".orange">
-          </ol>
-          <ol data-drag-sortable
-              data-drag-accepts=".yellow">
-          </ol>
+          <ol data-drag-sortable data-drag-accepts=".red"></ol>
+          <ol data-drag-sortable data-drag-accepts=".orange"></ol>
+          <ol data-drag-sortable data-drag-accepts=".yellow"></ol>
 
 
 
@@ -105,11 +105,6 @@
           </ol>
 
 
-          <h3>Horizontal Sortable</h3>
-          <ol data-drag-sortable="horizontal"
-              data-drag-scrollable
-              class="horizontal"><script type="text/javascript">items(5)</script></ol>
-
           <h3>Wrapped Sortable</h3>
           <h5>Inline</h5>
           <span>Hello there
@@ -140,6 +135,7 @@
               data-drag-disabled
               class="vertical"><script>items(5)</script></ol>
 
+
           <h3>Disabled Sortable Items</h3>
           <ol data-drag-sortable
               data-drag-scrollable
@@ -152,9 +148,9 @@
           </ol>
 
           <h3>Disabled Canvas</h3>
-          <div data-drag-canvas
-               data-drag-disabled>
-          </div>
+          <ul data-drag-canvas
+              data-drag-disabled>
+          </ul>
 
 
 
@@ -185,8 +181,8 @@
               data-drag-scrollable
               style="max-height:250px; overflow:auto">
             <script>
-              //for (var i = 0; i < 1000; i++)
-                //document.write("<li>Item " + i + "</li>")
+              for (var i = 0; i < 1000; i++)
+                document.write("<li>Item " + i + "</li>")
             </script>
           </ol>
 
@@ -205,29 +201,27 @@
       <div class="column">
         <div class="ui-segment">
           <h3>Canvas</h3>
-          <div style="height:400px; background:#EEE; position:relative" data-drag-canvas data-drag-accepts="*">
-            <div style="width:20px; height:20px; background:red; border-radius:10px; top: 20px; left: 40px;"
-
-                 data-drag-scope=".slider"></div>
-            <div style="width:20px; height:20px; background:red; border-radius:10px; top: 80px; left: 80px;"
-
-                 data-drag-scope=".slider"></div>
-          </div>
+          <ul style="height:400px; background:#EEE; position:relative" data-drag-canvas data-drag-accepts="*">
+            <li style="width:20px; height:20px; background:red; border-radius:10px; top: 20px; left: 40px;"
+                data-drag-scope=".slider"></li>
+            <li style="width:20px; height:20px; background:red; border-radius:10px; top: 80px; left: 80px;"
+                data-drag-scope=".slider"></li>
+          </ul>
           <h3>Slider</h3>
           <h4>Horizontal</h4>
-          <div class="slider horizontal"
-               data-drag-canvas
-               data-drag-capture>
-            <div class="slider-handle"
-                 data-drag-orientation="horizontal"></div>
-          </div>
+          <ul class="slider horizontal"
+              data-drag-canvas
+              data-drag-capture>
+            <li class="slider-handle"
+                data-drag-orientation="horizontal"></li>
+          </ul>
           <h4>Vertical</h4>
-          <div class="slider vertical"
-               data-drag-canvas
-               data-drag-capture>
-            <div class="slider-handle"
-                 data-drag-orientation="horizontal"></div>
-          </div>
+          <ul class="slider vertical"
+              data-drag-canvas
+              data-drag-capture>
+            <li class="slider-handle"
+                data-drag-orientation="horizontal"></li>
+          </ul>
 
         </div>
       </div>

@@ -2,7 +2,7 @@ import Container from './Container.js';
 import ContainerFactory from './ContainerFactory.js';
 import Helper from './Helper.js';
 import Placeholder from './Placeholder.js';
-import ScrollManager from './ScrollManager.js';
+import Scrollable from './Scrollable.js';
 import * as events from './lib/events.js';
 import * as math from './lib/math.js';
 import * as dom from './lib/dom.js';
@@ -37,21 +37,35 @@ export default class Drag {
     this.pointerXY = pointerXY;
     this.updateConstrainedPosition();
 
-    this.pointerEl = dom.elementFromPoint(pointerXY);
-    this.updateTargetContainer();
-    if (this.target) {
-      this.target.setPointerXY(this.constrainedXY);
+    if (!this.scroller || !this.scroller.updateVelocity(this.pointerXY)) {
+      this.pointerEl = dom.elementFromPoint(pointerXY);
+      this.updateTargetContainer();
+      if (this.target) this.target.setPointerXY(this.constrainedXY);
+      events.raiseEvent(this.draggable.el, 'drag', this);
+      this.updateScroll();
     }
-    // updates
     this.helper.setPosition(this.constrainedXY);
-    events.raiseEvent(this.draggable.el, 'drag', this);
 
-    ScrollManager.update(this.pointerXY, this.pointerEl);
+  }
+
+
+  updateScroll() {
+    this.scroller = false;
+    var scrollEls = dom.ancestors(this.pointerEl, Scrollable.selector);
+    scrollEls.every(function(scrollEl) {
+      let scrollable = new Scrollable(this, scrollEl);
+      if (scrollable.tryScroll(this.pointerXY)) {
+        this.scroller = scrollable;
+        return false;
+      }
+      return true;
+    }.bind(this));
   }
 
 
   end() {
     if (this.target) this.drop(); else this.cancel();
+    if (this.scroller) this.scroller.cancelScroll();
     events.raiseEvent(this.draggable.el, 'dragend', this)
     this.dispose()
   }
@@ -121,19 +135,19 @@ export default class Drag {
   }
 
   _enterTarget(container, removeOriginal) {
-    console.log("_enterTarget", container);
     container.updatePosition(this.constrainedXY)
     container.insertPlaceholder(removeOriginal ? this.draggable.el : null);
     events.raiseEvent(container.el, 'dragenter', this);
-    this.helper.setSizeAndScale(
-      container.placeholderSize,
-      container.placeholderScale);
+    if (this.options.helperResize) {
+      this.helper.setSizeAndScale(
+        container.placeholderSize,
+        container.placeholderScale);
+    }
     container.el.classList.add('dd-drag-over');
     this.target = container;
   }
 
   _leaveTarget(container) {
-    console.log("_leaveTarget", container);
     container.removePlaceholder();
     events.raiseEvent(container.el, 'dragleave', this);
     container.el.classList.remove('dd-drag-over');

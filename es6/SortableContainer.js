@@ -46,7 +46,7 @@ export default class SortableContainer extends Container {
     }
 
     if (closestEl) {
-      if (closestEl === this.placeholder.el) return;
+      if (this.placeholder && closestEl === this.placeholder.el) return;
       this.index = this.childEls.indexOf(closestEl);
       let closestRect = closestEl.getBoundingClientRect();
 

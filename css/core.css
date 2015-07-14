@@ -1,11 +1,20 @@
-[data-drag-sortable],
-[data-drag-canvas] {
+/************/
+/* SORTABLE */
+/************/
+
+body {
+  min-height: 100%;
+  height: auto;
+}
+
+ol[data-drag-sortable],
+ul[data-drag-canvas] {
   position: relative;
   z-index: 0;
 }
 
 ol[data-drag-sortable] > li,
-[data-drag-canvas] > * {
+ul[data-drag-canvas] > * {
   cursor:      default;
   cursor: -webkit-grab;
   cursor:    -moz-grab;
@@ -33,61 +42,7 @@ ol[data-drag-sortable] > li {
   will-change: transform;
 }
 
-
-
-[data-drag-disabled],
-[data-drag-disabled] > * {
-  cursor: default;
-}
-
-[data-drag-canvas] > * {
-  position: absolute;
-  display: inline-block;
-  margin: 0;
-}
-
-[data-drag-canvas] {
-  min-width: 1px;
-  min-height: 1px;
-}
-
-ol[data-drag-scrollable] {
-  -webkit-overflow-scrolling: scroll;
-  position: relative;
-}
-
-ol[data-drag-scrollable='both'] {
-  overflow-x: auto;
-  overflow-y: auto;
-}
-
-ol[data-drag-scrollable='horizontal'] {
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-ol[data-drag-scrollable='vertical'] {
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-[data-drag-disabled] {
-  cursor: default;
-}
-
-[data-drag-disabled] > * {
-  cursor: default;
-}
-
-[data-drag-handle] {
-  cursor: hand;
-  cursor: -webkit-grab;
-  cursor:    -moz-grab;
-  cursor:     -ms-grab;
-  cursor:         grab;
-}
-
-[data-drag-sortable='horizontal'] {
+ol[data-drag-sortable='horizontal'] {
   overflow-y: hidden;
   white-space: nowrap;
 }
@@ -104,6 +59,72 @@ ol[data-drag-sortable='wrap'] > li {
   overflow-x: hidden;
   display: inline-block;
   white-space: wrap;
+}
+
+
+/**********/
+/* CANVAS */
+/**********/
+
+ul[data-drag-canvas] {
+  min-width: 1px;
+  min-height: 1px;
+  padding: 0;
+}
+
+*[data-drag-disabled],
+*[data-drag-disabled] > * {
+  cursor: default;
+}
+
+ul[data-drag-canvas] > * {
+  position: absolute;
+  display: inline-block;
+  margin: 0;
+}
+
+
+
+/**************/
+/* SCROLLABLE */
+/**************/
+
+*[data-drag-scrollable],
+*[data-drag-scrollable='vertical'] {
+  -webkit-overflow-scrolling: scroll;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+*[data-drag-scrollable='both'] {
+  overflow-x: auto;
+}
+
+*[data-drag-scrollable='horizontal'] {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+
+/**********/
+/* COMMON */
+/**********/
+
+*[data-drag-disabled] {
+  cursor: default;
+}
+
+*[data-drag-disabled] > * {
+  cursor: default;
+}
+
+*[data-drag-handle] {
+  cursor: hand;
+  cursor: -webkit-grab;
+  cursor:    -moz-grab;
+  cursor:     -ms-grab;
+  cursor:         grab;
 }
 
 body[data-drag-in-progress] {
@@ -125,9 +146,9 @@ body[data-drag-in-progress] > * {
           pointer-events: none !important;
 }
 
-body[data-drag-in-progress] [data-drag-sortable] *,
-body[data-drag-in-progress] [data-drag-droppable] *,
-body[data-drag-in-progress] [data-drag-canvas] * {
+body[data-drag-in-progress] ol[data-drag-sortable] *,
+body[data-drag-in-progress] *[data-drag-droppable] *,
+body[data-drag-in-progress] ul[data-drag-canvas] * {
   -webkit-pointer-events: none !important;
      -moz-pointer-events: none !important;
       -ms-pointer-events: none !important;
@@ -135,10 +156,10 @@ body[data-drag-in-progress] [data-drag-canvas] * {
 }
 
 body[data-drag-in-progress] ol[data-drag-sortable],
-body[data-drag-in-progress] [data-drag-droppable],
+body[data-drag-in-progress] *[data-drag-droppable],
 body[data-drag-in-progress] ol[data-drag-sortable] > li,
-body[data-drag-in-progress] [data-drag-droppable] > *,
-body[data-drag-in-progress] [data-drag-canvas] {
+body[data-drag-in-progress] *[data-drag-droppable] > *,
+body[data-drag-in-progress] ul[data-drag-canvas] {
   -webkit-pointer-events: all !important;
      -moz-pointer-events: all !important;
       -ms-pointer-events: all !important;
@@ -170,7 +191,7 @@ body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
   will-change: transform;
 }
 
-[data-drag-overlay] {
+div[data-drag-overlay] {
   position: fixed;
   top: 0;
   left: 0;
@@ -181,7 +202,7 @@ body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
   z-index: 10000;
 }
 
-[data-drag-helper] {
+*[data-drag-helper] {
   position: absolute;
   top: 0;
   left: 0;
@@ -195,7 +216,7 @@ body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
   will-change: transform;
 }
 
-.ios [data-drag-helper] {
+.ios *[data-drag-helper] {
   /* IMPORTANT - transition smooths on iOS but not in Chrome */
   -webkit-transition: -webkit-transform 10ms linear;
      -moz-transition:    -moz-transform 10ms linear;
@@ -203,8 +224,8 @@ body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
           transition:         transform 10ms linear;
 }
 
-[data-drag-helper],
-[data-drag-helper] *
+*[data-drag-helper],
+*[data-drag-helper] *,
 body[data-drag-in-progress] [data-drag-helper],
 body[data-drag-in-progress] [data-drag-helper] * {
   -webkit-pointer-events: none !important;

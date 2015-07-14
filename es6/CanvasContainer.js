@@ -13,6 +13,7 @@ export default class CanvasContainer extends Container {
     this.initialize();
   }
 
+
   initialize() {
     let grid = this.el.getAttribute('data-drag-grid') || '';
     let cellSizeTokens = grid.split(',');
@@ -26,7 +27,6 @@ export default class CanvasContainer extends Container {
     const rect = this.el.getBoundingClientRect();
     let l = constrainedXY[0] - rect.left + this.el.scrollLeft - this.drag.helper.gripOffset[0] * this.drag.helper.size[0],
         t = constrainedXY[1] - rect.top + this.el.scrollTop - this.drag.helper.gripOffset[1] * this.drag.helper.size[1];
-
     t = Math.round((t - rect.top ) / this.grid[1]) * this.grid[1] + rect.top;
     l = Math.round((l - rect.left) / this.grid[0]) * this.grid[0] + rect.left;
     this.offset = [l,t];
@@ -61,6 +61,5 @@ export default class CanvasContainer extends Container {
     draggable.clean();
     dom.topLeft(draggable.el, this.offset);
     this.el.appendChild(draggable.el);
-    console.log(draggable.el);
   }
 }
