@@ -7,6 +7,20 @@ import * as events from './lib/events.js';
 import * as math from './lib/math.js';
 import * as dom from './lib/dom.js';
 
+
+// TODO: Animated revert
+// TODO: Animated resize
+// TODO: Animated destroy (drop elsewhere)
+// TODO: Animated pickup
+
+// TODO: Scroll only if scrollable is an ancestor of the target element
+// TODO: Scroll does not propagate if target element is constrained
+
+// TODO: Scroll slow down as you approach extremity
+// TODO: Scroll adjust scroll maxV based on number of items
+// TODO: Scroll trigger placeholder update when scroll stops
+// TODO: Copy behaviour
+
 export default class Drag {
   constructor(draggable, pointerXY, options) {
     this.options = options;
@@ -143,14 +157,14 @@ export default class Drag {
         container.placeholderSize,
         container.placeholderScale);
     }
-    container.el.classList.add('dd-drag-over');
+    container.el.classList.add(this.options.containerHoverClass);
     this.target = container;
   }
 
   _leaveTarget(container) {
     container.removePlaceholder();
     events.raiseEvent(container.el, 'dragleave', this);
-    container.el.classList.remove('dd-drag-over');
+    container.el.classList.remove(this.options.containerHoverClass);
     this.target = null;
   }
 }

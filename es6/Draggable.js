@@ -11,30 +11,33 @@ export default class Draggable {
   }
 
   static get handleOrDraggableSelector() {
-    return '[data-drag-handle],[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
+    return `${this.handleSelector},${this.draggableSelector}`;
+  }
+
+  static get handleUnderDraggableSelector() {
+    return '[data-draggable] [data-drag-handle],[data-drag-sortable] [data-drag-handle],[data-drag-canvas] [data-drag-handle]';
   }
 
   static closest(el) {
-    let handleOrDragEl = dom.closest(el, Draggable.handleOrDraggableSelector);
-    if (!handleOrDragEl) {
-      return null;
-    }
+    let dragEl = dom.closest(el, Draggable.handleOrDraggableSelector);
+    if (!dragEl) return null;
 
     // if the pointer is over a handle element, ascend the DOM to find the
     // associated draggable item
-    if (handleOrDragEl.hasAttribute('data-drag-handle')) {
-      let dragEl = dom.closest(handleOrDragEl, this.draggableSelector);
+    if (dragEl.hasAttribute('data-drag-handle')) {
+      dragEl = dom.closest(dragEl, this.draggableSelector);
       return dragEl ? new Draggable(dragEl) : null;
     }
 
     // if the item contains a handle (which was not the the pointer down spot)
     // then ignore
-    if (handleOrDragEl.querySelectorAll(this.handleSelector).length >
-        handleOrDragEl.querySelectorAll(this.handleOrDraggableSelector).length) {
+    // TODO: fix this
+    console.log(dragEl.querySelectorAll(this.handleUnderDraggableSelector).length);
+    if (dragEl.querySelectorAll(this.handleSelector).length >
+        dragEl.querySelectorAll(this.handleUnderDraggableSelector).length) {
       return null;
     }
 
-    let dragEl = handleOrDragEl;
     return dragEl ? new Draggable(dragEl) : null;
   }
 

@@ -80,10 +80,8 @@
 	  animatePickup: false,
 	  pickupDelay: 0,
 	  pickupDistance: 0,
-	  css: {
-	    placeholder: 'dd-drag-placeholder',
-	    containerOver: 'dd-drag-hover'
-	  },
+	  placeholderClass: 'dd-drag-placeholder',
+	  containerHoverClass: 'dd-drag-hover',
 	  scrollDelay: 500,
 	  scrollSensitivity: 50,
 	  scrollSpeed: 0.5,
@@ -265,6 +263,19 @@
 
 	var dom = _interopRequireWildcard(_libDomJs);
 
+	// TODO: Animated revert
+	// TODO: Animated resize
+	// TODO: Animated destroy (drop elsewhere)
+	// TODO: Animated pickup
+
+	// TODO: Scroll only if scrollable is an ancestor of the target element
+	// TODO: Scroll does not propagate if target element is constrained
+
+	// TODO: Scroll slow down as you approach extremity
+	// TODO: Scroll adjust scroll maxV based on number of items
+	// TODO: Scroll trigger placeholder update when scroll stops
+	// TODO: Copy behaviour
+
 	var Drag = (function () {
 	  function Drag(draggable, pointerXY, options) {
 	    _classCallCheck(this, Drag);
@@ -396,14 +407,14 @@
 	    if (this.options.helperResize) {
 	      this.helper.setSizeAndScale(container.placeholderSize, container.placeholderScale);
 	    }
-	    container.el.classList.add('dd-drag-over');
+	    container.el.classList.add(this.options.containerHoverClass);
 	    this.target = container;
 	  };
 
 	  Drag.prototype._leaveTarget = function _leaveTarget(container) {
 	    container.removePlaceholder();
 	    events.raiseEvent(container.el, 'dragleave', this);
-	    container.el.classList.remove('dd-drag-over');
+	    container.el.classList.remove(this.options.containerHoverClass);
 	    this.target = null;
 	  };
 
@@ -715,25 +726,24 @@
 	  }
 
 	  Draggable.closest = function closest(el) {
-	    var handleOrDragEl = dom.closest(el, Draggable.handleOrDraggableSelector);
-	    if (!handleOrDragEl) {
-	      return null;
-	    }
+	    var dragEl = dom.closest(el, Draggable.handleOrDraggableSelector);
+	    if (!dragEl) return null;
 
 	    // if the pointer is over a handle element, ascend the DOM to find the
 	    // associated draggable item
-	    if (handleOrDragEl.hasAttribute('data-drag-handle')) {
-	      var _dragEl = dom.closest(handleOrDragEl, this.draggableSelector);
-	      return _dragEl ? new Draggable(_dragEl) : null;
+	    if (dragEl.hasAttribute('data-drag-handle')) {
+	      dragEl = dom.closest(dragEl, this.draggableSelector);
+	      return dragEl ? new Draggable(dragEl) : null;
 	    }
 
 	    // if the item contains a handle (which was not the the pointer down spot)
 	    // then ignore
-	    if (handleOrDragEl.querySelectorAll(this.handleSelector).length > handleOrDragEl.querySelectorAll(this.handleOrDraggableSelector).length) {
+	    // TODO: fix this
+	    console.log(dragEl.querySelectorAll(this.handleUnderDraggableSelector).length);
+	    if (dragEl.querySelectorAll(this.handleSelector).length > dragEl.querySelectorAll(this.handleUnderDraggableSelector).length) {
 	      return null;
 	    }
 
-	    var dragEl = handleOrDragEl;
 	    return dragEl ? new Draggable(dragEl) : null;
 	  };
 
@@ -772,7 +782,12 @@
 	  }, {
 	    key: 'handleOrDraggableSelector',
 	    get: function get() {
-	      return '[data-drag-handle],[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
+	      return this.handleSelector + ',' + this.draggableSelector;
+	    }
+	  }, {
+	    key: 'handleUnderDraggableSelector',
+	    get: function get() {
+	      return '[data-draggable] [data-drag-handle],[data-drag-sortable] [data-drag-handle],[data-drag-canvas] [data-drag-handle]';
 	    }
 	  }]);
 
@@ -1520,7 +1535,7 @@
 	      this.el = this.drag.draggable.el.cloneNode(true);
 	      this.el.removeAttribute('id');
 	    }
-	    this.el.classList.add(this.drag.options.css.placeholder);
+	    this.el.classList.add(this.drag.options.placholderClass);
 	    this.el.setAttribute('data-drag-placeholder', '');
 	    dom.translate(this.el, 0, 0);
 	    dom.topLeft(this.el, [0, 0]);
@@ -1577,12 +1592,6 @@
 	var _libDomJs = __webpack_require__(2);
 
 	var dom = _interopRequireWildcard(_libDomJs);
-
-	// TODO: slow down as you approach extremity
-	// TODO: adjust scroll maxV based on number of items
-	// TODO: refactor: clearer scroll start, scroll finish
-	// TODO: refactor: rename ancestors (it's inclusive of this generation)
-	// TODO: trigger placeholder update when scroll stops
 
 	var Scrollable = (function () {
 	  function Scrollable(drag, el) {

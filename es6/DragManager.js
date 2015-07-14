@@ -11,10 +11,8 @@ const defaultOptions = {
   animatePickup: false,
   pickupDelay: 0,
   pickupDistance: 0,
-  css: {
-    placeholder: 'dd-drag-placeholder',
-    containerOver: 'dd-drag-hover',
-  },
+  placeholderClass: 'dd-drag-placeholder',
+  containerHoverClass: 'dd-drag-hover',
   scrollDelay: 500,
   scrollSensitivity: 50,
   scrollSpeed: 0.5,

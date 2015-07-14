@@ -26,7 +26,7 @@ export default class Placeholder {
       this.el = this.drag.draggable.el.cloneNode(true);
       this.el.removeAttribute('id');
     }
-    this.el.classList.add(this.drag.options.css.placeholder);
+    this.el.classList.add(this.drag.options.placholderClass);
     this.el.setAttribute('data-drag-placeholder', '');
     dom.translate(this.el,0,0);
     dom.topLeft(this.el,[0,0]);
