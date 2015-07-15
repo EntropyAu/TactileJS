@@ -66,3 +66,7 @@ body {
   top: 0;
   left: 0;
 }
+
+li {
+  line-height:1.5;
+}

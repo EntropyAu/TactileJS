@@ -8,20 +8,33 @@ import * as math from './lib/math.js';
 const defaultOptions = {
   cancel: 'input,textarea,a,button,select',
   helperResize: true,
-  animatePickup: false,
+  animatePickup: true,
+  pickupAnimation: {
+    duration: 300,
+    easing: 'ease-in-out'
+  },
+  resizeAnimation: {
+    duration: 300,
+    easing: 'ease-in-out'
+  },
+  dropAnimation: {
+    duration: 300,
+    easing: 'ease-out'
+  },
   pickupDelay: 0,
   pickupDistance: 0,
+  helperRotation: -1,
+  helperShadowSize: 15,
   placeholderClass: 'dd-drag-placeholder',
   containerHoverClass: 'dd-drag-hover',
   scrollDelay: 500,
-  scrollSensitivity: 50,
+  scrollSensitivity: 30,
   scrollSpeed: 0.5,
   animation: false
   /*{
     duration: 250,
     easing: 'ease-in-out',
     elementLimit: 25,
-    animateResize: true,
     animateSortableResize: false
   }*/
 };
@@ -74,14 +87,12 @@ export default class DragManager {
     const pointerId = events.pointerEventId(e);
 
     let draggable = Draggable.closest(e.target);
-    if (!draggable) return false;
+    if (!draggable || !draggable.enabled) return false;
 
-    dom.clearSelection();
 
     if (this.options.pickupDelay === null || this.options.pickupDelay === 0) {
       events.cancelEvent(e);
-      document.body.setAttribute('data-drag-in-progress', '');
-      this.drags[pointerId] = new Drag(draggable, pointerXY, defaultOptions);
+      this.startDrag(draggable, pointerId, pointerXY);
     } else {
       let onPickupTimeoutHandler = function() {
         this.onPickUpTimeout(pointerId);
@@ -95,12 +106,10 @@ export default class DragManager {
     this.bindPointerEventsForDragging(e.target)
   }
 
-
   onPickUpTimeout(pointerId) {
     if (this.pendingDrags[pointerId]) {
       let pendingDrag = this.pendingDrags[pointerId];
-      document.body.setAttribute('data-drag-in-progress', '');
-      this.drags[pointerId] = new Drag(pendingDrag.draggable, pendingDrag.pointerXY, this.options);
+      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
       delete this.pendingDrags[pointerId];
     }
   }
@@ -120,8 +129,7 @@ export default class DragManager {
       // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
       if (this.options.pickupDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickupDistance)
       clearTimeout(pendingDrag.timerId);
-      document.body.setAttribute('data-drag-in-progress', '');
-      this.drags[pointerId] = new Drag(pendingDrag.draggable, pendingDrag.pointerXY, this.options);
+      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
       delete this.pendingDrags[pointerId];
     }
   }
@@ -143,6 +151,15 @@ export default class DragManager {
       clearTimeout(this.pendingDrags[pointerId].timerId);
     }
   }
+
+  startDrag(draggable, pointerId, pointerXY) {
+    dom.clearSelection();
+    document.body.setAttribute('data-drag-in-progress', '');
+    this.drags[pointerId] = new Drag(draggable, pointerXY, defaultOptions);
+  }
+
+
+
 }
 
 window.dragManager = new DragManager();

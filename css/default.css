@@ -36,9 +36,6 @@ ol[data-drag-sortable] {
 ol[data-drag-sortable] > li {
   margin: 0 0 4px 0;
 }
-ol[data-drag-sortable] > li:last-of-type {
-  margin: 0 0 0 0;
-}
 
 ol[data-drag-sortable] ol[data-drag-sortable] {
   border-left: 2px solid #2185d0;
@@ -48,7 +45,7 @@ ol[data-drag-sortable="vertical"] {
   overflow-y: auto;
 }
 
-ol[data-drag-sortable="vertical"] li {
+ol[data-drag-sortable="vertical"] > li {
   margin: 0 0 4px 0;
 }
 
@@ -57,8 +54,9 @@ ol[data-drag-sortable="horizontal"] {
   overflow-x: auto;
 }
 
-ol[data-drag-sortable="horizontal"] li {
+ol[data-drag-sortable="horizontal"] > li {
   margin: 0 4px 0 0;
+  vertical-align: top;
 }
 
 ol[data-drag-sortable="wrap"] {

@@ -13,6 +13,7 @@ ul[data-drag-canvas] {
   z-index: 0;
 }
 
+*[data-drag-draggable],
 ol[data-drag-sortable] > li,
 ul[data-drag-canvas] > * {
   cursor:      default;
@@ -20,6 +21,7 @@ ul[data-drag-canvas] > * {
   cursor:    -moz-grab;
   cursor:     -ms-grab;
   cursor:         grab;
+  z-index: 1;
 }
 
 ol[data-drag-sortable] > li {
@@ -35,11 +37,14 @@ ol[data-drag-sortable] > li {
      -moz-transform: translateX(0) translateY(0) translateZ(0);
       -ms-transform: translateX(0) translateY(0) translateZ(0);
           transform: translateX(0) translateY(0) translateZ(0);
+  will-change: transform;
+}
+
+.not-ios ol[data-drag-sortable][data-drag-animate] > li {
   -webkit-transition: -webkit-transform 100ms ease-in-out;
      -moz-transition:    -moz-transform 100ms ease-in-out;
       -ms-transition:     -ms-transform 100ms ease-in-out;
           transition:         transform 100ms ease-in-out;
-  will-change: transform;
 }
 
 ol[data-drag-sortable='horizontal'] {
@@ -49,6 +54,7 @@ ol[data-drag-sortable='horizontal'] {
 
 ol[data-drag-sortable='horizontal'] > li {
   display: inline-block;
+  white-space: normal;
 }
 
 ol[data-drag-sortable='vertical'] {
@@ -203,7 +209,7 @@ div[data-drag-overlay] {
 }
 
 *[data-drag-helper] {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   margin: 0;
@@ -212,7 +218,7 @@ div[data-drag-overlay] {
      -moz-backface-visibility: hidden;
       -ms-backface-visibility: hidden;
           backface-visibility: hidden;
-  box-shadow: 0 0 16px rgba(0,0,0,0.2);
+  box-shadow: 0 0 0 rgba(0,0,0,0.2);
   will-change: transform;
 }
 

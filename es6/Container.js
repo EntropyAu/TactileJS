@@ -10,7 +10,7 @@ export default class Container {
     this.el = el;
     this.drag = drag;
     this.placeholder = null;
-    this.placeholderSize = [0,0];
+    this.placeholderSize = null;
     this.placeholderScale = 1;
     this.options = drag.options;
   }
@@ -52,5 +52,9 @@ export default class Container {
       return containmentSelector ? draggable.el.matches(containmentSelector) : true;
     }
     return false;
+  }
+
+  dispose() {
+
   }
 }

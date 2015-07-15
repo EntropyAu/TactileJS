@@ -1,0 +1,139 @@
+<html>
+<head>
+  <script type="text/javascript" src="../babel-polyfill.min.js"></script>
+  <script type="text/javascript" src="../velocity.js"></script>
+  <script type="text/javascript" src="../DragDrop.js"></script>
+  <link rel="stylesheet" type="text/css" href="vendor/semantic-ui/semantic-ui.min.css">
+  <link rel="stylesheet" type="text/css" href="workshopPlanner.css">
+  <link rel="stylesheet" type="text/css" href="../css/core.css">
+  <link rel="stylesheet" type="text/css" href="../css/default.css">
+</head>
+<body>
+  <div class="ui fixed inverted menu">
+    <div class="ui container">
+      <div href="#" class="header item">
+        tactile.js Demos
+      </div>
+      <span class="item active">Workshop Planner</span>
+      <a class="item" href="kitchenSink.html">Kitchen Sink</a>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="layout-activities" data-drag-scrollable>
+      <h2>Activities</h2>
+      <div class="ui search" style="margin-bottom:20px">
+        <div class="ui icon input fluid">
+          <input class="prompt" type="text" placeholder="Search...">
+          <i class="search icon"></i>
+        </div>
+      </div>
+
+      <ol data-drag-sortable
+          data-drag-out="copy">
+        <li class="ui card">
+          <div class="content">
+            <h4 class="header">Elevator Pitch</h4>
+            <p class="description">Develop a short elevator pitch for the new product</p>
+          </div>
+          <div class="extra content">
+            <i class="clock icon"></i>
+            15&ndash;60min
+          </div>
+        </li>
+        <li class="ui card">
+          <div class="content">
+            <h4 class="header">Business Model Canvas</h4>
+            <p class="description">Develop a business model canvas for the new product</p>
+          </div>
+          <div class="extra content">
+            <i class="clock icon"></i>
+            30&ndash;90min
+          </div>
+        </li>
+        <li class="ui card">
+          <div class="content">
+            <h4 class="header">Stakeholder Map</h4>
+            <p class="description">Identify key stakeholders</p>
+          </div>
+          <div class="extra content">
+            <i class="clock icon"></i>
+            15&ndash;60min
+          </div>
+        </li>
+        <li class="ui card">
+          <div class="content">
+            <h4 class="header">Organisational Context</h4>
+            <p class="description">Identify key organisational context</p>
+          </div>
+          <div class="extra content">
+            <i class="clock icon"></i>
+            15&ndash;60min
+          </div>
+        </li>
+        <li class="ui card">
+          <div class="content">
+            <h4 class="header">Customer Journey</h4>
+            <p class="description">Customer journey mapping</p>
+          </div>
+          <div class="extra content">
+            <i class="clock icon"></i>
+            15&ndash;60min
+          </div>
+        </li>
+      </ol>
+    </div>
+    <div class="layout-plan">
+      <h2>Workshop Plan</h2>
+      <ol data-drag-sortable="horizontal"
+          data-drag-scrollable
+          data-drag-capture=".day">
+        <li class="day">
+          <span style="float:right"><i class="remove icon"></i></span>
+          <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
+          <h2>Day 1</h2>
+          <ol data-drag-sortable
+              data-drag-accepts='.card'>
+          </ol>
+        </li><li class="day">
+          <span style="float:right"><i class="remove icon"></i></span>
+          <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
+          <h2>Day 2</h2>
+          <ol data-drag-sortable
+              data-drag-accepts='.card'>
+          </ol>
+        </li><li class="day">
+          <span style="float:right"><i class="remove icon"></i></span>
+          <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
+          <h2>Day 3</h2>
+          <ol data-drag-sortable
+              data-drag-accepts='.card'>
+          </ol>
+        </li><li class="day">
+          <span style="float:right"><i class="remove icon"></i></span>
+          <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
+          <h2>Day 4</h2>
+          <ol data-drag-sortable
+              data-drag-accepts='.card'>
+          </ol>
+        </li><li class="day">
+          <span style="float:right"><i class="remove icon"></i></span>
+          <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
+          <h2>Day 5</h2>
+          <ol data-drag-sortable
+              data-drag-accepts='.card'>
+          </ol>
+        </li><li class="day">
+          <span style="float:right"><i class="remove icon"></i></span>
+          <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
+          <h2>Day 6</h2>
+          <ol data-drag-sortable
+              data-drag-accepts='.card'>
+          </ol>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+</body>
+</html>

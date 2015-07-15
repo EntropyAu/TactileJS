@@ -7,7 +7,7 @@ export default class Draggable {
   }
 
   static get draggableSelector() {
-    return '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
+    return '[data-drag-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
   }
 
   static get handleOrDraggableSelector() {
@@ -15,7 +15,7 @@ export default class Draggable {
   }
 
   static get handleUnderDraggableSelector() {
-    return '[data-draggable] [data-drag-handle],[data-drag-sortable] [data-drag-handle],[data-drag-canvas] [data-drag-handle]';
+    return '[data-drag-draggable] [data-drag-handle],[data-drag-sortable] [data-drag-handle],[data-drag-canvas] [data-drag-handle]';
   }
 
   static closest(el) {
@@ -32,7 +32,6 @@ export default class Draggable {
     // if the item contains a handle (which was not the the pointer down spot)
     // then ignore
     // TODO: fix this
-    console.log(dragEl.querySelectorAll(this.handleUnderDraggableSelector).length);
     if (dragEl.querySelectorAll(this.handleSelector).length >
         dragEl.querySelectorAll(this.handleUnderDraggableSelector).length) {
       return null;

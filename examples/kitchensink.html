@@ -3,8 +3,8 @@
   <script type="text/javascript" src="../babel-polyfill.min.js"></script>
   <script type="text/javascript" src="../velocity.js"></script>
   <script type="text/javascript" src="../DragDrop.js"></script>
-  <link rel="stylesheet" type="text/css" href="vendor/semantic.min.css">
-  <link rel="stylesheet" type="text/css" href="kitchensink.css">
+  <link rel="stylesheet" type="text/css" href="vendor/semantic-ui/semantic-ui.min.css">
+  <link rel="stylesheet" type="text/css" href="kitchenSink.css">
   <link rel="stylesheet" type="text/css" href="../css/core.css">
   <link rel="stylesheet" type="text/css" href="../css/default.css">
 </head>
@@ -12,13 +12,14 @@
   <div class="ui fixed inverted menu">
     <div class="ui container">
       <div href="#" class="header item">
-        DropDrop
+        tactile.js Demos
       </div>
-      <a href="#" class="item">Demo</a>
+      <a class="item" href="workshopPlanner.html">Workshop Planner</a>
+      <span class="item active">Kitchen Sink</span>
     </div>
   </div>
 
-  <script>
+  <script type="text/javascript">
   function items(count) {
     var itemHtml = [];
     for (var i = 0; i < count; i++) itemHtml.push("<li>Item " + (i+1) + "</li>");
@@ -38,50 +39,52 @@
               data-drag-scrollable
               data-drag-accepts="*"
               style="max-height:200px"
-              class="vertical"><script>items(40)</script></ol>
+              class="vertical"><script type="text/javascript">items(40)</script></ol>
 
           <h3>Horizontal Sortable</h3>
           <ol data-drag-sortable="horizontal"
               data-drag-scrollable
+              data-drag-accepts="*"
               class="horizontal"><script type="text/javascript">items(10)</script></ol>
 
+
+          <h3>Droppable</h3>
+          <div data-drag-droppable
+               data-drag-accepts="*"
+               style="width:200px;height:200px;background:#EEF">
+          </div>
 
           <h3>Sortable with Padding</h3>
           <ol data-drag-sortable
               data-drag-scrollable
               data-drag-accepts="*"
               class="vertical"
-              style="padding:40px"><script>items(10)</script></ol>
+              style="padding:40px"><script type="text/javascript">items(10)</script></ol>
 
 
           <h3>Sortable with Accepts</h3>
-          <ol data-drag-sortable="horizontal"
-              data-drag-scrollable
-              data-drag-accepts=".red,.orange,.yellow,.lime,.green"
-              class="horizontal">
-            <li class='red'>Item 1
-            <li class='orange'>Item 2
-            <li class='yellow'>Item 3
-            <li class='lime'>Item 4
-            <li class='green'>Item 5
-          </ol>
+          <li data-drag-draggable class='red'>Item 1</li>
+          <li data-drag-draggable class='orange'>Item 2</li>
+          <li data-drag-draggable class='yellow'>Item 3</li>
+          <li data-drag-draggable class='lime'>Item 4</li>
+          <li data-drag-draggable class='green'>Item 5</li>
           <ol data-drag-sortable data-drag-accepts=".red"></ol>
           <ol data-drag-sortable data-drag-accepts=".orange"></ol>
           <ol data-drag-sortable data-drag-accepts=".yellow"></ol>
-
-
 
           <h3>Sortable with Containment</h3>
           <ol data-drag-sortable
               data-drag-containment
               data-drag-scrollable
-              class="vertical"><script>items(10)</script></ol>
+              data-drag-accepts="*"
+              class="vertical"><script type="text/javascript">items(10)</script></ol>
 
 
           <h3>Scaled and Translated Sortable</h3>
           <div class="scale50">
             <h2>Odd item sizes</h2>
             <ol data-drag-sortable="vertical"
+                data-drag-accepts="*"
                 class="vertical">
               <li>Item 1 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
               <li>Item 2
@@ -97,6 +100,7 @@
           <h3>Sortable</h3>
           <h2>Odd item sizes</h2>
           <ol data-drag-sortable="vertical"
+              data-drag-accepts="*"
               class="vertical">
             <li>Item 1 IEUhis urhgak eurghkvauehck aegryvkjaycg kjaewyfjkyawg kjvyagejkfygaerjkfyaerjkvygaek jrfgyaejkrfgyaejkrfygaerf
             <li>Item 2
@@ -134,7 +138,7 @@
           <ol data-drag-sortable
               data-drag-scrollable
               data-drag-disabled
-              class="vertical"><script>items(5)</script></ol>
+              class="vertical"><script type="text/javascript">items(5)</script></ol>
 
 
           <h3>Disabled Sortable Items</h3>
@@ -184,10 +188,7 @@
           <ol data-drag-sortable
               data-drag-scrollable
               style="max-height:250px; overflow:auto">
-            <script>
-              for (var i = 0; i < 1000; i++)
-                document.write("<li>Item " + i + "</li>")
-            </script>
+            <script type="text/javascript">items(250)</script>
           </ol>
 
           <h3>Drag Handles</h3>

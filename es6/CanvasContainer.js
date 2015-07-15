@@ -56,7 +56,7 @@ export default class CanvasContainer extends Container {
   }
 
 
-  dropDraggable(draggable) {
+  finalizeDrop(draggable) {
     this.placeholder.dispose();
     draggable.clean();
     dom.topLeft(draggable.el, this.offset);

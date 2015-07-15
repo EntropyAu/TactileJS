@@ -35,6 +35,17 @@ export function clientScale(el) {
 
 // vendor
 
+export function outerHeight(el) {
+  const style = getComputedStyle(el);
+  return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+}
+
+export function outerWidth(el) {
+  const style = getComputedStyle(el);
+  return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+}
+
+
 let vendorTransform = null;
 setTimeout(function() {
   if (document.body.style.webkitTransform !== undefined) vendorTransform = 'webkitTransform';
@@ -66,7 +77,7 @@ export function topLeft(el, [l, t]) {
   el.style.left = `${l}px`;
 }
 
-export function transformOrigin(el, [t, l]) {
+export function transformOrigin(el, [l, t]) {
   el.style.transformOrigin = `${l}% ${t}%`;
   el.style.webkitTransformOrigin = `${l}% ${t}%`;
 }

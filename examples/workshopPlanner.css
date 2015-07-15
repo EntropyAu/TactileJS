@@ -1,0 +1,42 @@
+.card {
+  width: 240px;
+  height: 148px;
+}
+
+.day > ol[data-drag-sortable]
+{
+  width: 240px;
+  min-height:148px;
+}
+
+.layout {
+  display: flex;
+  display: -webkit-flex;
+  flex-direction: row;
+  -webkit-flex-direction: row;
+  position: fixed;
+  top: 40px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.layout-activities {
+  width: 300px;
+  flex-grow: 0;
+  flex-shrink: 0;
+  -webkit-flex-grow: 0;
+  -webkit-flex-shrink: 0;
+  padding: 20px;
+  background: #EEE;
+}
+.layout-plan {
+  flex-grow: 1;
+  flex-shrink: 1;
+  -webkit-flex-grow: 1;
+  -webkit-flex-shrink: 1;
+  padding: 20px;
+}
+
+.ui.card {
+  margin-top: 0;
+}

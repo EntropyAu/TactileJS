@@ -34,38 +34,38 @@ export default class Scrollable {
     }
   }
 
+
   tryScroll(pointerXY) {
     this.updateVelocity(pointerXY);
     if (this.velocity[0] !== 0 || this.velocity[1] !== 0) {
-      this.startScroll();
+      this.offset = [this.el.scrollLeft, this.el.scrollTop];
+      this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
       return true;
     }
     return false;
   }
 
 
-  startScroll() {
-    this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
-    this.offset = [this.el.scrollLeft, this.el.scrollTop];
-  }
-
-
   continueScroll() {
+    this.requestId = null;
+    // calculate the amount we want to scroll
     let currentUpdate = new Date();
     let elapsedTimeMs = this.lastUpdate ? currentUpdate - this.lastUpdate : 16;
-    this.requestId = null;
     this.offset = [this.offset[0] + this.velocity[0] * elapsedTimeMs,
                    this.offset[1] + this.velocity[1] * elapsedTimeMs];
 
+    // scroll the scrollable
     if (this.velocity[0] !== 0) this.el.scrollLeft = this.offset[0];
     if (this.velocity[1] !== 0) this.el.scrollTop  = this.offset[1];
+    this.lastUpdate = currentUpdate;
+
+    // schedule the next scroll update
     if (this.velocity[0] !== 0 || this.velocity[1] !== 0)
       this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
-    this.lastUpdate = currentUpdate;
   }
 
 
-  cancelScroll() {
+  stopScroll() {
     cancelAnimationFrame(this.requestId);
     this.requestId = null;
     this.lastUpdate = null;

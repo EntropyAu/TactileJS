@@ -77,20 +77,33 @@
 	var defaultOptions = {
 	  cancel: 'input,textarea,a,button,select',
 	  helperResize: true,
-	  animatePickup: false,
+	  animatePickup: true,
+	  pickupAnimation: {
+	    duration: 300,
+	    easing: 'ease-in-out'
+	  },
+	  resizeAnimation: {
+	    duration: 300,
+	    easing: 'ease-in-out'
+	  },
+	  dropAnimation: {
+	    duration: 300,
+	    easing: 'ease-out'
+	  },
 	  pickupDelay: 0,
 	  pickupDistance: 0,
+	  helperRotation: -1,
+	  helperShadowSize: 15,
 	  placeholderClass: 'dd-drag-placeholder',
 	  containerHoverClass: 'dd-drag-hover',
 	  scrollDelay: 500,
-	  scrollSensitivity: 50,
+	  scrollSensitivity: 30,
 	  scrollSpeed: 0.5,
 	  animation: false
 	  /*{
 	    duration: 250,
 	    easing: 'ease-in-out',
 	    elementLimit: 25,
-	    animateResize: true,
 	    animateSortableResize: false
 	  }*/
 	};
@@ -143,14 +156,11 @@
 	    var pointerId = events.pointerEventId(e);
 
 	    var draggable = _DraggableJs2['default'].closest(e.target);
-	    if (!draggable) return false;
-
-	    dom.clearSelection();
+	    if (!draggable || !draggable.enabled) return false;
 
 	    if (this.options.pickupDelay === null || this.options.pickupDelay === 0) {
 	      events.cancelEvent(e);
-	      document.body.setAttribute('data-drag-in-progress', '');
-	      this.drags[pointerId] = new _DragJs2['default'](draggable, pointerXY, defaultOptions);
+	      this.startDrag(draggable, pointerId, pointerXY);
 	    } else {
 	      var onPickupTimeoutHandler = function onPickupTimeoutHandler() {
 	        this.onPickUpTimeout(pointerId);
@@ -167,8 +177,7 @@
 	  DragManager.prototype.onPickUpTimeout = function onPickUpTimeout(pointerId) {
 	    if (this.pendingDrags[pointerId]) {
 	      var pendingDrag = this.pendingDrags[pointerId];
-	      document.body.setAttribute('data-drag-in-progress', '');
-	      this.drags[pointerId] = new _DragJs2['default'](pendingDrag.draggable, pendingDrag.pointerXY, this.options);
+	      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
 	      delete this.pendingDrags[pointerId];
 	    }
 	  };
@@ -186,8 +195,7 @@
 	      var pendingDrag = this.pendingDrags[pointerId];
 	      // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
 	      if (this.options.pickupDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickupDistance) clearTimeout(pendingDrag.timerId);
-	      document.body.setAttribute('data-drag-in-progress', '');
-	      this.drags[pointerId] = new _DragJs2['default'](pendingDrag.draggable, pendingDrag.pointerXY, this.options);
+	      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
 	      delete this.pendingDrags[pointerId];
 	    }
 	  };
@@ -207,6 +215,12 @@
 	    if (this.pendingDrags[pointerId]) {
 	      clearTimeout(this.pendingDrags[pointerId].timerId);
 	    }
+	  };
+
+	  DragManager.prototype.startDrag = function startDrag(draggable, pointerId, pointerXY) {
+	    dom.clearSelection();
+	    document.body.setAttribute('data-drag-in-progress', '');
+	    this.drags[pointerId] = new _DragJs2['default'](draggable, pointerXY, defaultOptions);
 	  };
 
 	  return DragManager;
@@ -265,13 +279,11 @@
 
 	// TODO: Animated revert
 	// TODO: Animated resize
-	// TODO: Animated destroy (drop elsewhere)
+	// TODO: Animated destroy (beginDrop elsewhere)
 	// TODO: Animated pickup
 
 	// TODO: Scroll only if scrollable is an ancestor of the target element
 	// TODO: Scroll does not propagate if target element is constrained
-
-	// TODO: Scroll slow down as you approach extremity
 	// TODO: Scroll adjust scroll maxV based on number of items
 	// TODO: Scroll trigger placeholder update when scroll stops
 	// TODO: Copy behaviour
@@ -288,8 +300,10 @@
 
 	    this.draggable = draggable;
 	    this.target = null;
-	    this.knownTargets = new WeakMap();
+	    this.knownTargets = new Map();
 	    this.revertOnCancel = true;
+	    this.dropAction = 'move'; // "copy"
+	    this.cancelAction = 'revert'; // "remove", "last"
 
 	    this.initialize();
 	  }
@@ -330,31 +344,25 @@
 	  };
 
 	  Drag.prototype.end = function end() {
-	    if (this.target) this.drop();else this.cancel();
-	    if (this.scroller) this.scroller.cancelScroll();
+	    if (this.target) this.beginDrop();else this.beginCancel();
+	    if (this.scroller) this.scroller.stopScroll();
 	    events.raiseEvent(this.draggable.el, 'dragend', this);
-	    this.dispose();
 	  };
 
-	  Drag.prototype.drop = function drop() {
-	    events.raiseEvent(this.draggable.el, 'drop', this);
-	    var placeholderRect = this.target.placeholder.el.getBoundingClientRect();
-	    this.helper.animateToRect(placeholderRect, (function () {
-	      this.target.dropDraggable(this.draggable);
-	    }).bind(this));
-	  };
-
-	  Drag.prototype.cancel = function cancel() {
-	    this.draggable.restoreOriginal();
-	  };
-
-	  Drag.prototype.dispose = function dispose() {
-	    if (this.target) {
-	      this.target.el.classList.remove('dd-drag-over');
+	  Drag.prototype.beginDrop = function beginDrop() {
+	    events.raiseEvent(this.draggable.el, 'beginDrop', this);
+	    if (this.target.placeholder) {
+	      this.helper.animateToElement(this.target.placeholder.el, (function () {
+	        this.target.finalizeDrop(this.draggable);
+	        this.dispose();
+	      }).bind(this));
 	    }
+	  };
 
-	    this.helper.dispose();
-	    this.helper = null;
+	  Drag.prototype.beginCancel = function beginCancel() {
+	    this.draggable.restoreOriginal();
+	    // restore draggable to original position
+	    this.dispose();
 	  };
 
 	  Drag.prototype.applyDirectionConstraint = function applyDirectionConstraint(drag) {
@@ -404,7 +412,7 @@
 	    container.updatePosition(this.constrainedXY);
 	    container.insertPlaceholder(removeOriginal ? this.draggable.el : null);
 	    events.raiseEvent(container.el, 'dragenter', this);
-	    if (this.options.helperResize) {
+	    if (this.options.helperResize && container.placeholderSize) {
 	      this.helper.setSizeAndScale(container.placeholderSize, container.placeholderScale);
 	    }
 	    container.el.classList.add(this.options.containerHoverClass);
@@ -416,6 +424,18 @@
 	    events.raiseEvent(container.el, 'dragleave', this);
 	    container.el.classList.remove(this.options.containerHoverClass);
 	    this.target = null;
+	  };
+
+	  Drag.prototype.dispose = function dispose() {
+	    if (this.target) {
+	      this.target.el.classList.remove('dd-drag-over');
+	    }
+
+	    this.knownTargets.forEach(function (t) {
+	      return t.dispose();
+	    });
+	    this.helper.dispose();
+	    this.helper = null;
 	  };
 
 	  return Drag;
@@ -438,6 +458,8 @@
 	exports.closest = closest;
 	exports.ancestors = ancestors;
 	exports.clientScale = clientScale;
+	exports.outerHeight = outerHeight;
+	exports.outerWidth = outerWidth;
 	exports.translate = translate;
 	exports.transform = transform;
 	exports.topLeft = topLeft;
@@ -484,6 +506,16 @@
 
 	// vendor
 
+	function outerHeight(el) {
+	  var style = getComputedStyle(el);
+	  return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+	}
+
+	function outerWidth(el) {
+	  var style = getComputedStyle(el);
+	  return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+	}
+
 	var vendorTransform = null;
 	setTimeout(function () {
 	  if (document.body.style.webkitTransform !== undefined) vendorTransform = 'webkitTransform';
@@ -519,8 +551,8 @@
 	}
 
 	function transformOrigin(el, _ref2) {
-	  var t = _ref2[0];
-	  var l = _ref2[1];
+	  var l = _ref2[0];
+	  var t = _ref2[1];
 
 	  el.style.transformOrigin = l + '% ' + t + '%';
 	  el.style.webkitTransformOrigin = l + '% ' + t + '%';
@@ -645,7 +677,7 @@
 	    this.el = el;
 	    this.drag = drag;
 	    this.placeholder = null;
-	    this.placeholderSize = [0, 0];
+	    this.placeholderSize = null;
 	    this.placeholderScale = 1;
 	    this.options = drag.options;
 	  }
@@ -688,6 +720,8 @@
 	    }
 	    return false;
 	  };
+
+	  Container.prototype.dispose = function dispose() {};
 
 	  return Container;
 	})();
@@ -739,7 +773,6 @@
 	    // if the item contains a handle (which was not the the pointer down spot)
 	    // then ignore
 	    // TODO: fix this
-	    console.log(dragEl.querySelectorAll(this.handleUnderDraggableSelector).length);
 	    if (dragEl.querySelectorAll(this.handleSelector).length > dragEl.querySelectorAll(this.handleUnderDraggableSelector).length) {
 	      return null;
 	    }
@@ -777,7 +810,7 @@
 	  }, {
 	    key: 'draggableSelector',
 	    get: function get() {
-	      return '[data-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
+	      return '[data-drag-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
 	    }
 	  }, {
 	    key: 'handleOrDraggableSelector',
@@ -787,7 +820,7 @@
 	  }, {
 	    key: 'handleUnderDraggableSelector',
 	    get: function get() {
-	      return '[data-draggable] [data-drag-handle],[data-drag-sortable] [data-drag-handle],[data-drag-canvas] [data-drag-handle]';
+	      return '[data-drag-draggable] [data-drag-handle],[data-drag-sortable] [data-drag-handle],[data-drag-canvas] [data-drag-handle]';
 	    }
 	  }]);
 
@@ -814,6 +847,8 @@
 	var dom = _interopRequireWildcard(_libDomJs);
 
 	var Helper = (function () {
+	  /* members */
+
 	  function Helper(drag) {
 	    _classCallCheck(this, Helper);
 
@@ -843,16 +878,20 @@
 
 	    this.setPosition(this.drag.pointerXY);
 	    this.setSizeAndScale(this.drag.draggable.originalSize, this.drag.draggable.originalScale, false);
-
 	    this.el.focus();
 
-	    if (this.drag.options.animatePickup && window['Velocity']) {
+	    var o = this.drag.options;
+	    if (o.pickupAnimation && window['Velocity']) {
 	      Velocity(this.el, {
-	        rotateZ: -1,
-	        boxShadowBlur: this.drag.options.helper.shadowSize
+	        rotateZ: 0,
+	        boxShadowBlur: 0
+	      }, { duration: 0 });
+	      Velocity(this.el, {
+	        rotateZ: o.helperRotation,
+	        boxShadowBlur: o.helperShadowSize
 	      }, {
-	        duration: this.drag.options.animation.duration,
-	        easing: this.drag.options.animation.easing
+	        duration: o.pickupAnimation.duration,
+	        easing: o.pickupAnimation.easing
 	      });
 	    }
 	  };
@@ -867,71 +906,76 @@
 
 	    if (this.size && this.scale && this.size[0] === size[0] && this.size[1] === size[1] && this.scale[0] === scale[0] && this.scale[1] === scale[1]) return;
 
-	    /*
-	    if (animate && window['Velocity']) {
-	      const velocityOptions = this.drag.options.animation.animateResize
-	                            ? {
-	                                duration: this.drag.options.animation.duration,
-	                                easing: 'linear',
-	                                queue: false
-	                              }
-	                            : {
-	                                duration: 0,
-	                                queue: false
-	                              };
+	    if (window['Velocity'] && this.drag.options.resizeAnimation) {
+	      var velocityOptions = animate ? {
+	        duration: this.drag.options.resizeAnimation.duration,
+	        easing: this.drag.options.resizeAnimation.easing,
+	        queue: false
+	      } : {
+	        duration: 0,
+	        queue: false
+	      };
 	      Velocity(this.el, {
 	        width: size[0],
 	        height: size[1],
 	        left: -this.gripOffset[0] * size[0],
 	        top: -this.gripOffset[1] * size[1],
-	        transformOriginX: this.gripOffset[0] * size[0],
-	        transformOriginY: this.gripOffset[1] * size[1],
 	        scaleX: scale[0],
 	        scaleY: scale[1]
 	      }, velocityOptions);
 	    } else {
-	      */
-	    this.el.style.width = size[0] + 'px';
-	    this.el.style.height = size[1] + 'px';
-	    this.el.style.left = -this.gripOffset[0] * size[0] + 'px';
-	    this.el.style.top = -this.gripOffset[1] * size[1] + 'px';
-	    dom.transformOrigin(this.el, [-this.gripOffset[0], -this.gripOffset[1]]);
-	    this.scale = scale;
-	    this.updateTransform();
-	    //}
+	      this.el.style.width = size[0] + 'px';
+	      this.el.style.height = size[1] + 'px';
+	      this.el.style.left = -this.gripOffset[0] * size[0] + 'px';
+	      this.el.style.top = -this.gripOffset[1] * size[1] + 'px';
+	      dom.transformOrigin(this.el, [this.gripOffset[0] * 100, this.gripOffset[1] * 100]);
+	      this.scale = scale;
+	      this.updateTransform();
+	    }
 	    this.size = size;
+	    this.scale = scale;
 	  };
 
 	  Helper.prototype.updateTransform = function updateTransform() {
-	    dom.transform(this.el, {
-	      translateX: this.position[0],
-	      translateY: this.position[1],
-	      translateZ: 0,
-	      scaleX: this.scale[0],
-	      scaleY: this.scale[1],
-	      rotateZ: -1
-	    });
+	    if (window['Velocity'] && this.drag.options.pickupAnimation) {
+	      Velocity(this.el, {
+	        translateX: this.position[0],
+	        translateY: this.position[1]
+	      }, { duration: 0, queue: false });
+	    } else {
+	      dom.transform(this.el, {
+	        translateX: this.position[0],
+	        translateY: this.position[1],
+	        translateZ: 0,
+	        scaleX: this.scale[0],
+	        scaleY: this.scale[1],
+	        rotateZ: -1
+	      });
+	    }
 	  };
 
-	  Helper.prototype.animateToRect = function animateToRect(rect, callback) {
-	    return callback();
-	    var targetProps = {
-	      translateX: [rect.left, 'ease-out'],
-	      translateY: [rect.top, 'ease-out'],
-	      top: [0, 'ease-out'],
-	      left: [0, 'ease-out'],
-	      rotateZ: 0,
-	      boxShadowBlur: 0
-	    };
-	    if (this.drag.options.animation.animateResize) {
-	      targetProps.width = [rect.width, 'ease-out'];
-	      targetProps.height = [rect.height, 'ease-out'];
+	  Helper.prototype.animateToElement = function animateToElement(el, callback) {
+	    var rect = el.getBoundingClientRect();
+	    var o = this.drag.options;
+	    if (o.dropAnimation) {
+	      var targetProps = {
+	        translateX: rect.left,
+	        translateY: rect.top,
+	        top: 0,
+	        left: 0,
+	        rotateZ: 0,
+	        boxShadowBlur: 0,
+	        width: rect.width,
+	        height: rect.height
+	      };
+	      Velocity(this.el, targetProps, {
+	        duration: o.dropAnimation.duration,
+	        easing: o.dropAnimation.easing,
+	        complete: callback
+	      });
+	    } else {
+	      return callback();
 	    }
-	    Velocity(this.el, targetProps, {
-	      duration: this.drag.options.animation.duration,
-	      easing: this.drag.options.animation.easing,
-	      complete: callback
-	    });
 	  };
 
 	  Helper.prototype.dispose = function dispose(drag) {
@@ -1084,7 +1128,7 @@
 	    this.placeholder.el.style.visibility = "hidden";
 	  };
 
-	  CanvasContainer.prototype.dropDraggable = function dropDraggable(draggable) {
+	  CanvasContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
 	    this.placeholder.dispose();
 	    draggable.clean();
 	    dom.topLeft(draggable.el, this.offset);
@@ -1125,15 +1169,23 @@
 	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
 
 	var DroppableContainer = (function (_Container) {
-	  function DroppableContainer() {
+	  function DroppableContainer(el, drag) {
 	    _classCallCheck(this, DroppableContainer);
 
-	    _Container.apply(this, arguments);
+	    _Container.call(this, el, drag);
 	  }
 
 	  _inherits(DroppableContainer, _Container);
 
-	  DroppableContainer.prototype.updateTarget = function updateTarget(drag) {};
+	  DroppableContainer.prototype.updatePosition = function updatePosition(constrainedXY) {};
+
+	  DroppableContainer.prototype.insertPlaceholder = function insertPlaceholder(originalEl) {};
+
+	  DroppableContainer.prototype.updatePlaceholder = function updatePlaceholder() {};
+
+	  DroppableContainer.prototype.removePlaceholder = function removePlaceholder() {};
+
+	  DroppableContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {};
 
 	  _createClass(DroppableContainer, null, [{
 	    key: "selector",
@@ -1191,33 +1243,33 @@
 	    this.direction = "vertical";
 	    this.childEls = [];
 	    this.placeholderIndex = 0;
+	    this.style = null;
 	    this.initialize();
 	  }
 
 	  _inherits(SortableContainer, _Container);
 
 	  SortableContainer.prototype.initialize = function initialize() {
+	    this.style = getComputedStyle(this.el);
 	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
 	    this.childEls = Array.prototype.splice.call(this.el.children, 0);
+
 	    // remove the draggable element from the child array
 	    var draggableElIndex = this.childEls.indexOf(this.drag.draggable.el);
-	    if (draggableElIndex !== -1) this.childEls.splice(draggableElIndex, 1);
-	    this.updateIndex(this.drag.constrainedXY);
+	    if (draggableElIndex !== -1) {
+	      this.childEls.splice(draggableElIndex, 1);
+	      this.index = draggableElIndex;
+	    }
 	  };
 
 	  SortableContainer.prototype.updatePosition = function updatePosition(xy) {
-	    this.updateIndex(xy);
-	  };
-
-	  SortableContainer.prototype.updateIndex = function updateIndex(xy) {
 	    if (this.childEls.length === 0) return this.index = 0;
 
 	    // we'll use selection APIs rather than elementAtPoint,
 	    // as it returns the closest sibling to the area being selected
 	    // TODO - do performance comparison between "viaSelection" and normal elementFromPoint
-	    var closestEl = dom.elementFromPointViaSelection(xy);
-
 	    // find the closest direct descendant of this sortable container
+	    var closestEl = dom.elementFromPointViaSelection(xy);
 	    while (closestEl && this.childEls.indexOf(closestEl) === -1) {
 	      closestEl = closestEl.parentElement;
 	    }
@@ -1226,7 +1278,6 @@
 	      if (this.placeholder && closestEl === this.placeholder.el) return;
 	      this.index = this.childEls.indexOf(closestEl);
 	      var closestRect = closestEl.getBoundingClientRect();
-
 	      switch (this.direction) {
 	        case "vertical":
 	          if (xy[1] > closestRect.top + closestRect.height / 2) this.index++;
@@ -1249,6 +1300,7 @@
 	      if (!originalEl) this.el.appendChild(this.placeholder.el);
 	      this.placeholderIndex = dom.indexOf(this.placeholder.el);
 	    }
+	    this.el.setAttribute("data-drag-animate", "");
 	    /*
 	    function mutation() {
 	      if (originalEl) originalEl.remove();
@@ -1266,8 +1318,9 @@
 	    else mutation();
 	    */
 	    this.placeholderSize = this.placeholder.size;
+	    this.placeholderSizeWithMargins = this.placeholder.sizeWithMargins;
 	    this.placeholderScale = this.placeholder.scale;
-	    this.placeholder.el.style.visibility = "visible";
+	    this.placeholder.show();
 	  };
 
 	  SortableContainer.prototype.updatePlaceholder = function updatePlaceholder() {
@@ -1293,8 +1346,11 @@
 	    this.updateChildOffsets();
 	  };
 
-	  SortableContainer.prototype.removePlaceholder = function removePlaceholder(drag) {
-	    this.placeholder.el.style.visibility = "hidden";
+	  SortableContainer.prototype.removePlaceholder = function removePlaceholder() {
+	    // we'll keep the placeholder around in case the user
+	    // re-enters this sortable container; preventing expensive
+	    // dom updates later
+	    this.placeholder.hide();
 	    /*
 	    function mutation() {
 	      self.placeholder.el.remove();
@@ -1317,31 +1373,47 @@
 	  };
 
 	  SortableContainer.prototype.updateChildOffsets = function updateChildOffsets() {
-	    var index = 0;
-	    var offset = 0;
-	    this.childEls.forEach((function (el) {
-	      if (index === this.placeholderIndex) {
-	        offset -= this.direction === "vertical" ? this.placeholderSize[1] : this.placeholderSize[0];
+	    // initialize the expected offset to the padding value
+	    var expectedOffset = 0;
+	    if (this.childEls.length > 0) expectedOffset = this.direction === "vertical" ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft);
+
+	    var placeholderOffset = null;
+	    this.childEls.forEach((function (el, index) {
+	      if (index === this.index && this.placeholder.visible) {
+	        // leave room for the placeholder
+	        placeholderOffset = expectedOffset;
+	        expectedOffset += this.direction === "vertical" ? this.placeholderSizeWithMargins[1] : this.placeholderSizeWithMargins[0];
 	      }
-	      if (index === this.index) {
-	        offset += this.direction === "vertical" ? this.placeholderSize[1] : this.placeholderSize[0];
-	      }
+	      var offset = expectedOffset - (this.direction === "vertical" ? el.offsetTop : el.offsetLeft);
 	      if (el._offset !== offset && !(offset === 0 && el._offset === undefined)) {
 	        el.style.webkitTransform = this.direction === "vertical" ? "translate(0," + offset + "px)" : "translate(" + offset + "px,0)";
 	        el._offset = offset;
 	      }
-	      index++;
+	      expectedOffset += this.direction === "vertical" ? dom.outerHeight(el) : dom.outerWidth(el);
 	    }).bind(this));
+	    placeholderOffset = placeholderOffset || expectedOffset;
+	    var placeholderTranslation = placeholderOffset - (this.direction === "vertical" ? this.placeholder.el.offsetTop : this.placeholder.el.offsetLeft);
+	    this.placeholder.el.style.webkitTransform = this.direction === "vertical" ? "translate(0," + placeholderTranslation + "px)" : "translate(" + placeholderTranslation + "px,0)";
 	  };
 
-	  SortableContainer.prototype.dropDraggable = function dropDraggable(draggable) {
-	    this.placeholder.dispose();
-	    draggable.clean();
-	    this.el.insertBefore(draggable.el, this.childEls[this.index]);
+	  SortableContainer.prototype.clearChildTranslations = function clearChildTranslations() {
 	    this.childEls.forEach(function (el) {
 	      el.style.webkitTransform = "";
 	      el.style.transform = "";
 	    });
+	  };
+
+	  SortableContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
+	    this.el.removeAttribute("data-drag-animate");
+	    draggable.clean();
+	    this.el.insertBefore(draggable.el, this.childEls[this.index]);
+	    this.clearChildTranslations();
+	  };
+
+	  SortableContainer.prototype.dispose = function dispose() {
+	    this.clearChildTranslations();
+	    if (this.placeholder) this.placeholder.dispose();
+	    _Container.prototype.dispose.call(this);
 	  };
 
 	  _createClass(SortableContainer, null, [{
@@ -1523,6 +1595,7 @@
 	    this.drag = drag;
 	    this.isDraggableEl = !!draggableEl;
 	    this.el = draggableEl;
+	    this.visible = true;
 	    this.initialize();
 	  }
 
@@ -1535,10 +1608,23 @@
 	      this.el = this.drag.draggable.el.cloneNode(true);
 	      this.el.removeAttribute('id');
 	    }
-	    this.el.classList.add(this.drag.options.placholderClass);
+	    this.el.classList.add(this.drag.options.placeholderClass);
 	    this.el.setAttribute('data-drag-placeholder', '');
 	    dom.translate(this.el, 0, 0);
 	    dom.topLeft(this.el, [0, 0]);
+	    this.visible = true;
+	  };
+
+	  Placeholder.prototype.hide = function hide() {
+	    this.el.style.top = -99999;
+	    this.el.style.visibility = 'hidden';
+	    this.visible = false;
+	  };
+
+	  Placeholder.prototype.show = function show() {
+	    this.el.style.top = 0;
+	    this.el.style.visibility = '';
+	    this.visible = true;
 	  };
 
 	  Placeholder.prototype.dispose = function dispose() {
@@ -1552,6 +1638,7 @@
 	      this.el.style.webkitTransform = '';
 	      this.el.style.transform = '';
 	      this.el.style.visibility = 'visible';
+	      this.el.style.top = 0;
 	      this.el = null;
 	    }
 	  };
@@ -1560,6 +1647,11 @@
 	    key: 'size',
 	    get: function get() {
 	      return [this.el.offsetWidth, this.el.offsetHeight];
+	    }
+	  }, {
+	    key: 'sizeWithMargins',
+	    get: function get() {
+	      return [dom.outerWidth(this.el), dom.outerHeight(this.el)];
 	    }
 	  }, {
 	    key: 'scale',
@@ -1633,30 +1725,30 @@
 	  Scrollable.prototype.tryScroll = function tryScroll(pointerXY) {
 	    this.updateVelocity(pointerXY);
 	    if (this.velocity[0] !== 0 || this.velocity[1] !== 0) {
-	      this.startScroll();
+	      this.offset = [this.el.scrollLeft, this.el.scrollTop];
+	      this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
 	      return true;
 	    }
 	    return false;
 	  };
 
-	  Scrollable.prototype.startScroll = function startScroll() {
-	    this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
-	    this.offset = [this.el.scrollLeft, this.el.scrollTop];
-	  };
-
 	  Scrollable.prototype.continueScroll = function continueScroll() {
+	    this.requestId = null;
+	    // calculate the amount we want to scroll
 	    var currentUpdate = new Date();
 	    var elapsedTimeMs = this.lastUpdate ? currentUpdate - this.lastUpdate : 16;
-	    this.requestId = null;
 	    this.offset = [this.offset[0] + this.velocity[0] * elapsedTimeMs, this.offset[1] + this.velocity[1] * elapsedTimeMs];
 
+	    // scroll the scrollable
 	    if (this.velocity[0] !== 0) this.el.scrollLeft = this.offset[0];
 	    if (this.velocity[1] !== 0) this.el.scrollTop = this.offset[1];
-	    if (this.velocity[0] !== 0 || this.velocity[1] !== 0) this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
 	    this.lastUpdate = currentUpdate;
+
+	    // schedule the next scroll update
+	    if (this.velocity[0] !== 0 || this.velocity[1] !== 0) this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
 	  };
 
-	  Scrollable.prototype.cancelScroll = function cancelScroll() {
+	  Scrollable.prototype.stopScroll = function stopScroll() {
 	    cancelAnimationFrame(this.requestId);
 	    this.requestId = null;
 	    this.lastUpdate = null;

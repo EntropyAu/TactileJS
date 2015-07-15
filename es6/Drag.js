@@ -10,13 +10,11 @@ import * as dom from './lib/dom.js';
 
 // TODO: Animated revert
 // TODO: Animated resize
-// TODO: Animated destroy (drop elsewhere)
+// TODO: Animated destroy (beginDrop elsewhere)
 // TODO: Animated pickup
 
 // TODO: Scroll only if scrollable is an ancestor of the target element
 // TODO: Scroll does not propagate if target element is constrained
-
-// TODO: Scroll slow down as you approach extremity
 // TODO: Scroll adjust scroll maxV based on number of items
 // TODO: Scroll trigger placeholder update when scroll stops
 // TODO: Copy behaviour
@@ -31,8 +29,11 @@ export default class Drag {
 
     this.draggable = draggable;
     this.target = null;
-    this.knownTargets = new WeakMap();
+    this.knownTargets = new Map();
     this.revertOnCancel = true;
+    this.dropAction = "move"; // "copy"
+    this.cancelAction = "revert"; // "remove", "last"
+
 
     this.initialize();
   }
@@ -78,32 +79,27 @@ export default class Drag {
 
 
   end() {
-    if (this.target) this.drop(); else this.cancel();
-    if (this.scroller) this.scroller.cancelScroll();
+    if (this.target) this.beginDrop(); else this.beginCancel();
+    if (this.scroller) this.scroller.stopScroll();
     events.raiseEvent(this.draggable.el, 'dragend', this)
-    this.dispose()
   }
 
 
-  drop() {
-    events.raiseEvent(this.draggable.el, 'drop', this)
-    let placeholderRect = this.target.placeholder.el.getBoundingClientRect();
-    this.helper.animateToRect(placeholderRect, function() {
-      this.target.dropDraggable(this.draggable);
-    }.bind(this));
-  }
-
-  cancel() {
-    this.draggable.restoreOriginal();
-  }
-
-  dispose() {
-    if (this.target) {
-      this.target.el.classList.remove('dd-drag-over');
+  beginDrop() {
+    events.raiseEvent(this.draggable.el, 'beginDrop', this)
+    if (this.target.placeholder) {
+      this.helper.animateToElement(this.target.placeholder.el, function() {
+        this.target.finalizeDrop(this.draggable);
+        this.dispose();
+      }.bind(this));
     }
+  }
 
-    this.helper.dispose();
-    this.helper = null;
+
+  beginCancel() {
+    this.draggable.restoreOriginal();
+    // restore draggable to original position
+    this.dispose();
   }
 
 
@@ -130,6 +126,7 @@ export default class Drag {
     }
   }
 
+
   updateTargetContainer(removeOriginal = false) {
     if (this.target && this.target.captures(this.draggable)) return;
     let placeholderEl = Placeholder.closest(this.pointerEl);
@@ -148,11 +145,12 @@ export default class Drag {
     }
   }
 
+
   _enterTarget(container, removeOriginal) {
     container.updatePosition(this.constrainedXY)
     container.insertPlaceholder(removeOriginal ? this.draggable.el : null);
     events.raiseEvent(container.el, 'dragenter', this);
-    if (this.options.helperResize) {
+    if (this.options.helperResize && container.placeholderSize) {
       this.helper.setSizeAndScale(
         container.placeholderSize,
         container.placeholderScale);
@@ -166,5 +164,15 @@ export default class Drag {
     events.raiseEvent(container.el, 'dragleave', this);
     container.el.classList.remove(this.options.containerHoverClass);
     this.target = null;
+  }
+
+  dispose() {
+    if (this.target) {
+      this.target.el.classList.remove('dd-drag-over');
+    }
+
+    this.knownTargets.forEach((t) => t.dispose());
+    this.helper.dispose();
+    this.helper = null;
   }
 }

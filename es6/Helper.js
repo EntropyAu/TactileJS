@@ -1,6 +1,7 @@
 import * as dom from "./lib/dom.js";
 
 export default class Helper {
+  /* members */
 
   constructor(drag) {
     this.drag = drag;
@@ -22,7 +23,7 @@ export default class Helper {
     this.el.removeAttribute('id');
     this.el.setAttribute('data-drag-helper', '');
 
-    let rect = this.drag.draggable.el.getBoundingClientRect();
+    const rect = this.drag.draggable.el.getBoundingClientRect();
     this.gripOffset = [(this.drag.pointerXY[0] - rect.left) / rect.width,
                        (this.drag.pointerXY[1] - rect.top) / rect.height];
 
@@ -33,16 +34,20 @@ export default class Helper {
     this.setSizeAndScale(this.drag.draggable.originalSize,
                          this.drag.draggable.originalScale,
                          false);
-
     this.el.focus()
 
-    if (this.drag.options.animatePickup && window['Velocity']) {
+    const o = this.drag.options;
+    if (o.pickupAnimation && window['Velocity']) {
       Velocity(this.el, {
-        rotateZ: -1,
-        boxShadowBlur: this.drag.options.helper.shadowSize
+        rotateZ: 0,
+        boxShadowBlur: 0
+      }, { duration: 0 })
+      Velocity(this.el, {
+        rotateZ: o.helperRotation,
+        boxShadowBlur: o.helperShadowSize
       }, {
-        duration: this.drag.options.animation.duration,
-        easing: this.drag.options.animation.easing
+        duration: o.pickupAnimation.duration,
+        easing: o.pickupAnimation.easing
       });
     }
   }
@@ -56,17 +61,16 @@ export default class Helper {
 
   setSizeAndScale(size, scale, animate = true) {
     if (this.size && this.scale
-      && this.size[0] === size[0]
-      && this.size[1] === size[1]
-      && this.scale[0] === scale[0]
-      && this.scale[1] === scale[1]) return;
+     && this.size[0] === size[0]
+     && this.size[1] === size[1]
+     && this.scale[0] === scale[0]
+     && this.scale[1] === scale[1]) return;
 
-    /*
-    if (animate && window['Velocity']) {
-      const velocityOptions = this.drag.options.animation.animateResize
+    if (window['Velocity'] && this.drag.options.resizeAnimation) {
+      const velocityOptions = animate
                             ? {
-                                duration: this.drag.options.animation.duration,
-                                easing: 'linear',
+                                duration: this.drag.options.resizeAnimation.duration,
+                                easing: this.drag.options.resizeAnimation.easing,
                                 queue: false
                               }
                             : {
@@ -78,57 +82,64 @@ export default class Helper {
         height: size[1],
         left: -this.gripOffset[0] * size[0],
         top: -this.gripOffset[1] * size[1],
-        transformOriginX: this.gripOffset[0] * size[0],
-        transformOriginY: this.gripOffset[1] * size[1],
         scaleX: scale[0],
         scaleY: scale[1]
       }, velocityOptions);
     } else {
-      */
       this.el.style.width = size[0] + 'px';
       this.el.style.height = size[1] + 'px';
       this.el.style.left = (-this.gripOffset[0] * size[0]) + 'px';
       this.el.style.top = (-this.gripOffset[1] * size[1]) + 'px';
-      dom.transformOrigin(this.el, [-this.gripOffset[0], -this.gripOffset[1]]);
+      dom.transformOrigin(this.el, [this.gripOffset[0] * 100, this.gripOffset[1] * 100]);
       this.scale = scale;
       this.updateTransform();
-    //}
+    }
     this.size = size;
+    this.scale = scale;
   }
 
 
   updateTransform() {
-    dom.transform(this.el, {
-      translateX: this.position[0],
-      translateY: this.position[1],
-      translateZ: 0,
-      scaleX: this.scale[0],
-      scaleY: this.scale[1],
-      rotateZ: -1
-    });
+    if (window["Velocity"] && this.drag.options.pickupAnimation) {
+      Velocity(this.el, {
+        translateX: this.position[0],
+        translateY: this.position[1]
+      }, { duration: 0, queue: false });
+    } else {
+      dom.transform(this.el, {
+        translateX: this.position[0],
+        translateY: this.position[1],
+        translateZ: 0,
+        scaleX: this.scale[0],
+        scaleY: this.scale[1],
+        rotateZ: -1
+      });
+    }
   }
 
 
-
-  animateToRect(rect, callback) {
-    return callback();
-    let targetProps = {
-      translateX: [rect.left, 'ease-out'],
-      translateY: [rect.top, 'ease-out'],
-      top: [0, 'ease-out'],
-      left: [0, 'ease-out'],
-      rotateZ: 0,
-      boxShadowBlur: 0
-    };
-    if (this.drag.options.animation.animateResize) {
-      targetProps.width = [rect.width, 'ease-out'];
-      targetProps.height = [rect.height, 'ease-out'];
+  animateToElement(el, callback) {
+    const rect = el.getBoundingClientRect();
+    const o = this.drag.options;
+    if (o.dropAnimation) {
+      let targetProps = {
+        translateX: rect.left,
+        translateY: rect.top,
+        top: 0,
+        left: 0,
+        rotateZ: 0,
+        boxShadowBlur: 0,
+        width: rect.width,
+        height: rect.height
+      }
+      Velocity(this.el, targetProps, {
+        duration: o.dropAnimation.duration,
+        easing: o.dropAnimation.easing,
+        complete: callback
+      });
+    } else {
+      return callback();
     }
-    Velocity(this.el, targetProps, {
-      duration: this.drag.options.animation.duration,
-      easing: this.drag.options.animation.easing,
-      complete: callback
-    });
   }
 
 

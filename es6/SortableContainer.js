@@ -13,34 +13,33 @@ export default class SortableContainer extends Container {
     this.direction = 'vertical';
     this.childEls = [];
     this.placeholderIndex = 0;
+    this.style = null;
     this.initialize();
   }
 
 
   initialize() {
+    this.style = getComputedStyle(this.el);
     this.direction = this.el.getAttribute('data-drag-sortable') || 'vertical';
     this.childEls = Array.prototype.splice.call(this.el.children, 0);
+
     // remove the draggable element from the child array
     let draggableElIndex = this.childEls.indexOf(this.drag.draggable.el);
-    if (draggableElIndex !== -1) this.childEls.splice(draggableElIndex, 1);
-    this.updateIndex(this.drag.constrainedXY)
+    if (draggableElIndex !== -1) {
+      this.childEls.splice(draggableElIndex, 1);
+      this.index = draggableElIndex;
+    }
   }
 
 
   updatePosition(xy) {
-    this.updateIndex(xy);
-  }
-
-
-  updateIndex(xy) {
     if (this.childEls.length === 0) return this.index = 0;
 
     // we'll use selection APIs rather than elementAtPoint,
     // as it returns the closest sibling to the area being selected
     // TODO - do performance comparison between "viaSelection" and normal elementFromPoint
-    let closestEl = dom.elementFromPointViaSelection(xy);
-
     // find the closest direct descendant of this sortable container
+    let closestEl = dom.elementFromPointViaSelection(xy);
     while (closestEl && this.childEls.indexOf(closestEl) === -1) {
       closestEl = closestEl.parentElement;
     }
@@ -49,7 +48,6 @@ export default class SortableContainer extends Container {
       if (this.placeholder && closestEl === this.placeholder.el) return;
       this.index = this.childEls.indexOf(closestEl);
       let closestRect = closestEl.getBoundingClientRect();
-
       switch (this.direction) {
         case 'vertical':
           if (xy[1] > closestRect.top + closestRect.height / 2) this.index++;
@@ -73,6 +71,7 @@ export default class SortableContainer extends Container {
       if (!originalEl) this.el.appendChild(this.placeholder.el);
       this.placeholderIndex = dom.indexOf(this.placeholder.el);
     }
+    this.el.setAttribute('data-drag-animate', '');
     /*
     function mutation() {
       if (originalEl) originalEl.remove();
@@ -90,8 +89,9 @@ export default class SortableContainer extends Container {
     else mutation();
     */
     this.placeholderSize = this.placeholder.size;
+    this.placeholderSizeWithMargins = this.placeholder.sizeWithMargins;
     this.placeholderScale = this.placeholder.scale;
-    this.placeholder.el.style.visibility = 'visible';
+    this.placeholder.show();
   }
 
 
@@ -119,8 +119,11 @@ export default class SortableContainer extends Container {
   }
 
 
-  removePlaceholder(drag) {
-    this.placeholder.el.style.visibility = 'hidden';
+  removePlaceholder() {
+    // we'll keep the placeholder around in case the user
+    // re-enters this sortable container; preventing expensive
+    // dom updates later
+    this.placeholder.hide();
     /*
     function mutation() {
       self.placeholder.el.remove();
@@ -142,34 +145,53 @@ export default class SortableContainer extends Container {
     this.updateChildOffsets();
   }
 
+
   updateChildOffsets() {
-    let index = 0;
-    let offset = 0
-    this.childEls.forEach(function(el) {
-      if (index === this.placeholderIndex) {
-        offset -= this.direction === 'vertical' ? this.placeholderSize[1] : this.placeholderSize[0];
+    // initialize the expected offset to the padding value
+    let expectedOffset = 0;
+    if (this.childEls.length > 0) expectedOffset = (this.direction === 'vertical' ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft));
+
+    let placeholderOffset = null;
+    this.childEls.forEach(function(el, index) {
+      if (index === this.index && this.placeholder.visible) {
+        // leave room for the placeholder
+        placeholderOffset = expectedOffset;
+        expectedOffset += this.direction === 'vertical' ? this.placeholderSizeWithMargins[1] : this.placeholderSizeWithMargins[0];
       }
-      if (index === this.index) {
-        offset += this.direction === 'vertical' ? this.placeholderSize[1] : this.placeholderSize[0];
-      }
+      let offset = expectedOffset - (this.direction === 'vertical' ? el.offsetTop : el.offsetLeft);
       if (el._offset !== offset && !(offset === 0 && el._offset === undefined)) {
         el.style.webkitTransform = this.direction === 'vertical'
                                  ? 'translate(0,' + offset + 'px)'
                                  : 'translate(' + offset + 'px,0)';
         el._offset = offset;
       }
-      index++;
+      expectedOffset += this.direction === 'vertical' ? dom.outerHeight(el) : dom.outerWidth(el);
     }.bind(this));
+    placeholderOffset = placeholderOffset || expectedOffset;
+    let placeholderTranslation = placeholderOffset - (this.direction === 'vertical' ? this.placeholder.el.offsetTop : this.placeholder.el.offsetLeft);
+    this.placeholder.el.style.webkitTransform = this.direction === 'vertical'
+                                 ? 'translate(0,' + placeholderTranslation + 'px)'
+                                 : 'translate(' + placeholderTranslation + 'px,0)';
   }
 
-
-  dropDraggable(draggable) {
-    this.placeholder.dispose();
-    draggable.clean();
-    this.el.insertBefore(draggable.el, this.childEls[this.index]);
+  clearChildTranslations() {
     this.childEls.forEach(function(el) {
       el.style.webkitTransform = '';
       el.style.transform = '';
     });
+  }
+
+
+  finalizeDrop(draggable) {
+    this.el.removeAttribute('data-drag-animate');
+    draggable.clean();
+    this.el.insertBefore(draggable.el, this.childEls[this.index]);
+    this.clearChildTranslations();
+  }
+
+  dispose() {
+    this.clearChildTranslations();
+    if (this.placeholder) this.placeholder.dispose();
+    super();
   }
 }
