@@ -2,13 +2,6 @@
   opacity: 0.5;
 }
 
-.dd-drag-over[data-drag-canvas],
-.dd-drag-over[data-drag-sortable] {
-  /* disabled due to ios impact */
-  /*border: 1px solid #35BDB2;*/
-}
-
-
 li, ol li {
   list-style: none;
   overfow: hidden;

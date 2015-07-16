@@ -98,8 +98,7 @@ export default class Scrollable {
     const b = this.bounds;
 
     let v = [0,0];
-    if (xy[0] >= this.bounds.left && xy[0] <= this.bounds.right
-      && xy[1] >= this.bounds.top && xy[1] <= this.bounds.bottom) {
+    if (xy[0] >= b.left && xy[0] <= b.right && xy[1] >= b.top && xy[1] <= b.bottom) {
 
       if (this.horizontalEnabled) {
         if (xy[0] > b.right - this.sensitivityH && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right-this.sensitivityH, b.right], [0, +maxV]);
@@ -114,6 +113,4 @@ export default class Scrollable {
     this.velocity = v;
     return this.velocity[0] !== 0 || this.velocity[1] !== 0;
   }
-
-
 }

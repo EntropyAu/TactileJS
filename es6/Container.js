@@ -23,7 +23,6 @@ export default class Container {
 
   setPointerXY(constrainedXY) {
     this.updatePosition(constrainedXY)
-    this.updatePlaceholder();
   }
 
   accepts(draggable) {
@@ -33,9 +32,6 @@ export default class Container {
     return acceptsSelector ? draggable.el.matches(acceptsSelector)
                            : draggable.originalParentEl === this.el;
   }
-
-  enter() { }
-  leave() { }
 
   captures(draggable) {
     if (this.el.hasAttribute('data-drag-capture')) return true;
@@ -49,6 +45,10 @@ export default class Container {
     }
     return false;
   }
+
+  enter() { }
+  leave() { }
+
 
   dispose() {}
 }

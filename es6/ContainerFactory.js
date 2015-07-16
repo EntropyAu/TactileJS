@@ -8,7 +8,10 @@ export default class ContainerFactory {
   static get selector() { return '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]'; }
 
   static closest(el) {
-    return dom.closest(el, this.selector);
+    let closestEl = dom.closest(el, this.selector);
+    while (closestEl && dom.closest(closestEl, '[data-drag-placeholder]'))
+      closestEl = dom.closest(closestEl.parentElement, this.selector)
+    return closestEl;
   }
 
   static makeContainer(el, drag) {

@@ -63,22 +63,27 @@ export default class Placeholder {
     this.setState("ghosted", false);
   }
 
-  dispose(removeElement = true) {
-    if (!this.isDraggableEl && removeElement) {
-      this.el.remove();
-      this.el = null;
-    } else {
-      // restore the original draggable element settings
-      this.el.removeAttribute('data-drag-placeholder');
-      this.el.classList.remove('dd-drag-placeholder');
-      this.el.style.webkitTransform = '';
-      this.el.style.mozTransform = '';
-      this.el.style.msTransform = '';
-      this.el.style.transform = '';
-      this.el.style.visibility = 'visible';
-      this.el.style.top = 0;
-      this.el.style.opacity = 1;
-      this.el = null;
+  dispose() {
+    switch (this.state) {
+      case "hidden":
+        this.el.remove();
+        this.el = null;
+        break;
+      case "ghosted":
+      case "materialized":
+        // restore the original draggable element settings
+        this.el.removeAttribute('data-drag-placeholder');
+        this.el.classList.remove('dd-drag-placeholder');
+        this.el.style.position = 'static';
+        this.el.style.webkitTransform = '';
+        this.el.style.mozTransform = '';
+        this.el.style.msTransform = '';
+        this.el.style.transform = '';
+        this.el.style.visibility = 'visible';
+        this.el.style.top = 0;
+        this.el.style.opacity = 1;
+        this.el = null;
+        break;
     }
   }
 }

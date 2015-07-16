@@ -76,6 +76,7 @@ export default class Helper {
      && this.size[1] === size[1]
      && this.scale[0] === scale[0]
      && this.scale[1] === scale[1]) return;
+    console.log(size);
 
     animation.set(this.el, {
       width: size[0],

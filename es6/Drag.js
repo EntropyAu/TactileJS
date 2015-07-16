@@ -29,6 +29,7 @@ export default class Drag {
 
     this.draggable = draggable;
     this.target = null;
+    this.source = null;
     this.knownContainers = new Map();
     this.revertOnCancel = true;
     this.dropAction = "move"; // "copy"
@@ -162,6 +163,7 @@ export default class Drag {
 
 
   _enterTarget(container) {
+    console.log("_enterTarget", container);
     if (events.raiseEvent(container.el, 'dragenter', this).returnValue) {
       container.updatePosition(this.constrainedXY);
       container.enter();
@@ -177,6 +179,7 @@ export default class Drag {
 
 
   _leaveTarget(container) {
+    console.log("_leaveTarget", container);
     if (events.raiseEvent(container.el, 'dragleave', this).returnValue) {
       container.leave();
       container.el.classList.remove(this.options.containerHoverClass);
