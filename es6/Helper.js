@@ -5,6 +5,7 @@ export default class Helper {
   /* members */
 
   constructor(drag) {
+    this.options = drag.options;
     this.drag = drag;
     this.el = null;
     this.grip = null;
@@ -45,16 +46,9 @@ export default class Helper {
 
   pickUp() {
     animation.set(this.el, {
-      rotateZ: [this.drag.options.helperRotation, 0],
-      boxShadowBlur: [this.drag.options.helperShadowSize, 0]
-    }, this.drag.options.pickUpAnimation);
-  }
-
-  putDown() {
-    animation.set(this.el, {
-      rotateZ: 0,
-      boxShadowBlur: 0
-    }, this.drag.options.pickDownAnimation);
+      rotateZ: [this.options.helperRotation, 0],
+      boxShadowBlur: this.options.helperShadowSize
+    }, this.options.pickUpAnimation);
   }
 
 
@@ -71,10 +65,11 @@ export default class Helper {
 
   _applyGripOffset() {
     animation.set(this.el, {
-      left: -this.grip[0] * this.size[0],
-      top: -this.grip[1] * this.size[1],
+      left: (-this.grip[0] * this.size[0]),
+      top: (-this.grip[1] * this.size[1]),
     });
   }
+
 
   setSizeAndScale(size, scale, animate = true) {
     if (this.size[0] === size[0]
@@ -85,27 +80,33 @@ export default class Helper {
     animation.set(this.el, {
       width: size[0],
       height: size[1],
-      left: -this.grip[0] * size[0],
-      top: -this.grip[1] * size[1],
+      left: (-this.grip[0] * size[0]),
+      top: (-this.grip[1] * size[1]),
       scaleX: scale[0],
       scaleY: scale[1]
-    }, animate ? this.drag.options.resizeAnimation : undefined);
+    }, animate ? this.options.resizeAnimation : undefined);
 
     this.size = size;
     this.scale = scale;
   }
 
 
-  animateToElement(el, complete) {
+  animateToElementAndPutDown(el, complete) {
     const rect = el.getBoundingClientRect();
+    // prevent velocity from immediately applying the new value, when the
+    // new and old values are equal. This causes flickering in some
+    // circumstances
+    const minimalDelta = 0.001;
     animation.set(this.el, {
-      top: [0, 0],
-      left: [0, 0],
-      translateX: [rect.left, this.position[0] - this.grip[0] * this.size[0]],
-      translateY: [rect.top, this.position[1] - this.grip[1] * this.size[1]],
+      rotateZ: 0,
+      boxShadowBlur: 0,
+      top: [0, 0 + minimalDelta],
+      left: [0, 0 + minimalDelta],
+      translateX: [rect.left, this.position[0] - this.grip[0] * this.size[0] + minimalDelta],
+      translateY: [rect.top, this.position[1] - this.grip[1] * this.size[1] + minimalDelta],
       width: rect.width,
       height: rect.height
-    }, this.drag.options.dropAnimation, complete);
+    }, this.options.dropAnimation, complete);
   }
 
 

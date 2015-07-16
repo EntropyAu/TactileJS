@@ -50,7 +50,5 @@ export default class Container {
     return false;
   }
 
-  dispose() {
-
-  }
+  dispose() {}
 }

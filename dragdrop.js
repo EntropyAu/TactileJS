@@ -77,12 +77,11 @@
 	var defaultOptions = {
 	  cancel: 'input,textarea,a,button,select',
 	  helperResize: true,
-	  animatepickUp: true,
 	  pickUpAnimation: { duration: 300, easing: 'ease-in-out' },
 	  pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
 	  resizeAnimation: { duration: 300, easing: 'ease-in-out' },
 	  dropAnimation: { duration: 300, easing: 'ease-in-out' },
-	  reorderAnimation: { duration: 300, easing: 'ease-in-out' },
+	  reorderAnimation: { duration: 150, easing: 'ease-in-out' },
 	  pickUpDelay: 0,
 	  pickUpDistance: 0,
 	  helperRotation: -1,
@@ -338,10 +337,11 @@
 	  Drag.prototype.beginDrop = function beginDrop() {
 	    events.raiseEvent(this.draggable.el, 'beginDrop', this);
 	    if (this.target.placeholder) {
-	      this.helper.putDown();
-	      this.helper.animateToElement(this.target.placeholder.el, (function () {
-	        this.target.finalizeDrop(this.draggable);
-	        this.dispose();
+	      this.helper.animateToElementAndPutDown(this.target.placeholder.el, (function () {
+	        requestAnimationFrame((function () {
+	          this.target.finalizeDrop(this.draggable);
+	          this.dispose();
+	        }).bind(this));
 	      }).bind(this));
 	    }
 	  };
@@ -792,15 +792,6 @@
 	    this.el.remove();
 	  };
 
-	  Draggable.prototype.clean = function clean() {
-	    this.el.removeAttribute('data-drag-placeholder');
-	    this.el.classList.remove('dd-drag-placeholder');
-	    this.el.style.webkitTransform = '';
-	    this.el.style.transform = '';
-	    this.el.style.visibility = 'visible';
-	    this.el.style.opacity = 1;
-	  };
-
 	  Draggable.prototype.restoreOriginal = function restoreOriginal() {
 	    dom.topLeft(this.el, this.originalOffset);
 	    this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
@@ -865,6 +856,7 @@
 	  function Helper(drag) {
 	    _classCallCheck(this, Helper);
 
+	    this.options = drag.options;
 	    this.drag = drag;
 	    this.el = null;
 	    this.grip = null;
@@ -900,16 +892,9 @@
 
 	  Helper.prototype.pickUp = function pickUp() {
 	    animation.set(this.el, {
-	      rotateZ: [this.drag.options.helperRotation, 0],
-	      boxShadowBlur: [this.drag.options.helperShadowSize, 0]
-	    }, this.drag.options.pickUpAnimation);
-	  };
-
-	  Helper.prototype.putDown = function putDown() {
-	    animation.set(this.el, {
-	      rotateZ: 0,
-	      boxShadowBlur: 0
-	    }, this.drag.options.pickDownAnimation);
+	      rotateZ: [this.options.helperRotation, 0],
+	      boxShadowBlur: this.options.helperShadowSize
+	    }, this.options.pickUpAnimation);
 	  };
 
 	  Helper.prototype.setPosition = function setPosition(positionXY) {
@@ -940,22 +925,28 @@
 	      top: -this.grip[1] * size[1],
 	      scaleX: scale[0],
 	      scaleY: scale[1]
-	    }, animate ? this.drag.options.resizeAnimation : undefined);
+	    }, animate ? this.options.resizeAnimation : undefined);
 
 	    this.size = size;
 	    this.scale = scale;
 	  };
 
-	  Helper.prototype.animateToElement = function animateToElement(el, complete) {
+	  Helper.prototype.animateToElementAndPutDown = function animateToElementAndPutDown(el, complete) {
 	    var rect = el.getBoundingClientRect();
+	    // prevent velocity from immediately applying the new value, when the
+	    // new and old values are equal. This causes flickering in some
+	    // circumstances
+	    var minimalDelta = 0.001;
 	    animation.set(this.el, {
-	      top: [0, 0],
-	      left: [0, 0],
-	      translateX: [rect.left, this.position[0] - this.grip[0] * this.size[0]],
-	      translateY: [rect.top, this.position[1] - this.grip[1] * this.size[1]],
+	      rotateZ: 0,
+	      boxShadowBlur: 0,
+	      top: [0, 0 + minimalDelta],
+	      left: [0, 0 + minimalDelta],
+	      translateX: [rect.left, this.position[0] - this.grip[0] * this.size[0] + minimalDelta],
+	      translateY: [rect.top, this.position[1] - this.grip[1] * this.size[1] + minimalDelta],
 	      width: rect.width,
 	      height: rect.height
-	    }, this.drag.options.dropAnimation, complete);
+	    }, this.options.dropAnimation, complete);
 	  };
 
 	  Helper.prototype.dispose = function dispose(drag) {
@@ -1233,9 +1224,9 @@
 	    _Container.call(this, el, drag);
 	    this.index = 0;
 	    this.direction = "vertical";
+	    this.childEls = null;
 	    this.siblingEls = null;
-	    this.siblingMeasures = new WeakMap();
-	    this.placeholderIndex = 0;
+	    this.childMeasures = new WeakMap();
 	    this.style = null;
 	    this.initializeSortable();
 	  }
@@ -1245,8 +1236,8 @@
 	  SortableContainer.prototype.initializeSortable = function initializeSortable() {
 	    this.style = getComputedStyle(this.el);
 	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
-	    this.initializePlaceholder();
 	    this.initializeSiblingEls();
+	    this.initializePlaceholder();
 	  };
 
 	  SortableContainer.prototype.initializePlaceholder = function initializePlaceholder() {
@@ -1256,190 +1247,15 @@
 	      this.placeholder = new _PlaceholderJs2["default"](this.drag);
 	      this.el.appendChild(this.placeholder.el);
 	    }
-	    this.placeholderIndex = dom.indexOf(this.placeholder.el);
 	  };
 
 	  SortableContainer.prototype.initializeSiblingEls = function initializeSiblingEls() {
-	    this.siblingEls = Array.prototype.splice.call(this.el.children, 0);
+	    this.siblingEls = this.childEls = Array.prototype.splice.call(this.el.children, 0);
 	    var draggableElIndex = this.siblingEls.indexOf(this.drag.draggable.el);
 	    if (draggableElIndex !== -1) {
 	      this.siblingEls.splice(draggableElIndex, 1);
 	      this.index = draggableElIndex;
 	    }
-	    var offset = 0;
-	    for (var _iterator = this.siblingEls, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-	      var _ref;
-
-	      if (_isArray) {
-	        if (_i >= _iterator.length) break;
-	        _ref = _iterator[_i++];
-	      } else {
-	        _i = _iterator.next();
-	        if (_i.done) break;
-	        _ref = _i.value;
-	      }
-
-	      var el = _ref;
-
-	      var measure = this.direction === "vertical" ? dom.outerHeight(el, true) : dom.outerWidth(el, true);
-	      this.siblingMeasures.set(el, {
-	        offset: el.offsetTop,
-	        measure: measure
-	      });
-	      offset += measure;
-	    }
-	  };
-
-	  SortableContainer.prototype.updatePosition = function updatePosition(xy) {
-	    var localXY = [xy[0] - this.el.scrollLeft, xy[1] - this.el.scrollTop];
-	    if (this.siblingEls.length === 0) return this.index = 0;
-	    this.siblingEls.forEach((function (el, index) {
-	      var measures = this.siblingMeasures.get(el);
-	      if (xy[1] >= measures.offset && xy[1] <= measures.offset + measures.measure) this.index = index;
-	    }).bind(this));
-	    /*
-	    // we'll use selection APIs rather than elementAtPoint,
-	    // as it returns the closest sibling to the area being selected
-	    // TODO - do performance comparison between "viaSelection" and normal elementFromPoint
-	    // find the closest direct descendant of this sortable container
-	    let closestEl = dom.elementFromPointViaSelection(xy);
-	    while (closestEl && this.siblingEls.indexOf(closestEl) === -1) {
-	      closestEl = closestEl.parentElement;
-	    }
-	     if (closestEl) {
-	      if (this.placeholder && closestEl === this.placeholder.el) return;
-	      this.index = this.siblingEls.indexOf(closestEl);
-	      let closestRect = closestEl.getBoundingClientRect();
-	      switch (this.direction) {
-	        case 'vertical':
-	          if (xy[1] > closestRect.top + closestRect.height / 2) this.index++;
-	          break;
-	        case 'horizontal':
-	        case 'wrap':
-	          if (xy[0] > closestRect.left + closestRect.width / 2) this.index++;
-	          break;
-	      }
-	    }
-	    */
-	  };
-
-	  SortableContainer.prototype.insertPlaceholder = function insertPlaceholder() {
-	    /*
-	    function mutation() {
-	      if (originalEl) originalEl.remove();
-	      self.el.insertBefore(self.placeholder.el, self.el.children[self.index]);
-	    }
-	    if (this.options.animation)
-	      animation.animateDomMutation(this.el, mutation.bind(this),
-	      {
-	        duration: this.options.animation.duration,
-	        easing: this.options.animation.easing,
-	        startIndex: this.index,
-	        elementLimit: this.options.animation.elementLimit,
-	        animateParentSize: this.options.animation.animateSortableResize
-	      });
-	    else mutation();
-	    */
-	    this.placeholderSize = this.placeholder.size;
-	    this.placeholderOuterSize = this.placeholder.outerSize;
-	    this.placeholderScale = this.placeholder.scale;
-	    this.placeholder.setState("ghosted");
-	    this.updateChildOffsets();
-	  };
-
-	  SortableContainer.prototype.updatePlaceholder = function updatePlaceholder() {
-	    //let newIndex = this.index,
-	    //    oldIndex = dom.indexOf(this.placeholder.el);
-	    //if (oldIndex !== newIndex && oldIndex !== newIndex - 1) {
-	    /*
-	    let self = this;
-	    function mutation() {
-	      //self.el.insertBefore(self.placeholder.el, self.el.children[newIndex]);
-	    }
-	    if (this.options.animation)
-	      animation.animateDomMutation(this.el, mutation,
-	      {
-	        duration: this.options.animation.duration,
-	        easing: this.options.animation.easing,
-	        startIndex: Math.min(oldIndex, newIndex) - 1,
-	        endIndex: Math.max(oldIndex, newIndex) + 1,
-	        elementLimit: this.options.animation.elementLimit
-	      });
-	    else mutation();
-	    */
-	    this.updateChildOffsets();
-	  };
-
-	  SortableContainer.prototype.removePlaceholder = function removePlaceholder() {
-	    // we'll keep the placeholder around in case the user
-	    // re-enters this sortable container; preventing expensive
-	    // dom updates later
-	    this.placeholder.setState("hidden");
-	    /*
-	    function mutation() {
-	      self.placeholder.el.remove();
-	    }
-	    if (this.options.animation)
-	      animation.animateDomMutation(this.el, mutation,
-	      {
-	        duration: this.options.animation.duration,
-	        easing: this.options.animation.easing,
-	        startIndex: this.index,
-	        elementLimit: this.options.animation.elementLimit,
-	        animateParentSize: this.options.animation.animateSortableResize
-	      });
-	    else mutation();
-	    this.placeholder.dispose();
-	    this.placeholder = null;
-	    */
-	    this.index == null;
-	    this.updateChildOffsets();
-	  };
-
-	  SortableContainer.prototype.updateChildOffsets = function updateChildOffsets() {
-	    var offset = 0;
-	    this.siblingEls.forEach((function (el, index) {
-	      if (index === this.index) offset += this.placeholderOuterSize[1];
-	      var measures = this.siblingMeasures.get(el);
-	      var newTranslation = offset - measures.offset;
-	      if (measures.translation !== newTranslation) {
-	        measures.translation = newTranslation;
-	        animation.set(el, { translateX: 0, translateY: measures.translation }, this.drag.options.reorderAnimation);
-	      }
-	      offset += measures.measure;
-	    }).bind(this));
-	    /*
-	    // initialize the expected offset to the padding value
-	    let expectedOffset = 0;
-	    if (this.siblingEls.length > 0) expectedOffset = (this.direction === 'vertical' ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft));
-	     let placeholderOffset = null;
-	    this.siblingEls.forEach(function(el, index) {
-	      if (index === this.index && this.placeholder.visible) {
-	        // leave room for the placeholder
-	        placeholderOffset = expectedOffset;
-	        expectedOffset += this.direction === 'vertical' ? this.placeholderOuterSize[1] : this.placeholderOuterSize[0];
-	      }
-	      let offset = expectedOffset - (this.direction === 'vertical' ? el.offsetTop : el.offsetLeft);
-	      if (el._offset !== offset && !(offset === 0 && el._offset === undefined)) {
-	        el.style.webkitTransform = this.direction === 'vertical'
-	                                 ? 'translate(0,' + offset + 'px)'
-	                                 : 'translate(' + offset + 'px,0)';
-	        el._offset = offset;
-	      }
-	      expectedOffset += this.direction === 'vertical' ? dom.outerHeight(el) : dom.outerWidth(el);
-	    }.bind(this));
-	    placeholderOffset = placeholderOffset || expectedOffset;
-	    let placeholderTranslation = placeholderOffset - (this.direction === 'vertical' ? this.placeholder.el.offsetTop : this.placeholder.el.offsetLeft);
-	    this.placeholder.el.style.webkitTransform = this.direction === 'vertical'
-	                                 ? 'translate(0,' + placeholderTranslation + 'px)'
-	                                 : 'translate(' + placeholderTranslation + 'px,0)';
-	                                 */
-	  };
-
-	  SortableContainer.prototype.clearChildTranslations = function clearChildTranslations() {
-	    this.siblingEls.forEach(function (el) {
-	      animation.set(el, { translateX: 0, translateY: 0 });
-	    });
 	  };
 
 	  SortableContainer.prototype.enter = function enter() {
@@ -1455,14 +1271,92 @@
 	  };
 
 	  SortableContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
-	    draggable.clean();
+	    this.clearChildTransforms();
 	    this.el.insertBefore(this.placeholder.el, this.siblingEls[this.index]);
-	    this.clearChildTranslations();
+	    this.placeholder.dispose(this.drag.action === "copy");
+	  };
+
+	  SortableContainer.prototype.getChildMeasure = function getChildMeasure(el) {
+	    var measure = this.childMeasures.get(el);
+	    if (!measure) {
+	      measure = {
+	        offset: el.offsetTop - parseInt(this.style.paddingTop, 10),
+	        measure: this.direction === "vertical" ? dom.outerHeight(el, true) : dom.outerWidth(el, true),
+	        translation: 0
+	      };
+	      this.childMeasures.set(el, measure);
+	    }
+	    return measure;
+	  };
+
+	  SortableContainer.prototype.updatePosition = function updatePosition(xy) {
+	    var bounds = this.el.getBoundingClientRect();
+	    // calculate the position of the item relative to this container
+	    var innerXY = [xy[0] - bounds.left + this.el.scrollLeft - parseInt(this.style.paddingLeft, 10), xy[1] - bounds.top + this.el.scrollTop - parseInt(this.style.paddingTop, 10)];
+	    if (this.siblingEls.length === 0) return this.index = 0;
+	    this.siblingEls.forEach((function (el, index) {
+	      var measure = this.getChildMeasure(el);
+	      if (innerXY[1] >= measure.offset - measure.measure / 2 && innerXY[1] <= measure.offset + measure.measure / 2) this.index = index;
+	    }).bind(this));
+	  };
+
+	  SortableContainer.prototype.insertPlaceholder = function insertPlaceholder() {
+	    this.placeholderSize = this.placeholder.size;
+	    this.placeholderOuterSize = this.placeholder.outerSize;
+	    this.placeholderScale = this.placeholder.scale;
+	    this.placeholder.setState("ghosted");
+	    this.updateChildTranslations(true);
+	  };
+
+	  SortableContainer.prototype.updatePlaceholder = function updatePlaceholder() {
+	    this.updateChildTranslations();
+	  };
+
+	  SortableContainer.prototype.removePlaceholder = function removePlaceholder() {
+	    this.index == null;
+	    this.placeholder.setState("hidden");
+	    this.updateChildTranslations();
+	  };
+
+	  SortableContainer.prototype.updateChildTranslations = function updateChildTranslations() {
+	    var firstTime = arguments[0] === undefined ? false : arguments[0];
+
+	    var offset = 0;
+	    var placeholderOffset = 0;
+	    this.siblingEls.forEach((function (el, index) {
+	      if (index === this.index) {
+	        placeholderOffset = offset;
+	        offset += this.placeholderOuterSize[1];
+	      }
+	      var measure = this.getChildMeasure(el);
+	      var newTranslation = offset - measure.offset;
+	      if (measure.translation !== newTranslation || firstTime) {
+	        measure.translation = newTranslation;
+	        var props = firstTime ? { translateX: [0, 0], translateY: [measure.translation, 0] } : { translateX: 0, translateY: measure.translation };
+	        animation.set(el, props, this.drag.options.reorderAnimation);
+	      }
+	      offset += measure.measure;
+	    }).bind(this));
+	    var placeholderMeasure = this.getChildMeasure(this.placeholder.el);
+	    var newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
+	    if (placeholderMeasure.translation !== newPlaceholderTranslation || firstTime) {
+	      animation.set(this.placeholder.el, { translateX: 0, translateY: newPlaceholderTranslation });
+	      placeholderMeasure.translation = newPlaceholderTranslation;
+	    }
+	  };
+
+	  SortableContainer.prototype.clearChildTransforms = function clearChildTransforms() {
+	    // synchronously clear the transform styles (rather than calling
+	    // velocity.js) to avoid flickering when the dom elements are reordered
+	    this.siblingEls.forEach(function (el) {
+	      el.style.transform = "";
+	      el.style.msTransform = "";
+	      el.style.mozTransform = "";
+	      el.style.webkitTransform = "";
+	    });
 	  };
 
 	  SortableContainer.prototype.dispose = function dispose() {
-	    this.clearChildTranslations();
-	    if (this.placeholder) this.placeholder.dispose();
 	    _Container.prototype.dispose.call(this);
 	  };
 
@@ -1709,7 +1603,9 @@
 	  };
 
 	  Placeholder.prototype.dispose = function dispose() {
-	    if (!this.isDraggableEl) {
+	    var removeElement = arguments[0] === undefined ? true : arguments[0];
+
+	    if (!this.isDraggableEl && removeElement) {
 	      this.el.remove();
 	      this.el = null;
 	    } else {
@@ -1717,9 +1613,12 @@
 	      this.el.removeAttribute('data-drag-placeholder');
 	      this.el.classList.remove('dd-drag-placeholder');
 	      this.el.style.webkitTransform = '';
+	      this.el.style.mozTransform = '';
+	      this.el.style.msTransform = '';
 	      this.el.style.transform = '';
 	      this.el.style.visibility = 'visible';
 	      this.el.style.top = 0;
+	      this.el.style.opacity = 1;
 	      this.el = null;
 	    }
 	  };

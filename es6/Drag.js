@@ -86,10 +86,11 @@ export default class Drag {
   beginDrop() {
     events.raiseEvent(this.draggable.el, 'beginDrop', this)
     if (this.target.placeholder) {
-      this.helper.putDown();
-      this.helper.animateToElement(this.target.placeholder.el, function() {
-        this.target.finalizeDrop(this.draggable);
-        this.dispose();
+      this.helper.animateToElementAndPutDown(this.target.placeholder.el, function() {
+        requestAnimationFrame(function() {
+          this.target.finalizeDrop(this.draggable);
+          this.dispose();
+        }.bind(this));
       }.bind(this));
     }
   }
