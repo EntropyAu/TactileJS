@@ -48,8 +48,8 @@ export default class Placeholder {
   }
 
   _show() {
-    this.el.style.position = 'static';
-    this.el.style.top = 0;
+    this.el.style.position = '';
+    this.el.style.top = '';
     this.el.style.visibility = '';
   }
 

@@ -75,7 +75,7 @@
 	var math = _interopRequireWildcard(_libMathJs);
 
 	var defaultOptions = {
-	  cancel: 'input,textarea,a,button,select',
+	  cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
 	  helperResize: true,
 	  pickUpAnimation: { duration: 300, easing: 'ease-in-out' },
 	  pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
@@ -298,7 +298,7 @@
 	    this.helper = new _HelperJs2['default'](this);
 	    this.updateConstrainedPosition();
 	    this.pointerEl = dom.elementFromPoint(this.pointerXY);
-	    this.draggable.originalContainer = this.updateTargetContainer();
+	    this.updateTargetContainer();
 	    events.raiseEvent(this.draggable.el, 'dragstart', this);
 	  };
 
@@ -707,9 +707,11 @@
 	  };
 
 	  Container.prototype.accepts = function accepts(draggable) {
-	    if (draggable.originalContainer === this) return true;
+	    if (draggable.originalParentEl === this.el) return true;
 	    if (this.el.hasAttribute('data-drag-disabled')) return false;
 	    var acceptsSelector = this.el.getAttribute('data-drag-accepts');
+	    if (!acceptsSelector) return false;
+
 	    return acceptsSelector ? draggable.el.matches(acceptsSelector) : draggable.originalParentEl === this.el;
 	  };
 
@@ -761,7 +763,6 @@
 	    _classCallCheck(this, Draggable);
 
 	    this.el = el;
-	    this.originalContainer = null;
 	    this.originalParentEl = el.parentElement;
 	    this.originalIndex = dom.indexOf(el);
 	    this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
@@ -1252,6 +1253,7 @@
 	      this.placeholder = new _PlaceholderJs2["default"](this.drag);
 	      this.el.appendChild(this.placeholder.el);
 	    }
+	    this.placeholder.setState("hidden");
 	  };
 
 	  SortableContainer.prototype.initializeSiblingEls = function initializeSiblingEls() {
@@ -1598,8 +1600,8 @@
 	  };
 
 	  Placeholder.prototype._show = function _show() {
-	    this.el.style.position = 'static';
-	    this.el.style.top = 0;
+	    this.el.style.position = '';
+	    this.el.style.top = '';
 	    this.el.style.visibility = '';
 	  };
 

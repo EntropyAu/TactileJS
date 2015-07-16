@@ -8,6 +8,7 @@
   display: -webkit-flex !important;
   flex-direction: column;
   -webkit-flex-direction: column;
+  margin: 8px !important;
 }
 .day-header {
   flex-grow: 0;
@@ -57,13 +58,12 @@
   -webkit-flex-shrink: 1;
 }
 
-.layout-plan > ol[data-drag-sortable] {
+.layout-plan {
   padding: 10px;
-  display: flex;
-  display: -webkit-flex;
-  flex-direction: row;
-  -webkit-flex-direction: row;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  -webkit-flex-shrink: 1;
+  flex-grow: 1;
+  -webkit-flex-grow: 1;
   overflow: scroll;
 }
 

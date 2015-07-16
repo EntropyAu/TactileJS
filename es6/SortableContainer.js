@@ -34,6 +34,7 @@ export default class SortableContainer extends Container {
       this.placeholder = new Placeholder(this.drag);
       this.el.appendChild(this.placeholder.el);
     }
+    this.placeholder.setState("hidden");
   }
 
 

@@ -6,7 +6,7 @@ import * as math from './lib/math.js';
 
 
 const defaultOptions = {
-  cancel: 'input,textarea,a,button,select',
+  cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
   helperResize: true,
   pickUpAnimation:   { duration: 300, easing: 'ease-in-out' },
   pickDownAnimation: { duration: 300, easing: 'ease-in-out' },

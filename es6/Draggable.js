@@ -48,7 +48,6 @@ export default class Draggable {
 
   constructor(el) {
     this.el = el;
-    this.originalContainer = null;
     this.originalParentEl = el.parentElement;
     this.originalIndex = dom.indexOf(el);
     this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];

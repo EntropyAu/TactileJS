@@ -42,7 +42,7 @@ export default class Drag {
     this.helper = new Helper(this);
     this.updateConstrainedPosition();
     this.pointerEl = dom.elementFromPoint(this.pointerXY);
-    this.draggable.originalContainer = this.updateTargetContainer();
+    this.updateTargetContainer();
     events.raiseEvent(this.draggable.el, 'dragstart', this)
   }
 

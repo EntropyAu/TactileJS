@@ -26,9 +26,11 @@ export default class Container {
   }
 
   accepts(draggable) {
-    if (draggable.originalContainer === this) return true;
+    if (draggable.originalParentEl === this.el) return true;
     if (this.el.hasAttribute('data-drag-disabled')) return false;
     let acceptsSelector = this.el.getAttribute('data-drag-accepts');
+    if (!acceptsSelector) return false;
+
     return acceptsSelector ? draggable.el.matches(acceptsSelector)
                            : draggable.originalParentEl === this.el;
   }
