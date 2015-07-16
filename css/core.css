@@ -40,13 +40,6 @@ ol[data-drag-sortable] > li {
   will-change: transform;
 }
 
-.not-ios ol[data-drag-sortable][data-drag-animate] > li {
-  -webkit-transition: -webkit-transform 100ms ease-in-out;
-     -moz-transition:    -moz-transform 100ms ease-in-out;
-      -ms-transition:     -ms-transform 100ms ease-in-out;
-          transition:         transform 100ms ease-in-out;
-}
-
 ol[data-drag-sortable='horizontal'] {
   overflow-y: hidden;
   white-space: nowrap;
@@ -186,7 +179,6 @@ body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
 [data-drag-placeholder] {
   z-index: -1;
   opacity: 0.1;
-  box-shadow: none !important;
 }
 
 .dd-drag-hover > * {
@@ -195,17 +187,6 @@ body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
       -ms-backface-visibility: hidden;
           backface-visibility: hidden;
   will-change: transform;
-}
-
-div[data-drag-overlay] {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  overflow: hidden;
-  z-index: 10000;
 }
 
 *[data-drag-helper] {
@@ -239,4 +220,3 @@ body[data-drag-in-progress] [data-drag-helper] * {
       -ms-pointer-events: none !important;
           pointer-events: none !important;
 }
-

@@ -1,4 +1,5 @@
 import * as dom from './lib/dom.js';
+import * as animation from './lib/animation.js';
 
 export default class Placeholder {
 
@@ -11,7 +12,7 @@ export default class Placeholder {
   }
 
   get sizeWithMargins() {
-    return [dom.outerWidth(this.el), dom.outerHeight(this.el)];
+    return [dom.outerWidth(this.el, true), dom.outerHeight(this.el, true)];
   }
 
   get scale() {
@@ -23,7 +24,33 @@ export default class Placeholder {
     this.isDraggableEl = !!draggableEl;
     this.el = draggableEl;
     this.visible = true;
+    this.state = "none";
     this.initialize();
+  }
+
+  setState(state, animate = true) {
+      if (this.state === state) return;
+      let velocityOptions = animate
+                          ? { duration: 400, queue: false }
+                          : { duration:   0, queue: false };
+      switch (state) {
+        case "hidden": this._hide(); break;
+        case "ghosted": this._show(); animation.set(this.el, { opacity: 0.1 }, velocityOptions); break;
+        case "materialized": this._show(); animation.set(this.el, { opacity: 1.0 }, velocityOptions); break;
+      }
+      this.state = state;
+  }
+
+  _hide() {
+    this.el.style.position = 'absolute';
+    this.el.style.top = -99999;
+    this.el.style.visibility = 'hidden';
+  }
+
+  _show() {
+    this.el.style.position = 'static';
+    this.el.style.top = 0;
+    this.el.style.visibility = '';
   }
 
   initialize(draggable) {
@@ -35,19 +62,7 @@ export default class Placeholder {
     this.el.setAttribute('data-drag-placeholder', '');
     dom.translate(this.el,0,0);
     dom.topLeft(this.el,[0,0]);
-    this.visible = true;
-  }
-
-  hide() {
-    this.el.style.top = -99999;
-    this.el.style.visibility = 'hidden';
-    this.visible = false;
-  }
-
-  show() {
-    this.el.style.top = 0;
-    this.el.style.visibility = '';
-    this.visible = true;
+    this.setState("ghosted", false);
   }
 
   dispose() {

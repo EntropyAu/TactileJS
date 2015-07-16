@@ -11,42 +11,69 @@ export default class SortableContainer extends Container {
     super(el, drag);
     this.index = 0;
     this.direction = 'vertical';
-    this.childEls = [];
+    this.siblingEls = null;
+    this.siblingMeasures = new WeakMap();
     this.placeholderIndex = 0;
     this.style = null;
-    this.initialize();
+    this.initializeSortable();
   }
 
 
-  initialize() {
+  initializeSortable() {
     this.style = getComputedStyle(this.el);
     this.direction = this.el.getAttribute('data-drag-sortable') || 'vertical';
-    this.childEls = Array.prototype.splice.call(this.el.children, 0);
+    this.initializePlaceholder();
+    this.initializeSiblingEls();
+  }
 
-    // remove the draggable element from the child array
-    let draggableElIndex = this.childEls.indexOf(this.drag.draggable.el);
+
+  initializePlaceholder() {
+    if (this.drag.draggable.originalParentEl === this.el) {
+      this.placeholder = new Placeholder(this.drag, this.drag.draggable.el);
+    } else {
+      this.placeholder = new Placeholder(this.drag);
+      this.el.appendChild(this.placeholder.el);
+    }
+    this.placeholderIndex = dom.indexOf(this.placeholder.el);
+  }
+
+
+  initializeSiblingEls() {
+    this.siblingEls = Array.prototype.splice.call(this.el.children, 0);
+    let draggableElIndex = this.siblingEls.indexOf(this.drag.draggable.el);
     if (draggableElIndex !== -1) {
-      this.childEls.splice(draggableElIndex, 1);
+      this.siblingEls.splice(draggableElIndex, 1);
       this.index = draggableElIndex;
+    }
+    let offset = 0;
+    for (let el of this.siblingEls) {
+      let measure = this.direction === "vertical"
+                  ? dom.outerHeight(el, true)
+                  : dom.outerWidth(el, true);
+      this.siblingMeasures.set(el, {
+        offset: offset,
+        measure: measure
+      });
+      offset += measure;
     }
   }
 
 
   updatePosition(xy) {
-    if (this.childEls.length === 0) return this.index = 0;
+    if (this.siblingEls.length === 0) return this.index = 0;
 
     // we'll use selection APIs rather than elementAtPoint,
     // as it returns the closest sibling to the area being selected
     // TODO - do performance comparison between "viaSelection" and normal elementFromPoint
     // find the closest direct descendant of this sortable container
     let closestEl = dom.elementFromPointViaSelection(xy);
-    while (closestEl && this.childEls.indexOf(closestEl) === -1) {
+    while (closestEl && this.siblingEls.indexOf(closestEl) === -1) {
       closestEl = closestEl.parentElement;
     }
 
     if (closestEl) {
       if (this.placeholder && closestEl === this.placeholder.el) return;
-      this.index = this.childEls.indexOf(closestEl);
+      this.index = this.siblingEls.indexOf(closestEl);
       let closestRect = closestEl.getBoundingClientRect();
       switch (this.direction) {
         case 'vertical':
@@ -61,17 +88,7 @@ export default class SortableContainer extends Container {
   }
 
 
-  //var end = new Date();
-  //var start = new Date();
-  //if (new Date() % 100 === 0) document.querySelector(".header.item").innerHTML = "<p>" + (end - start) + "ms</p>";
-
-  insertPlaceholder(originalEl) {
-    if (!this.placeholder) {
-      this.placeholder = new Placeholder(this.drag, originalEl);
-      if (!originalEl) this.el.appendChild(this.placeholder.el);
-      this.placeholderIndex = dom.indexOf(this.placeholder.el);
-    }
-    this.el.setAttribute('data-drag-animate', '');
+  insertPlaceholder() {
     /*
     function mutation() {
       if (originalEl) originalEl.remove();
@@ -91,7 +108,8 @@ export default class SortableContainer extends Container {
     this.placeholderSize = this.placeholder.size;
     this.placeholderSizeWithMargins = this.placeholder.sizeWithMargins;
     this.placeholderScale = this.placeholder.scale;
-    this.placeholder.show();
+    this.placeholder.setState("ghosted");
+    this.updateChildOffsets();
   }
 
 
@@ -123,7 +141,7 @@ export default class SortableContainer extends Container {
     // we'll keep the placeholder around in case the user
     // re-enters this sortable container; preventing expensive
     // dom updates later
-    this.placeholder.hide();
+    this.placeholder.setState("hidden");
     /*
     function mutation() {
       self.placeholder.el.remove();
@@ -149,10 +167,10 @@ export default class SortableContainer extends Container {
   updateChildOffsets() {
     // initialize the expected offset to the padding value
     let expectedOffset = 0;
-    if (this.childEls.length > 0) expectedOffset = (this.direction === 'vertical' ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft));
+    if (this.siblingEls.length > 0) expectedOffset = (this.direction === 'vertical' ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft));
 
     let placeholderOffset = null;
-    this.childEls.forEach(function(el, index) {
+    this.siblingEls.forEach(function(el, index) {
       if (index === this.index && this.placeholder.visible) {
         // leave room for the placeholder
         placeholderOffset = expectedOffset;
@@ -175,17 +193,27 @@ export default class SortableContainer extends Container {
   }
 
   clearChildTranslations() {
-    this.childEls.forEach(function(el) {
+    this.siblingEls.forEach(function(el) {
       el.style.webkitTransform = '';
       el.style.transform = '';
     });
   }
 
+  enter() {
+    this.insertPlaceholder();
+  }
+
+  leave() {
+    if (this.dragOutAction === 'copy' && this.placeholder.isDraggableEl) {
+      this.placeholder.setState("materialized");
+    } else {
+      this.placeholder.setState("hidden");
+    }
+  }
 
   finalizeDrop(draggable) {
-    this.el.removeAttribute('data-drag-animate');
     draggable.clean();
-    this.el.insertBefore(draggable.el, this.childEls[this.index]);
+    this.el.insertBefore(this.placeholder.el, this.siblingEls[this.index]);
     this.clearChildTranslations();
   }
 

@@ -30,13 +30,26 @@
   background: #EEE;
 }
 .layout-plan {
+  display: flex;
+  display: -webkit-flex;
   flex-grow: 1;
   flex-shrink: 1;
   -webkit-flex-grow: 1;
   -webkit-flex-shrink: 1;
-  padding: 20px;
+}
+.layout-plan > ol[data-drag-sortable] {
+  padding: 10px;
+  display: flex;
+  display: -webkit-flex;
+  flex-direction: row;
+  -webkit-flex-direction: row;
+  flex-shrink: 0;
+  overflow: scroll;
 }
 
 .ui.card {
   margin-top: 0;
+}
+.ui.card:last-child {
+  margin-bottom: 14px;
 }

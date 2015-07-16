@@ -12,6 +12,8 @@ export default class Scrollable {
     this.el = el;
     this.velocity = [0,0];
     this.offset = [0,0];
+    this.hEnabled = false;
+    this.vEnabled = false;
     this.direction = 'both';
     this.lastUpdate = null;
     this.options = drag.options;
@@ -19,7 +21,9 @@ export default class Scrollable {
   }
 
   initialize() {
-    this.direction = this.el.getAttribute('data-drag-scrollable') || 'both';
+    let style = getComputedStyle(this.el);
+    this.hEnabled = (style.overflowX === 'auto' || style.overflowX === 'scroll')
+    this.vEnabled = (style.overflowY === 'auto' || style.overflowY === 'scroll')
     if (this.el.tagName === 'BODY') {
       this.bounds = {
         left: 0,
@@ -81,13 +85,13 @@ export default class Scrollable {
     if (xy[0] >= this.bounds.left && xy[0] <= this.bounds.right
       && xy[1] >= this.bounds.top && xy[1] <= this.bounds.bottom) {
 
-      if (this.direction !== 'vertical') {
+      if (this.hEnabled) {
         const hs = Math.min(sensitivity, b.width / 3);
         if (xy[0] > b.right - hs && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right-hs, b.right], [0, +maxV]);
         if (xy[0] < b.left + hs && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left+hs, b.left], [0, -maxV]);
       }
 
-      if (this.direction !== 'horizontal') {
+      if (this.vEnabled) {
         const vs = Math.min(sensitivity, b.height / 3);
         if (xy[1] > b.bottom - vs && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom-vs, b.bottom], [0, +maxV]);
         if (xy[1] < b.top + vs && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top+vs, b.top], [0, -maxV]);

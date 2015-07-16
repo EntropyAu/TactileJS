@@ -35,12 +35,14 @@ export function clientScale(el) {
 
 // vendor
 
-export function outerHeight(el) {
+export function outerHeight(el, includeMargins = false) {
+  if (!includeMargins) return el.offsetHeight;
   const style = getComputedStyle(el);
   return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
 }
 
-export function outerWidth(el) {
+export function outerWidth(el, includeMargins = false) {
+  if (!includeMargins) return el.offsetWidth;
   const style = getComputedStyle(el);
   return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
 }

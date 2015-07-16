@@ -13,6 +13,12 @@ export default class Container {
     this.placeholderSize = null;
     this.placeholderScale = 1;
     this.options = drag.options;
+    this.dragOutAction = null;
+    this.initialize();
+  }
+
+  initialize() {
+    this.dragOutAction = this.el.getAttribute('data-drag-out-action') || 'move';
   }
 
   setPointerXY(constrainedXY) {
@@ -20,33 +26,23 @@ export default class Container {
     this.updatePlaceholder();
   }
 
-  updatePosition() {
-    throw new Error("Not implemented");
-  }
-
-
-  updatePlaceholder() {
-    throw new Error("Not implemented");
-  }
-
-
   accepts(draggable) {
+    if (draggable.originalContainer === this) return true;
     if (this.el.hasAttribute('data-drag-disabled')) return false;
     let acceptsSelector = this.el.getAttribute('data-drag-accepts');
     return acceptsSelector ? draggable.el.matches(acceptsSelector)
                            : draggable.originalParentEl === this.el;
   }
 
-  captures(draggable) {
-    if (this.el.hasAttribute('data-drag-capture'))
-      return true;
+  enter() { }
+  leave() { }
 
-    // draggable is contained by this
+  captures(draggable) {
+    if (this.el.hasAttribute('data-drag-capture')) return true;
     if (draggable.el.hasAttribute('data-drag-containment')) {
       let containmentSelector = draggable.el.getAttribute('data-drag-containment');
       return containmentSelector ? this.el.matches(containmentSelector) : true;
     }
-    // this contains draggable
     if (this.el.hasAttribute('data-drag-containment')) {
       let containmentSelector = this.el.getAttribute('data-drag-containment');
       return containmentSelector ? draggable.el.matches(containmentSelector) : true;

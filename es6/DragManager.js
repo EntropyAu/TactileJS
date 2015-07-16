@@ -8,21 +8,13 @@ import * as math from './lib/math.js';
 const defaultOptions = {
   cancel: 'input,textarea,a,button,select',
   helperResize: true,
-  animatePickup: true,
-  pickupAnimation: {
-    duration: 300,
-    easing: 'ease-in-out'
-  },
-  resizeAnimation: {
-    duration: 300,
-    easing: 'ease-in-out'
-  },
-  dropAnimation: {
-    duration: 300,
-    easing: 'ease-out'
-  },
-  pickupDelay: 0,
-  pickupDistance: 0,
+  animatepickUp: true,
+  pickUpAnimation:   { duration: 300, easing: 'ease-in-out' },
+  pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
+  resizeAnimation:   { duration: 300, easing: 'ease-in-out' },
+  dropAnimation:     { duration: 300, easing: 'ease-in-out' },
+  pickUpDelay: 0,
+  pickUpDistance: 0,
   helperRotation: -1,
   helperShadowSize: 15,
   placeholderClass: 'dd-drag-placeholder',
@@ -31,12 +23,6 @@ const defaultOptions = {
   scrollSensitivity: 30,
   scrollSpeed: 0.5,
   animation: false
-  /*{
-    duration: 250,
-    easing: 'ease-in-out',
-    elementLimit: 25,
-    animateSortableResize: false
-  }*/
 };
 
 
@@ -90,23 +76,23 @@ export default class DragManager {
     if (!draggable || !draggable.enabled) return false;
 
 
-    if (this.options.pickupDelay === null || this.options.pickupDelay === 0) {
+    if (this.options.pickUpDelay === null || this.options.pickUpDelay === 0) {
       events.cancelEvent(e);
       this.startDrag(draggable, pointerId, pointerXY);
     } else {
-      let onPickupTimeoutHandler = function() {
-        this.onPickUpTimeout(pointerId);
+      let onpickUpTimeoutHandler = function() {
+        this.onpickUpTimeout(pointerId);
       }
       this.pendingDrags[pointerId] = {
         draggable: draggable,
         pointerXY: pointerXY,
-        timerId: setTimeout(onPickupTimeoutHandler.bind(this), this.options.pickupDelay)
+        timerId: setTimeout(onpickUpTimeoutHandler.bind(this), this.options.pickUpDelay)
       };
     }
     this.bindPointerEventsForDragging(e.target)
   }
 
-  onPickUpTimeout(pointerId) {
+  onpickUpTimeout(pointerId) {
     if (this.pendingDrags[pointerId]) {
       let pendingDrag = this.pendingDrags[pointerId];
       this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
@@ -127,7 +113,7 @@ export default class DragManager {
     if (this.pendingDrags[pointerId]) {
       let pendingDrag = this.pendingDrags[pointerId];
       // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
-      if (this.options.pickupDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickupDistance)
+      if (this.options.pickUpDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickUpDistance)
       clearTimeout(pendingDrag.timerId);
       this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
       delete this.pendingDrags[pointerId];
