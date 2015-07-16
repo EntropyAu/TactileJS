@@ -98,8 +98,9 @@ export default class Helper {
 
   animateToElement(el, complete) {
     const rect = el.getBoundingClientRect();
-    animation.set(this.el, { top: 0, left: 0 });
     animation.set(this.el, {
+      top: [0, 0],
+      left: [0, 0],
       translateX: [rect.left, this.position[0] - this.grip[0] * this.size[0]],
       translateY: [rect.top, this.position[1] - this.grip[1] * this.size[1]],
       width: rect.width,

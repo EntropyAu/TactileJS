@@ -12,18 +12,26 @@ export default class Scrollable {
     this.el = el;
     this.velocity = [0,0];
     this.offset = [0,0];
-    this.hEnabled = false;
-    this.vEnabled = false;
-    this.direction = 'both';
-    this.lastUpdate = null;
     this.options = drag.options;
+    this.horizontalEnabled = false;
+    this.verticalEnabled = false;
+    this.lastUpdate = null;
     this.initialize();
   }
 
   initialize() {
+    this.initializeDirections();
+    this.initializeBounds();
+    this.initializeSensitivity();
+  }
+
+  initializeDirections() {
     let style = getComputedStyle(this.el);
-    this.hEnabled = (style.overflowX === 'auto' || style.overflowX === 'scroll')
-    this.vEnabled = (style.overflowY === 'auto' || style.overflowY === 'scroll')
+    this.horizontalEnabled = (style.overflowX === 'auto' || style.overflowX === 'scroll')
+    this.verticalEnabled = (style.overflowY === 'auto' || style.overflowY === 'scroll')
+  }
+
+  initializeBounds() {
     if (this.el.tagName === 'BODY') {
       this.bounds = {
         left: 0,
@@ -36,6 +44,15 @@ export default class Scrollable {
     } else {
       this.bounds = this.el.getBoundingClientRect();
     }
+  }
+
+  initializeSensitivity() {
+    const sensitivity = this.options.scrollSensitivity;
+    const sensitivityPercent = sensitivity.toString().indexOf('%') !== -1
+                             ? parseInt(sensitivity, 10) / 100
+                             : null;
+    this.sensitivityH = Math.min(sensitivityPercent ? sensitivityPercent * this.bounds.width : parseInt(sensitivity, 10), this.bounds.width / 3);
+    this.sensitivityV = Math.min(sensitivityPercent ? sensitivityPercent * this.bounds.height : parseInt(sensitivity, 10), this.bounds.height / 3);
   }
 
 
@@ -77,7 +94,6 @@ export default class Scrollable {
 
 
   updateVelocity(xy) {
-    const sensitivity = this.options.scrollSensitivity;
     const maxV = this.options.scrollSpeed;
     const b = this.bounds;
 
@@ -85,16 +101,14 @@ export default class Scrollable {
     if (xy[0] >= this.bounds.left && xy[0] <= this.bounds.right
       && xy[1] >= this.bounds.top && xy[1] <= this.bounds.bottom) {
 
-      if (this.hEnabled) {
-        const hs = Math.min(sensitivity, b.width / 3);
-        if (xy[0] > b.right - hs && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right-hs, b.right], [0, +maxV]);
-        if (xy[0] < b.left + hs && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left+hs, b.left], [0, -maxV]);
+      if (this.horizontalEnabled) {
+        if (xy[0] > b.right - this.sensitivityH && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right-this.sensitivityH, b.right], [0, +maxV]);
+        if (xy[0] < b.left + this.sensitivityH && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left+this.sensitivityH, b.left], [0, -maxV]);
       }
 
-      if (this.vEnabled) {
-        const vs = Math.min(sensitivity, b.height / 3);
-        if (xy[1] > b.bottom - vs && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom-vs, b.bottom], [0, +maxV]);
-        if (xy[1] < b.top + vs && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top+vs, b.top], [0, -maxV]);
+      if (this.verticalEnabled) {
+        if (xy[1] > b.bottom - this.sensitivityV && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom-this.sensitivityV, b.bottom], [0, +maxV]);
+        if (xy[1] < b.top + this.sensitivityV && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top+this.sensitivityV, b.top], [0, -maxV]);
       }
     }
     this.velocity = v;

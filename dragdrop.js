@@ -82,6 +82,7 @@
 	  pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
 	  resizeAnimation: { duration: 300, easing: 'ease-in-out' },
 	  dropAnimation: { duration: 300, easing: 'ease-in-out' },
+	  reorderAnimation: { duration: 300, easing: 'ease-in-out' },
 	  pickUpDelay: 0,
 	  pickUpDistance: 0,
 	  helperRotation: -1,
@@ -89,8 +90,8 @@
 	  placeholderClass: 'dd-drag-placeholder',
 	  containerHoverClass: 'dd-drag-hover',
 	  scrollDelay: 500,
-	  scrollSensitivity: 30,
-	  scrollSpeed: 0.5,
+	  scrollSensitivity: '15%',
+	  scrollSpeed: 1,
 	  animation: false
 	};
 
@@ -947,8 +948,9 @@
 
 	  Helper.prototype.animateToElement = function animateToElement(el, complete) {
 	    var rect = el.getBoundingClientRect();
-	    animation.set(this.el, { top: 0, left: 0 });
 	    animation.set(this.el, {
+	      top: [0, 0],
+	      left: [0, 0],
 	      translateX: [rect.left, this.position[0] - this.grip[0] * this.size[0]],
 	      translateY: [rect.top, this.position[1] - this.grip[1] * this.size[1]],
 	      width: rect.width,
@@ -1281,7 +1283,7 @@
 
 	      var measure = this.direction === "vertical" ? dom.outerHeight(el, true) : dom.outerWidth(el, true);
 	      this.siblingMeasures.set(el, {
-	        offset: offset,
+	        offset: el.offsetTop,
 	        measure: measure
 	      });
 	      offset += measure;
@@ -1289,31 +1291,36 @@
 	  };
 
 	  SortableContainer.prototype.updatePosition = function updatePosition(xy) {
+	    var localXY = [xy[0] - this.el.scrollLeft, xy[1] - this.el.scrollTop];
 	    if (this.siblingEls.length === 0) return this.index = 0;
-
+	    this.siblingEls.forEach((function (el, index) {
+	      var measures = this.siblingMeasures.get(el);
+	      if (xy[1] >= measures.offset && xy[1] <= measures.offset + measures.measure) this.index = index;
+	    }).bind(this));
+	    /*
 	    // we'll use selection APIs rather than elementAtPoint,
 	    // as it returns the closest sibling to the area being selected
 	    // TODO - do performance comparison between "viaSelection" and normal elementFromPoint
 	    // find the closest direct descendant of this sortable container
-	    var closestEl = dom.elementFromPointViaSelection(xy);
+	    let closestEl = dom.elementFromPointViaSelection(xy);
 	    while (closestEl && this.siblingEls.indexOf(closestEl) === -1) {
 	      closestEl = closestEl.parentElement;
 	    }
-
-	    if (closestEl) {
+	     if (closestEl) {
 	      if (this.placeholder && closestEl === this.placeholder.el) return;
 	      this.index = this.siblingEls.indexOf(closestEl);
-	      var closestRect = closestEl.getBoundingClientRect();
+	      let closestRect = closestEl.getBoundingClientRect();
 	      switch (this.direction) {
-	        case "vertical":
+	        case 'vertical':
 	          if (xy[1] > closestRect.top + closestRect.height / 2) this.index++;
 	          break;
-	        case "horizontal":
-	        case "wrap":
+	        case 'horizontal':
+	        case 'wrap':
 	          if (xy[0] > closestRect.left + closestRect.width / 2) this.index++;
 	          break;
 	      }
 	    }
+	    */
 	  };
 
 	  SortableContainer.prototype.insertPlaceholder = function insertPlaceholder() {
@@ -1334,7 +1341,7 @@
 	    else mutation();
 	    */
 	    this.placeholderSize = this.placeholder.size;
-	    this.placeholderSizeWithMargins = this.placeholder.sizeWithMargins;
+	    this.placeholderOuterSize = this.placeholder.outerSize;
 	    this.placeholderScale = this.placeholder.scale;
 	    this.placeholder.setState("ghosted");
 	    this.updateChildOffsets();
@@ -1390,33 +1397,48 @@
 	  };
 
 	  SortableContainer.prototype.updateChildOffsets = function updateChildOffsets() {
-	    // initialize the expected offset to the padding value
-	    var expectedOffset = 0;
-	    if (this.siblingEls.length > 0) expectedOffset = this.direction === "vertical" ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft);
-
-	    var placeholderOffset = null;
+	    var offset = 0;
 	    this.siblingEls.forEach((function (el, index) {
+	      if (index === this.index) offset += this.placeholderOuterSize[1];
+	      var measures = this.siblingMeasures.get(el);
+	      var newTranslation = offset - measures.offset;
+	      if (measures.translation !== newTranslation) {
+	        measures.translation = newTranslation;
+	        animation.set(el, { translateX: 0, translateY: measures.translation }, this.drag.options.reorderAnimation);
+	      }
+	      offset += measures.measure;
+	    }).bind(this));
+	    /*
+	    // initialize the expected offset to the padding value
+	    let expectedOffset = 0;
+	    if (this.siblingEls.length > 0) expectedOffset = (this.direction === 'vertical' ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft));
+	     let placeholderOffset = null;
+	    this.siblingEls.forEach(function(el, index) {
 	      if (index === this.index && this.placeholder.visible) {
 	        // leave room for the placeholder
 	        placeholderOffset = expectedOffset;
-	        expectedOffset += this.direction === "vertical" ? this.placeholderSizeWithMargins[1] : this.placeholderSizeWithMargins[0];
+	        expectedOffset += this.direction === 'vertical' ? this.placeholderOuterSize[1] : this.placeholderOuterSize[0];
 	      }
-	      var offset = expectedOffset - (this.direction === "vertical" ? el.offsetTop : el.offsetLeft);
+	      let offset = expectedOffset - (this.direction === 'vertical' ? el.offsetTop : el.offsetLeft);
 	      if (el._offset !== offset && !(offset === 0 && el._offset === undefined)) {
-	        el.style.webkitTransform = this.direction === "vertical" ? "translate(0," + offset + "px)" : "translate(" + offset + "px,0)";
+	        el.style.webkitTransform = this.direction === 'vertical'
+	                                 ? 'translate(0,' + offset + 'px)'
+	                                 : 'translate(' + offset + 'px,0)';
 	        el._offset = offset;
 	      }
-	      expectedOffset += this.direction === "vertical" ? dom.outerHeight(el) : dom.outerWidth(el);
-	    }).bind(this));
+	      expectedOffset += this.direction === 'vertical' ? dom.outerHeight(el) : dom.outerWidth(el);
+	    }.bind(this));
 	    placeholderOffset = placeholderOffset || expectedOffset;
-	    var placeholderTranslation = placeholderOffset - (this.direction === "vertical" ? this.placeholder.el.offsetTop : this.placeholder.el.offsetLeft);
-	    this.placeholder.el.style.webkitTransform = this.direction === "vertical" ? "translate(0," + placeholderTranslation + "px)" : "translate(" + placeholderTranslation + "px,0)";
+	    let placeholderTranslation = placeholderOffset - (this.direction === 'vertical' ? this.placeholder.el.offsetTop : this.placeholder.el.offsetLeft);
+	    this.placeholder.el.style.webkitTransform = this.direction === 'vertical'
+	                                 ? 'translate(0,' + placeholderTranslation + 'px)'
+	                                 : 'translate(' + placeholderTranslation + 'px,0)';
+	                                 */
 	  };
 
 	  SortableContainer.prototype.clearChildTranslations = function clearChildTranslations() {
 	    this.siblingEls.forEach(function (el) {
-	      el.style.webkitTransform = "";
-	      el.style.transform = "";
+	      animation.set(el, { translateX: 0, translateY: 0 });
 	    });
 	  };
 
@@ -1683,8 +1705,6 @@
 	    }
 	    this.el.classList.add(this.drag.options.placeholderClass);
 	    this.el.setAttribute('data-drag-placeholder', '');
-	    dom.translate(this.el, 0, 0);
-	    dom.topLeft(this.el, [0, 0]);
 	    this.setState('ghosted', false);
 	  };
 
@@ -1710,7 +1730,7 @@
 	      return [this.el.offsetWidth, this.el.offsetHeight];
 	    }
 	  }, {
-	    key: 'sizeWithMargins',
+	    key: 'outerSize',
 	    get: function get() {
 	      return [dom.outerWidth(this.el, true), dom.outerHeight(this.el, true)];
 	    }
@@ -1753,11 +1773,10 @@
 	    this.el = el;
 	    this.velocity = [0, 0];
 	    this.offset = [0, 0];
-	    this.hEnabled = false;
-	    this.vEnabled = false;
-	    this.direction = 'both';
-	    this.lastUpdate = null;
 	    this.options = drag.options;
+	    this.horizontalEnabled = false;
+	    this.verticalEnabled = false;
+	    this.lastUpdate = null;
 	    this.initialize();
 	  }
 
@@ -1770,9 +1789,18 @@
 	  };
 
 	  Scrollable.prototype.initialize = function initialize() {
+	    this.initializeDirections();
+	    this.initializeBounds();
+	    this.initializeSensitivity();
+	  };
+
+	  Scrollable.prototype.initializeDirections = function initializeDirections() {
 	    var style = getComputedStyle(this.el);
-	    this.hEnabled = style.overflowX === 'auto' || style.overflowX === 'scroll';
-	    this.vEnabled = style.overflowY === 'auto' || style.overflowY === 'scroll';
+	    this.horizontalEnabled = style.overflowX === 'auto' || style.overflowX === 'scroll';
+	    this.verticalEnabled = style.overflowY === 'auto' || style.overflowY === 'scroll';
+	  };
+
+	  Scrollable.prototype.initializeBounds = function initializeBounds() {
 	    if (this.el.tagName === 'BODY') {
 	      this.bounds = {
 	        left: 0,
@@ -1785,6 +1813,13 @@
 	    } else {
 	      this.bounds = this.el.getBoundingClientRect();
 	    }
+	  };
+
+	  Scrollable.prototype.initializeSensitivity = function initializeSensitivity() {
+	    var sensitivity = this.options.scrollSensitivity;
+	    var sensitivityPercent = sensitivity.toString().indexOf('%') !== -1 ? parseInt(sensitivity, 10) / 100 : null;
+	    this.sensitivityH = Math.min(sensitivityPercent ? sensitivityPercent * this.bounds.width : parseInt(sensitivity, 10), this.bounds.width / 3);
+	    this.sensitivityV = Math.min(sensitivityPercent ? sensitivityPercent * this.bounds.height : parseInt(sensitivity, 10), this.bounds.height / 3);
 	  };
 
 	  Scrollable.prototype.tryScroll = function tryScroll(pointerXY) {
@@ -1820,23 +1855,20 @@
 	  };
 
 	  Scrollable.prototype.updateVelocity = function updateVelocity(xy) {
-	    var sensitivity = this.options.scrollSensitivity;
 	    var maxV = this.options.scrollSpeed;
 	    var b = this.bounds;
 
 	    var v = [0, 0];
 	    if (xy[0] >= this.bounds.left && xy[0] <= this.bounds.right && xy[1] >= this.bounds.top && xy[1] <= this.bounds.bottom) {
 
-	      if (this.hEnabled) {
-	        var hs = Math.min(sensitivity, b.width / 3);
-	        if (xy[0] > b.right - hs && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right - hs, b.right], [0, +maxV]);
-	        if (xy[0] < b.left + hs && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left + hs, b.left], [0, -maxV]);
+	      if (this.horizontalEnabled) {
+	        if (xy[0] > b.right - this.sensitivityH && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right - this.sensitivityH, b.right], [0, +maxV]);
+	        if (xy[0] < b.left + this.sensitivityH && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left + this.sensitivityH, b.left], [0, -maxV]);
 	      }
 
-	      if (this.vEnabled) {
-	        var vs = Math.min(sensitivity, b.height / 3);
-	        if (xy[1] > b.bottom - vs && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom - vs, b.bottom], [0, +maxV]);
-	        if (xy[1] < b.top + vs && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top + vs, b.top], [0, -maxV]);
+	      if (this.verticalEnabled) {
+	        if (xy[1] > b.bottom - this.sensitivityV && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom - this.sensitivityV, b.bottom], [0, +maxV]);
+	        if (xy[1] < b.top + this.sensitivityV && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top + this.sensitivityV, b.top], [0, -maxV]);
 	      }
 	    }
 	    this.velocity = v;

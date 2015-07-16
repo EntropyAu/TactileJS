@@ -11,7 +11,7 @@ export default class Placeholder {
     return [this.el.offsetWidth, this.el.offsetHeight];
   }
 
-  get sizeWithMargins() {
+  get outerSize() {
     return [dom.outerWidth(this.el, true), dom.outerHeight(this.el, true)];
   }
 
@@ -60,8 +60,6 @@ export default class Placeholder {
     }
     this.el.classList.add(this.drag.options.placeholderClass);
     this.el.setAttribute('data-drag-placeholder', '');
-    dom.translate(this.el,0,0);
-    dom.topLeft(this.el,[0,0]);
     this.setState("ghosted", false);
   }
 

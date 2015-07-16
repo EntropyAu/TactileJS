@@ -13,6 +13,7 @@ const defaultOptions = {
   pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
   resizeAnimation:   { duration: 300, easing: 'ease-in-out' },
   dropAnimation:     { duration: 300, easing: 'ease-in-out' },
+  reorderAnimation:  { duration: 300, easing: 'ease-in-out' },
   pickUpDelay: 0,
   pickUpDistance: 0,
   helperRotation: -1,
@@ -20,8 +21,8 @@ const defaultOptions = {
   placeholderClass: 'dd-drag-placeholder',
   containerHoverClass: 'dd-drag-hover',
   scrollDelay: 500,
-  scrollSensitivity: 30,
-  scrollSpeed: 0.5,
+  scrollSensitivity: '15%',
+  scrollSpeed: 1,
   animation: false
 };
 

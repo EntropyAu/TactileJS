@@ -47,11 +47,9 @@ export default class SortableContainer extends Container {
     }
     let offset = 0;
     for (let el of this.siblingEls) {
-      let measure = this.direction === "vertical"
-                  ? dom.outerHeight(el, true)
-                  : dom.outerWidth(el, true);
+      let measure = this.direction === "vertical" ? dom.outerHeight(el, true) : dom.outerWidth(el, true);
       this.siblingMeasures.set(el, {
-        offset: offset,
+        offset: el.offsetTop,
         measure: measure
       });
       offset += measure;
@@ -60,8 +58,15 @@ export default class SortableContainer extends Container {
 
 
   updatePosition(xy) {
+    let localXY = [xy[0] - this.el.scrollLeft,
+                   xy[1] - this.el.scrollTop];
     if (this.siblingEls.length === 0) return this.index = 0;
-
+    this.siblingEls.forEach(function(el, index) {
+      let measures = this.siblingMeasures.get(el);
+      if (xy[1] >= measures.offset && xy[1] <= measures.offset + measures.measure)
+        this.index = index;
+    }.bind(this));
+    /*
     // we'll use selection APIs rather than elementAtPoint,
     // as it returns the closest sibling to the area being selected
     // TODO - do performance comparison between "viaSelection" and normal elementFromPoint
@@ -85,6 +90,7 @@ export default class SortableContainer extends Container {
           break;
       }
     }
+    */
   }
 
 
@@ -106,7 +112,7 @@ export default class SortableContainer extends Container {
     else mutation();
     */
     this.placeholderSize = this.placeholder.size;
-    this.placeholderSizeWithMargins = this.placeholder.sizeWithMargins;
+    this.placeholderOuterSize = this.placeholder.outerSize;
     this.placeholderScale = this.placeholder.scale;
     this.placeholder.setState("ghosted");
     this.updateChildOffsets();
@@ -165,6 +171,18 @@ export default class SortableContainer extends Container {
 
 
   updateChildOffsets() {
+    let offset = 0;
+    this.siblingEls.forEach(function (el, index) {
+      if (index === this.index) offset += this.placeholderOuterSize[1];
+      let measures = this.siblingMeasures.get(el);
+      let newTranslation = offset - measures.offset
+      if (measures.translation !== newTranslation) {
+        measures.translation = newTranslation;
+        animation.set(el, { translateX: 0, translateY: measures.translation }, this.drag.options.reorderAnimation);
+      }
+      offset += measures.measure;
+    }.bind(this));
+    /*
     // initialize the expected offset to the padding value
     let expectedOffset = 0;
     if (this.siblingEls.length > 0) expectedOffset = (this.direction === 'vertical' ? parseInt(this.style.paddingTop) : parseInt(this.style.paddingLeft));
@@ -174,7 +192,7 @@ export default class SortableContainer extends Container {
       if (index === this.index && this.placeholder.visible) {
         // leave room for the placeholder
         placeholderOffset = expectedOffset;
-        expectedOffset += this.direction === 'vertical' ? this.placeholderSizeWithMargins[1] : this.placeholderSizeWithMargins[0];
+        expectedOffset += this.direction === 'vertical' ? this.placeholderOuterSize[1] : this.placeholderOuterSize[0];
       }
       let offset = expectedOffset - (this.direction === 'vertical' ? el.offsetTop : el.offsetLeft);
       if (el._offset !== offset && !(offset === 0 && el._offset === undefined)) {
@@ -190,12 +208,12 @@ export default class SortableContainer extends Container {
     this.placeholder.el.style.webkitTransform = this.direction === 'vertical'
                                  ? 'translate(0,' + placeholderTranslation + 'px)'
                                  : 'translate(' + placeholderTranslation + 'px,0)';
+                                 */
   }
 
   clearChildTranslations() {
     this.siblingEls.forEach(function(el) {
-      el.style.webkitTransform = '';
-      el.style.transform = '';
+      animation.set(el, { translateX: 0, translateY: 0 });
     });
   }
 
