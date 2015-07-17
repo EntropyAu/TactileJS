@@ -1,30 +1,17 @@
 .card {
-  width: 240px;
-  height: 148px;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  height: 148px !important;
+  min-height: 148px !important;
+  max-height: 148px !important;
 }
 
-.day {
-  display: flex !important;
-  display: -webkit-flex !important;
-  flex-direction: column;
-  -webkit-flex-direction: column;
-  margin: 8px !important;
-}
 .day-header {
   flex-grow: 0;
   -webkit-flex-grow: 0;
   flex-shrink: 0;
   -webkit-flex-shrink: 0;
-}
-
-.day-activities {
-  width: 248px;
-  min-height:148px;
-  padding: 4px !important;
-  flex-grow: 1;
-  -webkit-flex-grow: 1;
-  flex-shrink: 1;
-  -webkit-flex-shrink: 1;
 }
 
 .layout {
@@ -50,22 +37,43 @@
 }
 
 .layout-plan {
-  display: flex;
-  display: -webkit-flex;
   flex-grow: 1;
   flex-shrink: 1;
   -webkit-flex-grow: 1;
+  -webkit-flex-shrink: 1;
+  overflow: scroll;
+}
+
+.days-list {
+  overflow: scroll;
+  margin: 10px;
+  height: 100%;
+  max-width: 100%;
+  white-space: nowrap;
+  padding: 20px !important;
+}
+
+.day {
+  display: inline-flex !important;
+  display: -webkit-inline-flex !important;
+  flex-direction: column;
+  -webkit-flex-direction: column;
+  height: 100%;
+  margin: 8px !important;
+}
+
+.day-activities {
+  width: 253px;
+  min-height:148px;
+  padding: 4px !important;
+  flex-grow: 1;
+  -webkit-flex-grow: 1;
+  flex-shrink: 1;
   -webkit-flex-shrink: 1;
 }
 
-.layout-plan {
-  padding: 10px;
-  flex-shrink: 1;
-  -webkit-flex-shrink: 1;
-  flex-grow: 1;
-  -webkit-flex-grow: 1;
-  overflow: scroll;
-}
+
+
 
 .ui.card {
   margin-top: 0;

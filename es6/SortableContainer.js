@@ -15,15 +15,16 @@ export default class SortableContainer extends Container {
     this.siblingEls = null;
     this.childMeasures = new WeakMap();
     this.style = null;
+    this.forceFeedClearRequired = true;
     this.initializeSortable();
   }
 
 
   initializeSortable() {
-    this.style = getComputedStyle(this.el);
     this.direction = this.el.getAttribute('data-drag-sortable') || 'vertical';
     this.initializeSiblingEls();
     this.initializePlaceholder();
+    this.style = getComputedStyle(this.el);
   }
 
 
@@ -52,8 +53,6 @@ export default class SortableContainer extends Container {
     this.placeholder.setState("ghosted");
     this.placeholderSize = this.placeholder.size;
     this.placeholderScale = this.placeholder.scale;
-    this.childMeasures = new WeakMap();
-    this.updateChildTranslations(true);
   }
 
   leave() {
@@ -62,7 +61,6 @@ export default class SortableContainer extends Container {
     } else {
       this.index = null;
       this.placeholder.setState("hidden");
-      this.childMeasures = new WeakMap();
       this.updateChildTranslations();
     }
   }
@@ -77,11 +75,14 @@ export default class SortableContainer extends Container {
 
 
   getChildMeasure(el) {
+    let layoutOffsetProperty = this.direction === "vertical" ? "offsetTop" : "offsetLeft";
+    let paddingTopOrLeftProperty = this.direction === "vertical" ? "paddingTop" : "paddingLeft";
+    let outerWidthOrHeightProperty = this.direction === "vertical" ? "outerHeight" : "outerWidth";
     let measure = this.childMeasures.get(el);
     if (!measure) {
       measure = {
-        offset: el.offsetTop - parseInt(this.style.paddingTop, 10),
-        measure: this.direction === "vertical" ? dom.outerHeight(el, true) : dom.outerWidth(el, true),
+        offset: el[layoutOffsetProperty] - parseInt(this.style[paddingTopOrLeftProperty], 10),
+        measure: dom[outerWidthOrHeightProperty](el, true),
         translation: null
       };
       this.childMeasures.set(el, measure);
@@ -94,6 +95,9 @@ export default class SortableContainer extends Container {
     // if it's empty, answer is simple
     if (this.siblingEls.length === 0) return this.index = 0;
 
+    let dimensionIndex = this.direction === 'vertical' ? 1 : 0;
+    let translateProperty = this.direction === 'vertical' ? 'translateY' : 'translateX';
+
     const bounds = this.el.getBoundingClientRect();
     // calculate the position of the item relative to this container
     const innerXY = [xy[0] - bounds.left + this.el.scrollLeft - parseInt(this.style.paddingLeft, 10),
@@ -105,11 +109,13 @@ export default class SortableContainer extends Container {
     let newIndex = 0;
     do {
       let measure = this.getChildMeasure(this.childEls[newIndex]);
-      if (adjustedXY[1] < naturalOffset + measure.measure / 2) break;
+      if (adjustedXY[dimensionIndex] < naturalOffset + measure.measure / 2) break;
       naturalOffset += measure.measure;
       newIndex++;
     }
-    while (newIndex < this.childEls.length)
+    while (newIndex < this.childEls.length);
+
+    this.forceFeedClearRequired = this.forceFeedClearRequired || (this.index === null);
     if (this.index !== newIndex) {
       this.index = newIndex;
       this.updateChildTranslations();
@@ -117,49 +123,53 @@ export default class SortableContainer extends Container {
   }
 
 
-
-  updateChildTranslations(firstTime = false) {
+  updateChildTranslations() {
     let offset = 0;
     let placeholderOffset = null;
+    let dimensionIndex = this.direction === 'vertical' ? 1 : 0;
+    let translateProperty = this.direction === 'vertical' ? 'translateY' : 'translateX';
+
     this.siblingEls.forEach(function (el, index) {
       if (index === this.index) {
         placeholderOffset = offset;
-        offset += this.placeholder.outerSize[1];
+        offset += this.placeholder.outerSize[dimensionIndex];
       }
       let measure = this.getChildMeasure(el);
       let newTranslation = offset - measure.offset
-      if (measure.translation !== newTranslation || firstTime) {
+      if (measure.translation !== newTranslation || this.forceFeedClearRequired) {
         measure.translation = newTranslation;
-        let props = firstTime
-                  ? { translateX: [0, 0], translateY: [measure.translation, 0] }
-                  : { translateX: 0, translateY: measure.translation };
+        let props = this.forceFeedClearRequired
+                  ? { [translateProperty]: [measure.translation, Math.random() / 100] }
+                  : { [translateProperty]: measure.translation + Math.random() / 100 };
         animation.set(el, props, this.drag.options.reorderAnimation);
       }
       offset += measure.measure;
     }.bind(this));
+
     if (placeholderOffset === null)  placeholderOffset = offset;
     let placeholderMeasure = this.getChildMeasure(this.placeholder.el);
     let newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
-    if (placeholderMeasure.translation !== newPlaceholderTranslation || firstTime) {
-      animation.set(this.placeholder.el, { translateX: 0, translateY: newPlaceholderTranslation });
+    if (placeholderMeasure.translation !== newPlaceholderTranslation || this.forceFeedCleanRequired) {
+      animation.set(this.placeholder.el, { [translateProperty]: newPlaceholderTranslation });
       placeholderMeasure.translation = newPlaceholderTranslation;
     }
+    this.forceFeedClearRequired = false;
   }
+
 
   clearChildTransforms() {
     // synchronously clear the transform styles (rather than calling
     // velocity.js) to avoid flickering when the dom elements are reordered
     this.siblingEls.forEach(function(el) {
-      el.style.transform = '';
-      el.style.msTransform = '';
-      el.style.mozTransform = '';
-      el.style.webkitTransform = '';
+      Velocity(el, 'stop');
+      el.setAttribute('style', '');
     });
+    this.forceFeedCleanRequired = true;
   }
+
 
   dispose() {
     this.clearChildTransforms();
-    console.log("dispose")
     if (this.placeholder) this.placeholder.dispose()
     super();
   }

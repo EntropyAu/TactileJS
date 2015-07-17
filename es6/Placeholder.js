@@ -31,7 +31,7 @@ export default class Placeholder {
   setState(state, animate = true) {
       if (this.state === state) return;
       let velocityOptions = animate
-                          ? { duration: 400, queue: false }
+                          ? { duration: 200, queue: false }
                           : { duration:   0, queue: false };
       switch (state) {
         case "hidden": this._hide(); break;
@@ -42,14 +42,10 @@ export default class Placeholder {
   }
 
   _hide() {
-    this.el.style.position = 'absolute';
-    this.el.style.top = -99999;
     this.el.style.visibility = 'hidden';
   }
 
   _show() {
-    this.el.style.position = '';
-    this.el.style.top = '';
     this.el.style.visibility = '';
   }
 
@@ -74,14 +70,12 @@ export default class Placeholder {
         // restore the original draggable element settings
         this.el.removeAttribute('data-drag-placeholder');
         this.el.classList.remove('dd-drag-placeholder');
-        this.el.style.position = 'static';
         this.el.style.webkitTransform = '';
         this.el.style.mozTransform = '';
         this.el.style.msTransform = '';
         this.el.style.transform = '';
-        this.el.style.visibility = 'visible';
-        this.el.style.top = 0;
-        this.el.style.opacity = 1;
+        this.el.style.visibility = '';
+        this.el.style.opacity = '';
         this.el = null;
         break;
     }
