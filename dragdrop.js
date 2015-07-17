@@ -292,7 +292,7 @@
 	    this.dropAction = 'move'; // "copy"
 	    this.cancelAction = 'last'; // "remove", "last"
 
-	    this._knownContainers = new WeakMap();
+	    this._knownContainers = new Map();
 	    this._start();
 	  }
 
@@ -318,7 +318,6 @@
 	  };
 
 	  Drag.prototype.dispose = function dispose() {
-	    if (this.target) this.target.el.classList.remove('dd-drag-over');
 	    this._knownContainers.forEach(function (t) {
 	      return t.dispose();
 	    });
@@ -420,7 +419,6 @@
 	      if (container.placeholderSize && this.options.helperResize) {
 	        this.helper.setSizeAndScale(container.placeholderSize, container.placeholderScale);
 	      }
-	      container.el.classList.add(this.options.containerHoverClass);
 	      this.target = container;
 	    }
 	  };
@@ -428,7 +426,6 @@
 	  Drag.prototype._leaveTarget = function _leaveTarget(container) {
 	    if (events.raiseEvent(container.el, 'dragleave', this)) {
 	      container.leave();
-	      container.el.classList.remove(this.options.containerHoverClass);
 	      this.target = null;
 	    }
 	  };
@@ -866,11 +863,17 @@
 	    });
 	  };
 
-	  Container.prototype.enter = function enter() {};
+	  Container.prototype.enter = function enter() {
+	    this.el.classList.add(this.options.containerHoverClass);
+	  };
 
-	  Container.prototype.leave = function leave() {};
+	  Container.prototype.leave = function leave() {
+	    this.el.classList.remove(this.options.containerHoverClass);
+	  };
 
-	  Container.prototype.dispose = function dispose() {};
+	  Container.prototype.dispose = function dispose() {
+	    this.el.classList.remove(this.options.containerHoverClass);
+	  };
 
 	  return Container;
 	})();
@@ -927,17 +930,17 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var _CanvasContainerJs = __webpack_require__(7);
+	var _CanvasJs = __webpack_require__(16);
 
-	var _CanvasContainerJs2 = _interopRequireDefault(_CanvasContainerJs);
+	var _CanvasJs2 = _interopRequireDefault(_CanvasJs);
 
-	var _DroppableContainerJs = __webpack_require__(10);
+	var _DroppableJs = __webpack_require__(17);
 
-	var _DroppableContainerJs2 = _interopRequireDefault(_DroppableContainerJs);
+	var _DroppableJs2 = _interopRequireDefault(_DroppableJs);
 
-	var _SortableContainerJs = __webpack_require__(11);
+	var _SortableJs = __webpack_require__(18);
 
-	var _SortableContainerJs2 = _interopRequireDefault(_SortableContainerJs);
+	var _SortableJs2 = _interopRequireDefault(_SortableJs);
 
 	var _libDomJs = __webpack_require__(3);
 
@@ -957,9 +960,9 @@
 	  };
 
 	  ContainerFactory.makeContainer = function makeContainer(el, drag) {
-	    if (_CanvasContainerJs2['default'].matches(el)) return new _CanvasContainerJs2['default'](el, drag);
-	    if (_DroppableContainerJs2['default'].matches(el)) return new _DroppableContainerJs2['default'](el, drag);
-	    if (_SortableContainerJs2['default'].matches(el)) return new _SortableContainerJs2['default'](el, drag);
+	    if (_CanvasJs2['default'].matches(el)) return new _CanvasJs2['default'](el, drag);
+	    if (_DroppableJs2['default'].matches(el)) return new _DroppableJs2['default'](el, drag);
+	    if (_SortableJs2['default'].matches(el)) return new _SortableJs2['default'](el, drag);
 	    return null;
 	  };
 
@@ -970,107 +973,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	exports.__esModule = true;
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
-
-	var _ContainerJs = __webpack_require__(4);
-
-	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
-
-	var _PlaceholderJs = __webpack_require__(8);
-
-	var _PlaceholderJs2 = _interopRequireDefault(_PlaceholderJs);
-
-	var _libDomJs = __webpack_require__(3);
-
-	var dom = _interopRequireWildcard(_libDomJs);
-
-	var CanvasContainer = (function (_Container) {
-	  function CanvasContainer(el, drag) {
-	    _classCallCheck(this, CanvasContainer);
-
-	    _Container.call(this, el, drag);
-	    this.offset = [0, 0];
-	    this.grid = null;
-	    this.initialize();
-	  }
-
-	  _inherits(CanvasContainer, _Container);
-
-	  CanvasContainer.prototype.initialize = function initialize() {
-	    var grid = this.el.getAttribute("data-drag-grid") || "";
-	    var cellSizeTokens = grid.split(",");
-	    this.grid = [parseInt(cellSizeTokens[0], 10) || 1, parseInt(cellSizeTokens[1], 10) || parseInt(cellSizeTokens[0], 10) || 1];
-	    this.insertPlaceholder();
-	  };
-
-	  CanvasContainer.prototype.insertPlaceholder = function insertPlaceholder(originalEl) {
-	    this.placeholder = new _PlaceholderJs2["default"](this.drag, originalEl);
-	    if (!originalEl) {
-	      this.el.appendChild(this.placeholder.el);
-	    }
-	    this.placeholderSize = this.placeholder.size;
-	    this.placeholderScale = this.placeholder.scale;
-	    this.placeholder.setState("hidden");
-	  };
-
-	  CanvasContainer.prototype.updatePosition = function updatePosition(xy) {
-	    // TODO cache if possible
-	    var rect = this.el.getBoundingClientRect();
-	    var l = xy[0] - rect.left + this.el.scrollLeft - this.drag.helper.grip[0] * this.drag.helper.size[0],
-	        t = xy[1] - rect.top + this.el.scrollTop - this.drag.helper.grip[1] * this.drag.helper.size[1];
-	    t = Math.round((t - rect.top) / this.grid[1]) * this.grid[1] + rect.top;
-	    l = Math.round((l - rect.left) / this.grid[0]) * this.grid[0] + rect.left;
-	    this.offset = [l, t];
-	    dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
-	  };
-
-	  CanvasContainer.prototype.enter = function enter() {
-	    this.placeholder.setState("ghosted");
-	  };
-
-	  CanvasContainer.prototype.leave = function leave() {
-	    if (this.dragOutAction === "copy" && this.placeholder.isOriginal) {
-	      this.placeholder.setState("materialized");
-	    } else {
-	      this.placeholder.setState("hidden");
-	    }
-	  };
-
-	  CanvasContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
-	    this.placeholder.dispose();
-	    dom.topLeft(draggable.el, this.offset);
-	    this.el.appendChild(draggable.el);
-	  };
-
-	  _createClass(CanvasContainer, null, [{
-	    key: "selector",
-	    get: function get() {
-	      return "[data-drag-canvas]";
-	    }
-	  }]);
-
-	  return CanvasContainer;
-	})(_ContainerJs2["default"]);
-
-	exports["default"] = CanvasContainer;
-	module.exports = exports["default"];
-
-/***/ },
+/* 7 */,
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -1297,299 +1200,8 @@
 	}
 
 /***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	exports.__esModule = true;
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
-
-	var _ContainerJs = __webpack_require__(4);
-
-	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
-
-	var DroppableContainer = (function (_Container) {
-	  function DroppableContainer(el, drag) {
-	    _classCallCheck(this, DroppableContainer);
-
-	    _Container.call(this, el, drag);
-	  }
-
-	  _inherits(DroppableContainer, _Container);
-
-	  DroppableContainer.prototype.updatePosition = function updatePosition(xy) {};
-
-	  DroppableContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {};
-
-	  _createClass(DroppableContainer, null, [{
-	    key: "selector",
-	    get: function get() {
-	      return "[data-drag-droppable]";
-	    }
-	  }]);
-
-	  return DroppableContainer;
-	})(_ContainerJs2["default"]);
-
-	exports["default"] = DroppableContainer;
-	module.exports = exports["default"];
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	exports.__esModule = true;
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
-
-	var _ContainerJs = __webpack_require__(4);
-
-	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
-
-	var _PlaceholderJs = __webpack_require__(8);
-
-	var _PlaceholderJs2 = _interopRequireDefault(_PlaceholderJs);
-
-	var _libDomJs = __webpack_require__(3);
-
-	var dom = _interopRequireWildcard(_libDomJs);
-
-	var _libAnimationJs = __webpack_require__(9);
-
-	var animation = _interopRequireWildcard(_libAnimationJs);
-
-	var SortableContainer = (function (_Container) {
-	  function SortableContainer(el, drag) {
-	    _classCallCheck(this, SortableContainer);
-
-	    _Container.call(this, el, drag);
-	    this.index = null;
-	    this.direction = "vertical";
-	    this.childEls = null;
-	    this.siblingEls = null;
-	    this.childMeasures = new WeakMap();
-	    this.style = null;
-	    this.forceFeedClearRequired = true;
-	    this.propertiesForDimension = null;
-	    this.initializeSortable();
-	  }
-
-	  _inherits(SortableContainer, _Container);
-
-	  SortableContainer.prototype.initializeSortable = function initializeSortable() {
-	    this.style = getComputedStyle(this.el);
-	    this.initializeDirection();
-	    this.initializePlaceholder();
-	    this.initializeChildAndSiblingEls();
-	  };
-
-	  SortableContainer.prototype.initializeDirection = function initializeDirection() {
-	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
-	    this.directionProperties = this.direction === "vertical" ? {
-	      index: 1,
-	      translate: "translateY",
-	      paddingStart: "paddingTop",
-	      endMargin: "marginBottom",
-	      layoutOffset: "offsetTop",
-	      outerDimension: "outerHeight"
-	    } : {
-	      index: 0,
-	      translate: "translateX",
-	      paddingStart: "paddingLeft",
-	      endMargin: "marginRight",
-	      layoutOffset: "offsetLeft",
-	      outerDimension: "outerWidth"
-	    };
-	  };
-
-	  SortableContainer.prototype.initializePlaceholder = function initializePlaceholder() {
-	    if (this.drag.draggable.originalParentEl === this.el) {
-	      this.placeholder = new _PlaceholderJs2["default"](this.drag, this.drag.draggable.el);
-	    } else {
-	      this.placeholder = new _PlaceholderJs2["default"](this.drag);
-	      this.el.appendChild(this.placeholder.el);
-	    }
-	    this.placeholder.setState("hidden");
-	    this._addNegativeMarginToLastChild();
-	  };
-
-	  SortableContainer.prototype.initializeChildAndSiblingEls = function initializeChildAndSiblingEls() {
-	    this.childEls = dom.childElementArray(this.el);
-	    this.siblingEls = this.childEls.slice(0);
-	    var placeholderElIndex = this.childEls.indexOf(this.placeholder.el);
-	    if (placeholderElIndex !== -1) {
-	      this.siblingEls.splice(placeholderElIndex, 1);
-	    }
-	  };
-
-	  SortableContainer.prototype.enter = function enter() {
-	    this.placeholder.setState("ghosted");
-	    this.placeholderSize = this.placeholder.size;
-	    this.placeholderScale = this.placeholder.scale;
-	    this._removeNegativeMarginFromLastChild();
-	    this.childMeasures = new WeakMap();
-	  };
-
-	  SortableContainer.prototype.leave = function leave() {
-	    if (this.dragOutAction === "copy" && this.placeholder.isDraggableEl) {
-	      this.placeholder.setState("materialized");
-	    } else {
-	      this.index = null;
-	      this.forceFeedClearRequired = true;
-	      this.childMeasures = new WeakMap();
-	      this.placeholder.setState("hidden");
-	      this._addNegativeMarginToLastChild();
-	      this.updateChildTranslations();
-	    }
-	  };
-
-	  SortableContainer.prototype._addNegativeMarginToLastChild = function _addNegativeMarginToLastChild() {
-	    if (this.el.children.length === 0) return;
-	    var lastChildEl = this.el.children[this.el.children.length - 1];
-	    var lastChildStyle = getComputedStyle(lastChildEl);
-	    var newMargin = parseInt(lastChildStyle[this.directionProperties.endMargin], 10) - this.placeholder.outerSize[this.directionProperties.index];
-	    lastChildEl.style[this.directionProperties.endMargin] = newMargin + "px";
-	  };
-
-	  SortableContainer.prototype._removeNegativeMarginFromLastChild = function _removeNegativeMarginFromLastChild() {
-	    if (this.el.children.length === 0) return;
-	    var lastChildEl = this.el.children[this.el.children.length - 1];
-	    lastChildEl.style[this.directionProperties.endMargin] = "";
-	  };
-
-	  SortableContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
-	    this.clearChildTransforms();
-	    this.el.insertBefore(this.placeholder.el, this.siblingEls[this.index]);
-	    this.placeholder.dispose(this.drag.action === "copy");
-	    this.placeholder = null;
-	  };
-
-	  SortableContainer.prototype.getChildMeasure = function getChildMeasure(el) {
-	    var measure = this.childMeasures.get(el);
-	    if (!measure) {
-	      measure = {
-	        offset: el[this.directionProperties.layoutOffset] - parseInt(this.style[this.directionProperties.paddingStart], 10),
-	        measure: dom[this.directionProperties.outerDimension](el, true),
-	        translation: null
-	      };
-	      this.childMeasures.set(el, measure);
-	    }
-	    return measure;
-	  };
-
-	  SortableContainer.prototype.updatePosition = function updatePosition(xy) {
-	    // if it's empty, answer is simple
-	    if (this.siblingEls.length === 0) {
-	      if (this.index !== 0) {
-	        this.index = 0;
-	        this.updateChildTranslations();
-	      }
-	      return;
-	    }
-
-	    this._removeNegativeMarginFromLastChild();
-
-	    var bounds = this.el.getBoundingClientRect();
-	    // calculate the position of the item relative to this container
-	    var innerXY = [xy[0] - bounds.left + this.el.scrollLeft - parseInt(this.style.paddingLeft, 10), xy[1] - bounds.top + this.el.scrollTop - parseInt(this.style.paddingTop, 10)];
-	    var adjustedXY = [innerXY[0] - this.drag.helper.grip[0] * this.drag.helper.size[0], innerXY[1] - this.drag.helper.grip[1] * this.drag.helper.size[1]];
-
-	    var naturalOffset = 0;
-	    var newIndex = 0;
-	    do {
-	      var measure = this.getChildMeasure(this.siblingEls[newIndex]);
-	      if (adjustedXY[this.directionProperties.index] < naturalOffset + measure.measure / 2) break;
-	      naturalOffset += measure.measure;
-	      newIndex++;
-	    } while (newIndex < this.siblingEls.length);
-
-	    if (this.index !== newIndex) {
-	      this.index = newIndex;
-	      this.updateChildTranslations();
-	    }
-	  };
-
-	  SortableContainer.prototype.updateChildTranslations = function updateChildTranslations() {
-	    var offset = 0;
-	    var placeholderOffset = null;
-
-	    this.siblingEls.forEach((function (el, index) {
-	      if (index === this.index) {
-	        placeholderOffset = offset;
-	        offset += this.placeholder.outerSize[this.directionProperties.index];
-	      }
-	      var measure = this.getChildMeasure(el);
-	      var newTranslation = offset - measure.offset;
-	      if (measure.translation !== newTranslation || this.forceFeedClearRequired) {
-	        var _ref, _ref2;
-
-	        measure.translation = newTranslation;
-	        var props = this.forceFeedClearRequired ? (_ref = {}, _ref[this.directionProperties.translate] = [measure.translation, Math.random() / 100], _ref) : (_ref2 = {}, _ref2[this.directionProperties.translate] = measure.translation + Math.random() / 100, _ref2);
-	        animation.set(el, props, this.drag.options.reorderAnimation);
-	      }
-	      offset += measure.measure;
-	    }).bind(this));
-
-	    if (placeholderOffset === null) placeholderOffset = offset;
-	    var placeholderMeasure = this.getChildMeasure(this.placeholder.el);
-	    var newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
-	    if (placeholderMeasure.translation !== newPlaceholderTranslation || this.forceFeedCleanRequired) {
-	      var _animation$set;
-
-	      animation.set(this.placeholder.el, (_animation$set = {}, _animation$set[this.directionProperties.translate] = newPlaceholderTranslation, _animation$set));
-	      placeholderMeasure.translation = newPlaceholderTranslation;
-	    }
-	    this.forceFeedClearRequired = false;
-	  };
-
-	  SortableContainer.prototype.clearChildTransforms = function clearChildTransforms() {
-	    // synchronously clear the transform styles (rather than calling
-	    // velocity.js) to avoid flickering when the dom elements are reordered
-	    this.siblingEls.forEach(function (el) {
-	      Velocity(el, "stop");
-	      el.setAttribute("style", "");
-	    });
-	    this.forceFeedCleanRequired = true;
-	  };
-
-	  SortableContainer.prototype.dispose = function dispose() {
-	    this.clearChildTransforms();
-	    if (this.placeholder) this.placeholder.dispose();
-	    _Container.prototype.dispose.call(this);
-	  };
-
-	  _createClass(SortableContainer, null, [{
-	    key: "selector",
-	    get: function get() {
-	      return "[data-drag-sortable]";
-	    }
-	  }]);
-
-	  return SortableContainer;
-	})(_ContainerJs2["default"]);
-
-	exports["default"] = SortableContainer;
-	module.exports = exports["default"];
-
-/***/ },
+/* 10 */,
+/* 11 */,
 /* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -1880,6 +1492,404 @@
 	})();
 
 	exports["default"] = Draggable;
+	module.exports = exports["default"];
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+
+	var _ContainerJs = __webpack_require__(4);
+
+	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
+
+	var _PlaceholderJs = __webpack_require__(8);
+
+	var _PlaceholderJs2 = _interopRequireDefault(_PlaceholderJs);
+
+	var _libDomJs = __webpack_require__(3);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var Canvas = (function (_Container) {
+	  function Canvas(el, drag) {
+	    _classCallCheck(this, Canvas);
+
+	    _Container.call(this, el, drag);
+	    this.offset = [0, 0];
+	    this.grid = null;
+	    this.initialize();
+	  }
+
+	  _inherits(Canvas, _Container);
+
+	  Canvas.prototype.initialize = function initialize() {
+	    var grid = this.el.getAttribute("data-drag-grid") || "";
+	    var cellSizeTokens = grid.split(",");
+	    this.grid = [parseInt(cellSizeTokens[0], 10) || 1, parseInt(cellSizeTokens[1], 10) || parseInt(cellSizeTokens[0], 10) || 1];
+	    this.insertPlaceholder();
+	  };
+
+	  Canvas.prototype.insertPlaceholder = function insertPlaceholder(originalEl) {
+	    this.placeholder = new _PlaceholderJs2["default"](this.drag, originalEl);
+	    if (!originalEl) {
+	      this.el.appendChild(this.placeholder.el);
+	    }
+	    this.placeholderSize = this.placeholder.size;
+	    this.placeholderScale = this.placeholder.scale;
+	    this.placeholder.setState("hidden");
+	  };
+
+	  Canvas.prototype.updatePosition = function updatePosition(xy) {
+	    // TODO cache if possible
+	    var rect = this.el.getBoundingClientRect();
+	    var l = xy[0] - rect.left + this.el.scrollLeft - this.drag.helper.grip[0] * this.drag.helper.size[0],
+	        t = xy[1] - rect.top + this.el.scrollTop - this.drag.helper.grip[1] * this.drag.helper.size[1];
+	    t = Math.round((t - rect.top) / this.grid[1]) * this.grid[1] + rect.top;
+	    l = Math.round((l - rect.left) / this.grid[0]) * this.grid[0] + rect.left;
+	    this.offset = [l, t];
+	    dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
+	  };
+
+	  Canvas.prototype.enter = function enter() {
+	    _Container.prototype.enter.call(this);
+	    this.placeholder.setState("ghosted");
+	  };
+
+	  Canvas.prototype.leave = function leave() {
+	    _Container.prototype.leave.call(this);
+	    if (this.dragOutAction === "copy" && this.placeholder.isOriginal) {
+	      this.placeholder.setState("materialized");
+	    } else {
+	      this.placeholder.setState("hidden");
+	    }
+	  };
+
+	  Canvas.prototype.finalizeDrop = function finalizeDrop(draggable) {
+	    this.placeholder.dispose();
+	    dom.topLeft(draggable.el, this.offset);
+	    this.el.appendChild(draggable.el);
+	  };
+
+	  _createClass(Canvas, null, [{
+	    key: "selector",
+	    get: function get() {
+	      return "[data-drag-canvas]";
+	    }
+	  }]);
+
+	  return Canvas;
+	})(_ContainerJs2["default"]);
+
+	exports["default"] = Canvas;
+	module.exports = exports["default"];
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+
+	var _ContainerJs = __webpack_require__(4);
+
+	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
+
+	var Droppable = (function (_Container) {
+	  function Droppable(el, drag) {
+	    _classCallCheck(this, Droppable);
+
+	    _Container.call(this, el, drag);
+	  }
+
+	  _inherits(Droppable, _Container);
+
+	  Droppable.prototype.updatePosition = function updatePosition(xy) {};
+
+	  Droppable.prototype.finalizeDrop = function finalizeDrop(draggable) {};
+
+	  _createClass(Droppable, null, [{
+	    key: "selector",
+	    get: function get() {
+	      return "[data-drag-droppable]";
+	    }
+	  }]);
+
+	  return Droppable;
+	})(_ContainerJs2["default"]);
+
+	exports["default"] = Droppable;
+	module.exports = exports["default"];
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+
+	var _ContainerJs = __webpack_require__(4);
+
+	var _ContainerJs2 = _interopRequireDefault(_ContainerJs);
+
+	var _PlaceholderJs = __webpack_require__(8);
+
+	var _PlaceholderJs2 = _interopRequireDefault(_PlaceholderJs);
+
+	var _libDomJs = __webpack_require__(3);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var _libAnimationJs = __webpack_require__(9);
+
+	var animation = _interopRequireWildcard(_libAnimationJs);
+
+	var Sortable = (function (_Container) {
+	  function Sortable(el, drag) {
+	    _classCallCheck(this, Sortable);
+
+	    _Container.call(this, el, drag);
+	    this.index = null;
+	    this.direction = "vertical";
+	    this.childEls = null;
+	    this.siblingEls = null;
+	    this.childMeasures = new WeakMap();
+	    this.style = null;
+	    this.forceFeedClearRequired = true;
+	    this.propertiesForDimension = null;
+	    this.initializeSortable();
+	  }
+
+	  _inherits(Sortable, _Container);
+
+	  Sortable.prototype.initializeSortable = function initializeSortable() {
+	    this.style = getComputedStyle(this.el);
+	    this.initializeDirection();
+	    this.initializePlaceholder();
+	    this.initializeChildAndSiblingEls();
+	  };
+
+	  Sortable.prototype.initializeDirection = function initializeDirection() {
+	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
+	    this.directionProperties = this.direction === "vertical" ? {
+	      index: 1,
+	      translate: "translateY",
+	      paddingStart: "paddingTop",
+	      endMargin: "marginBottom",
+	      layoutOffset: "offsetTop",
+	      outerDimension: "outerHeight"
+	    } : {
+	      index: 0,
+	      translate: "translateX",
+	      paddingStart: "paddingLeft",
+	      endMargin: "marginRight",
+	      layoutOffset: "offsetLeft",
+	      outerDimension: "outerWidth"
+	    };
+	  };
+
+	  Sortable.prototype.initializePlaceholder = function initializePlaceholder() {
+	    if (this.drag.draggable.originalParentEl === this.el) {
+	      this.placeholder = new _PlaceholderJs2["default"](this.drag, this.drag.draggable.el);
+	    } else {
+	      this.placeholder = new _PlaceholderJs2["default"](this.drag);
+	      this.el.appendChild(this.placeholder.el);
+	    }
+	    this.placeholder.setState("hidden");
+	    this._addNegativeMarginToLastChild();
+	  };
+
+	  Sortable.prototype.initializeChildAndSiblingEls = function initializeChildAndSiblingEls() {
+	    this.childEls = dom.childElementArray(this.el);
+	    this.siblingEls = this.childEls.slice(0);
+	    var placeholderElIndex = this.childEls.indexOf(this.placeholder.el);
+	    if (placeholderElIndex !== -1) {
+	      this.siblingEls.splice(placeholderElIndex, 1);
+	    }
+	  };
+
+	  Sortable.prototype.enter = function enter() {
+	    _Container.prototype.enter.call(this);
+	    this.placeholder.setState("ghosted");
+	    this.placeholderSize = this.placeholder.size;
+	    this.placeholderScale = this.placeholder.scale;
+	    this._removeNegativeMarginFromLastChild();
+	    this.childMeasures = new WeakMap();
+	  };
+
+	  Sortable.prototype.leave = function leave() {
+	    _Container.prototype.leave.call(this);
+	    if (this.dragOutAction === "copy" && this.placeholder.isDraggableEl) {
+	      this.placeholder.setState("materialized");
+	    } else {
+	      this.index = null;
+	      this.forceFeedClearRequired = true;
+	      this.childMeasures = new WeakMap();
+	      this.placeholder.setState("hidden");
+	      this._addNegativeMarginToLastChild();
+	      this.updateChildTranslations();
+	    }
+	  };
+
+	  Sortable.prototype._addNegativeMarginToLastChild = function _addNegativeMarginToLastChild() {
+	    if (this.el.children.length === 0) return;
+	    var lastChildEl = this.el.children[this.el.children.length - 1];
+	    var lastChildStyle = getComputedStyle(lastChildEl);
+	    var newMargin = parseInt(lastChildStyle[this.directionProperties.endMargin], 10) - this.placeholder.outerSize[this.directionProperties.index];
+	    lastChildEl.style[this.directionProperties.endMargin] = newMargin + "px";
+	  };
+
+	  Sortable.prototype._removeNegativeMarginFromLastChild = function _removeNegativeMarginFromLastChild() {
+	    if (this.el.children.length === 0) return;
+	    var lastChildEl = this.el.children[this.el.children.length - 1];
+	    lastChildEl.style[this.directionProperties.endMargin] = "";
+	  };
+
+	  Sortable.prototype.finalizeDrop = function finalizeDrop(draggable) {
+	    this.clearChildTransforms();
+	    this.el.insertBefore(this.placeholder.el, this.siblingEls[this.index]);
+	    this.placeholder.dispose(this.drag.action === "copy");
+	    this.placeholder = null;
+	  };
+
+	  Sortable.prototype.getChildMeasure = function getChildMeasure(el) {
+	    var measure = this.childMeasures.get(el);
+	    if (!measure) {
+	      measure = {
+	        offset: el[this.directionProperties.layoutOffset] - parseInt(this.style[this.directionProperties.paddingStart], 10),
+	        measure: dom[this.directionProperties.outerDimension](el, true),
+	        translation: null
+	      };
+	      this.childMeasures.set(el, measure);
+	    }
+	    return measure;
+	  };
+
+	  Sortable.prototype.updatePosition = function updatePosition(xy) {
+	    // if it's empty, answer is simple
+	    if (this.siblingEls.length === 0) {
+	      if (this.index !== 0) {
+	        this.index = 0;
+	        this.updateChildTranslations();
+	      }
+	      return;
+	    }
+
+	    this._removeNegativeMarginFromLastChild();
+
+	    var bounds = this.el.getBoundingClientRect();
+	    // calculate the position of the item relative to this container
+	    var innerXY = [xy[0] - bounds.left + this.el.scrollLeft - parseInt(this.style.paddingLeft, 10), xy[1] - bounds.top + this.el.scrollTop - parseInt(this.style.paddingTop, 10)];
+	    var adjustedXY = [innerXY[0] - this.drag.helper.grip[0] * this.drag.helper.size[0], innerXY[1] - this.drag.helper.grip[1] * this.drag.helper.size[1]];
+
+	    var naturalOffset = 0;
+	    var newIndex = 0;
+	    do {
+	      var measure = this.getChildMeasure(this.siblingEls[newIndex]);
+	      if (adjustedXY[this.directionProperties.index] < naturalOffset + measure.measure / 2) break;
+	      naturalOffset += measure.measure;
+	      newIndex++;
+	    } while (newIndex < this.siblingEls.length);
+
+	    if (this.index !== newIndex) {
+	      this.index = newIndex;
+	      this.updateChildTranslations();
+	    }
+	  };
+
+	  Sortable.prototype.updateChildTranslations = function updateChildTranslations() {
+	    var offset = 0;
+	    var placeholderOffset = null;
+
+	    this.siblingEls.forEach((function (el, index) {
+	      if (index === this.index) {
+	        placeholderOffset = offset;
+	        offset += this.placeholder.outerSize[this.directionProperties.index];
+	      }
+	      var measure = this.getChildMeasure(el);
+	      var newTranslation = offset - measure.offset;
+	      if (measure.translation !== newTranslation || this.forceFeedClearRequired) {
+	        var _ref, _ref2;
+
+	        measure.translation = newTranslation;
+	        var props = this.forceFeedClearRequired ? (_ref = {}, _ref[this.directionProperties.translate] = [measure.translation, Math.random() / 100], _ref) : (_ref2 = {}, _ref2[this.directionProperties.translate] = measure.translation + Math.random() / 100, _ref2);
+	        animation.set(el, props, this.drag.options.reorderAnimation);
+	      }
+	      offset += measure.measure;
+	    }).bind(this));
+
+	    if (placeholderOffset === null) placeholderOffset = offset;
+	    var placeholderMeasure = this.getChildMeasure(this.placeholder.el);
+	    var newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
+	    if (placeholderMeasure.translation !== newPlaceholderTranslation || this.forceFeedCleanRequired) {
+	      var _animation$set;
+
+	      animation.set(this.placeholder.el, (_animation$set = {}, _animation$set[this.directionProperties.translate] = newPlaceholderTranslation, _animation$set));
+	      placeholderMeasure.translation = newPlaceholderTranslation;
+	    }
+	    this.forceFeedClearRequired = false;
+	  };
+
+	  Sortable.prototype.clearChildTransforms = function clearChildTransforms() {
+	    // synchronously clear the transform styles (rather than calling
+	    // velocity.js) to avoid flickering when the dom elements are reordered
+	    this.siblingEls.forEach(function (el) {
+	      Velocity(el, "stop");
+	      el.setAttribute("style", "");
+	    });
+	    this.forceFeedCleanRequired = true;
+	  };
+
+	  Sortable.prototype.dispose = function dispose() {
+	    this.clearChildTransforms();
+	    if (this.placeholder) this.placeholder.dispose();
+	    _Container.prototype.dispose.call(this);
+	  };
+
+	  _createClass(Sortable, null, [{
+	    key: "selector",
+	    get: function get() {
+	      return "[data-drag-sortable]";
+	    }
+	  }]);
+
+	  return Sortable;
+	})(_ContainerJs2["default"]);
+
+	exports["default"] = Sortable;
 	module.exports = exports["default"];
 
 /***/ }

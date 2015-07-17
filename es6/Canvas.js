@@ -2,7 +2,7 @@ import Container from "./Container.js";
 import Placeholder from "./Placeholder.js";
 import * as dom from "./lib/dom.js";
 
-export default class CanvasContainer extends Container {
+export default class Canvas extends Container {
 
   static get selector() { return '[data-drag-canvas]'; }
 
@@ -48,11 +48,13 @@ export default class CanvasContainer extends Container {
 
 
   enter() {
+    super();
     this.placeholder.setState("ghosted");
   }
 
 
   leave() {
+    super();
     if (this.dragOutAction === 'copy' && this.placeholder.isOriginal) {
       this.placeholder.setState("materialized");
     } else {

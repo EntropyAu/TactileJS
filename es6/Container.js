@@ -37,7 +37,15 @@ export default class Container {
     return this.captures.has('*') || [...draggable.tags].some(t => this.captures.has(t));
   }
 
-  enter() {}
-  leave() {}
-  dispose() {}
+  enter() {
+    this.el.classList.add(this.options.containerHoverClass);
+  }
+
+  leave() {
+    this.el.classList.remove(this.options.containerHoverClass);
+  }
+
+  dispose() {
+    this.el.classList.remove(this.options.containerHoverClass);
+  }
 }

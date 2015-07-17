@@ -1,6 +1,6 @@
-import CanvasContainer from './CanvasContainer.js';
-import DroppableContainer from './DroppableContainer.js';
-import SortableContainer from './SortableContainer.js';
+import Canvas from './Canvas.js';
+import Droppable from './Droppable.js';
+import Sortable from './Sortable.js';
 import * as dom from "./lib/dom.js";
 
 const containerSelector = '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]';
@@ -15,9 +15,9 @@ export default class ContainerFactory {
   }
 
   static makeContainer(el, drag) {
-    if (CanvasContainer.matches(el)) return new CanvasContainer(el, drag);
-    if (DroppableContainer.matches(el)) return new DroppableContainer(el, drag);
-    if (SortableContainer.matches(el)) return new SortableContainer(el, drag);
+    if (Canvas.matches(el)) return new Canvas(el, drag);
+    if (Droppable.matches(el)) return new Droppable(el, drag);
+    if (Sortable.matches(el)) return new Sortable(el, drag);
     return null;
   }
 }

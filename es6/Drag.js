@@ -33,7 +33,7 @@ export default class Drag {
     this.dropAction = "move"; // "copy"
     this.cancelAction = "last"; // "remove", "last"
 
-    this._knownContainers = new WeakMap();
+    this._knownContainers = new Map();
     this._start();
   }
 
@@ -63,7 +63,6 @@ export default class Drag {
 
 
   dispose() {
-    if (this.target) this.target.el.classList.remove('dd-drag-over');
     this._knownContainers.forEach((t) => t.dispose());
     this.helper.dispose();
     this.helper = null;
@@ -173,7 +172,6 @@ export default class Drag {
           container.placeholderSize,
           container.placeholderScale);
       }
-      container.el.classList.add(this.options.containerHoverClass);
       this.target = container;
     }
   }
@@ -182,7 +180,6 @@ export default class Drag {
   _leaveTarget(container) {
     if (events.raiseEvent(container.el, 'dragleave', this)) {
       container.leave();
-      container.el.classList.remove(this.options.containerHoverClass);
       this.target = null;
     }
   }

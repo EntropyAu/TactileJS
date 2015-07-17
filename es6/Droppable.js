@@ -1,6 +1,6 @@
 import Container from "./Container.js";
 
-export default class DroppableContainer extends Container {
+export default class Droppable extends Container {
 
   static get selector() { return '[data-drag-droppable]'; }
 

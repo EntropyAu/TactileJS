@@ -3,7 +3,7 @@ import Placeholder from "./Placeholder.js";
 import * as dom from "./lib/dom.js";
 import * as animation from "./lib/animation.js";
 
-export default class SortableContainer extends Container {
+export default class Sortable extends Container {
 
   static get selector() { return '[data-drag-sortable]'; }
 
@@ -74,6 +74,7 @@ export default class SortableContainer extends Container {
 
 
   enter() {
+    super();
     this.placeholder.setState("ghosted");
     this.placeholderSize = this.placeholder.size;
     this.placeholderScale = this.placeholder.scale;
@@ -83,6 +84,7 @@ export default class SortableContainer extends Container {
 
 
   leave() {
+    super();
     if (this.dragOutAction === 'copy' && this.placeholder.isDraggableEl) {
       this.placeholder.setState("materialized");
     } else {
