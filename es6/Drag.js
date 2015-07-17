@@ -10,7 +10,7 @@ import * as dom from './lib/dom.js';
 
 // TODO: Animated revert
 // TODO: Animated resize
-// TODO: Animated destroy (beginDrop elsewhere)
+// TODO: Animated destroy (_beginDrop elsewhere)
 // TODO: Animated pickUp
 
 // TODO: Scroll only if scrollable is an ancestor of the target element
@@ -26,44 +26,49 @@ export default class Drag {
     this.constrainedXY = null;
     this.pointerEl = null;
     this.helper = null;
-
     this.draggable = draggable;
     this.target = null;
     this.source = null;
-    this.knownContainers = new Map();
     this.revertOnCancel = true;
     this.dropAction = "move"; // "copy"
     this.cancelAction = "last"; // "remove", "last"
-    this.initialize();
-  }
 
-
-  initialize() {
-    this.helper = new Helper(this);
-    this.updateConstrainedPosition();
-    this.pointerEl = dom.elementFromPoint(this.pointerXY);
-    this.updateTargetContainer();
-    events.raiseEvent(this.draggable.el, 'dragstart', this)
+    this._knownContainers = new Map();
+    this._start();
   }
 
 
   move(pointerXY) {
     this.pointerXY = pointerXY;
-    this.updateConstrainedPosition();
+    this._updateConstrainedPosition();
 
     if (!this.scroller || !this.scroller.updateVelocity(this.pointerXY)) {
       this.pointerEl = dom.elementFromPoint(pointerXY);
-      this.updateTargetContainer();
+      this._updateTarget();
       if (this.target) this.target.setPointerXY(this.constrainedXY);
       events.raiseEvent(this.draggable.el, 'drag', this);
-      this.updateScroll();
+      this._updateScroll();
     }
     this.helper.setPosition(this.constrainedXY);
-
   }
 
 
-  updateScroll() {
+  end() {
+    if (this.target) this._beginDrop(); else this._beginCancel();
+    if (this.scroller) this.scroller.stopScroll();
+    events.raiseEvent(this.draggable.el, 'dragend', this)
+  }
+
+
+  dispose() {
+    if (this.target) this.target.el.classList.remove('dd-drag-over');
+    this._knownContainers.forEach((t) => t.dispose());
+    this.helper.dispose();
+    this.helper = null;
+  }
+
+
+  _updateScroll() {
     this.scroller = false;
     var scrollEls = dom.ancestors(this.target ? this.target.el : document.body, Scrollable.selector);
     scrollEls.every(function(scrollEl) {
@@ -77,14 +82,7 @@ export default class Drag {
   }
 
 
-  end() {
-    if (this.target) this.beginDrop(); else this.beginCancel();
-    if (this.scroller) this.scroller.stopScroll();
-    events.raiseEvent(this.draggable.el, 'dragend', this)
-  }
-
-
-  beginDrop() {
+  _beginDrop() {
     events.raiseEvent(this.draggable.el, 'beginDrop', this)
     if (this.target.placeholder) {
       this.helper.animateToElementAndPutDown(this.target.placeholder.el, function() {
@@ -97,14 +95,14 @@ export default class Drag {
   }
 
 
-  beginCancel() {
+  _beginCancel() {
     this.draggable.restoreOriginal();
     // restore draggable to original position
     this.dispose();
   }
 
 
-  applyDirectionConstraint(drag) {
+  _applyDirectionConstraint(drag) {
     switch (drag.orientation) {
       case "vertical": adjustedX = drag.originalOffsetLeft; break;
       case "horizontal": adjustedY = drag.originalOffsetTop; break;
@@ -113,45 +111,28 @@ export default class Drag {
   }
 
 
-  updateConstrainedPosition() {
+  _updateConstrainedPosition() {
+    const grip = this.helper.grip;
+    const helperSize = this.helper.size;
+
     if (this.target && this.target.captures(this.draggable)) {
-      let constrained = [this.pointerXY[0] - this.helper.grip[0] * this.helper.size[0],
-                         this.pointerXY[1] - this.helper.grip[1] * this.helper.size[1]];
+      let constrained = [this.pointerXY[0] - grip[0] * helperSize[0],
+                         this.pointerXY[1] - grip[1] * helperSize[1]];
       let rect = dom.getPaddingClientRect(this.target.el);
-      constrained[0] = math.coerce(constrained[0], rect.left, rect.right - this.helper.size[0]);
-      constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - this.helper.size[1]);
-      this.constrainedXY = [constrained[0] + this.helper.grip[0] * this.helper.size[0],
-                            constrained[1] + this.helper.grip[1] * this.helper.size[1]];
+      constrained[0] = math.coerce(constrained[0], rect.left, rect.right - helperSize[0]);
+      constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - helperSize[1]);
+      this.constrainedXY = [constrained[0] + grip[0] * helperSize[0],
+                            constrained[1] + grip[1] * helperSize[1]];
     } else {
       this.constrainedXY = this.pointerXY;
     }
   }
 
-  getContainerForElement(el) {
-    let container = this.knownContainers.get(el);
-    if (!container) {
-      container = ContainerFactory.makeContainer(el, this);
-      this.knownContainers.set(el, container);
-    }
-    return container;
-  }
 
-
-  findAcceptingTargetUnderEl(el) {
-    let targetEl = ContainerFactory.closest(el);
-    while (targetEl) {
-      let target = this.getContainerForElement(targetEl);
-      if (target.accepts(this.draggable)) return target;
-      targetEl = ContainerFactory.closest(targetEl.parentElement);
-    }
-    return null;
-  }
-
-
-  updateTargetContainer() {
+  _updateTarget() {
     if (this.target && this.target.captures(this.draggable)) return;
 
-    let newTarget = this.findAcceptingTargetUnderEl(this.pointerEl);
+    let newTarget = this._findAcceptingTarget(this.pointerEl);
     if (newTarget === this.target) return;
 
     if (newTarget || this.cancelAction !== 'last') {
@@ -159,6 +140,27 @@ export default class Drag {
       if (newTarget) this._enterTarget(newTarget);
       return newTarget;
     }
+  }
+
+
+  _findAcceptingTarget(el) {
+    let targetEl = ContainerFactory.closest(el);
+    while (targetEl) {
+      let target = this._getContainer(targetEl);
+      if (target.accepts(this.draggable)) return target;
+      targetEl = ContainerFactory.closest(targetEl.parentElement);
+    }
+    return null;
+  }
+
+
+  _getContainer(el) {
+    let container = this._knownContainers.get(el);
+    if (!container) {
+      container = ContainerFactory.makeContainer(el, this);
+      this._knownContainers.set(el, container);
+    }
+    return container;
   }
 
 
@@ -185,13 +187,12 @@ export default class Drag {
     }
   }
 
-  dispose() {
-    if (this.target) {
-      this.target.el.classList.remove('dd-drag-over');
-    }
 
-    this.knownContainers.forEach((t) => t.dispose());
-    this.helper.dispose();
-    this.helper = null;
+  _start() {
+    this.helper = new Helper(this);
+    this._updateConstrainedPosition();
+    this.pointerEl = dom.elementFromPoint(this.pointerXY);
+    this._updateTarget();
+    events.raiseEvent(this.draggable.el, 'dragstart', this)
   }
 }

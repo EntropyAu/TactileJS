@@ -265,7 +265,7 @@
 
 	// TODO: Animated revert
 	// TODO: Animated resize
-	// TODO: Animated destroy (beginDrop elsewhere)
+	// TODO: Animated destroy (_beginDrop elsewhere)
 	// TODO: Animated pickUp
 
 	// TODO: Scroll only if scrollable is an ancestor of the target element
@@ -283,40 +283,47 @@
 	    this.constrainedXY = null;
 	    this.pointerEl = null;
 	    this.helper = null;
-
 	    this.draggable = draggable;
 	    this.target = null;
 	    this.source = null;
-	    this.knownContainers = new Map();
 	    this.revertOnCancel = true;
 	    this.dropAction = 'move'; // "copy"
 	    this.cancelAction = 'last'; // "remove", "last"
-	    this.initialize();
-	  }
 
-	  Drag.prototype.initialize = function initialize() {
-	    this.helper = new _HelperJs2['default'](this);
-	    this.updateConstrainedPosition();
-	    this.pointerEl = dom.elementFromPoint(this.pointerXY);
-	    this.updateTargetContainer();
-	    events.raiseEvent(this.draggable.el, 'dragstart', this);
-	  };
+	    this._knownContainers = new Map();
+	    this._start();
+	  }
 
 	  Drag.prototype.move = function move(pointerXY) {
 	    this.pointerXY = pointerXY;
-	    this.updateConstrainedPosition();
+	    this._updateConstrainedPosition();
 
 	    if (!this.scroller || !this.scroller.updateVelocity(this.pointerXY)) {
 	      this.pointerEl = dom.elementFromPoint(pointerXY);
-	      this.updateTargetContainer();
+	      this._updateTarget();
 	      if (this.target) this.target.setPointerXY(this.constrainedXY);
 	      events.raiseEvent(this.draggable.el, 'drag', this);
-	      this.updateScroll();
+	      this._updateScroll();
 	    }
 	    this.helper.setPosition(this.constrainedXY);
 	  };
 
-	  Drag.prototype.updateScroll = function updateScroll() {
+	  Drag.prototype.end = function end() {
+	    if (this.target) this._beginDrop();else this._beginCancel();
+	    if (this.scroller) this.scroller.stopScroll();
+	    events.raiseEvent(this.draggable.el, 'dragend', this);
+	  };
+
+	  Drag.prototype.dispose = function dispose() {
+	    if (this.target) this.target.el.classList.remove('dd-drag-over');
+	    this._knownContainers.forEach(function (t) {
+	      return t.dispose();
+	    });
+	    this.helper.dispose();
+	    this.helper = null;
+	  };
+
+	  Drag.prototype._updateScroll = function _updateScroll() {
 	    this.scroller = false;
 	    var scrollEls = dom.ancestors(this.target ? this.target.el : document.body, _ScrollableJs2['default'].selector);
 	    scrollEls.every((function (scrollEl) {
@@ -329,13 +336,7 @@
 	    }).bind(this));
 	  };
 
-	  Drag.prototype.end = function end() {
-	    if (this.target) this.beginDrop();else this.beginCancel();
-	    if (this.scroller) this.scroller.stopScroll();
-	    events.raiseEvent(this.draggable.el, 'dragend', this);
-	  };
-
-	  Drag.prototype.beginDrop = function beginDrop() {
+	  Drag.prototype._beginDrop = function _beginDrop() {
 	    events.raiseEvent(this.draggable.el, 'beginDrop', this);
 	    if (this.target.placeholder) {
 	      this.helper.animateToElementAndPutDown(this.target.placeholder.el, (function () {
@@ -347,13 +348,13 @@
 	    }
 	  };
 
-	  Drag.prototype.beginCancel = function beginCancel() {
+	  Drag.prototype._beginCancel = function _beginCancel() {
 	    this.draggable.restoreOriginal();
 	    // restore draggable to original position
 	    this.dispose();
 	  };
 
-	  Drag.prototype.applyDirectionConstraint = function applyDirectionConstraint(drag) {
+	  Drag.prototype._applyDirectionConstraint = function _applyDirectionConstraint(drag) {
 	    switch (drag.orientation) {
 	      case 'vertical':
 	        adjustedX = drag.originalOffsetLeft;break;
@@ -364,41 +365,25 @@
 	    }
 	  };
 
-	  Drag.prototype.updateConstrainedPosition = function updateConstrainedPosition() {
+	  Drag.prototype._updateConstrainedPosition = function _updateConstrainedPosition() {
+	    var grip = this.helper.grip;
+	    var helperSize = this.helper.size;
+
 	    if (this.target && this.target.captures(this.draggable)) {
-	      var constrained = [this.pointerXY[0] - this.helper.grip[0] * this.helper.size[0], this.pointerXY[1] - this.helper.grip[1] * this.helper.size[1]];
+	      var constrained = [this.pointerXY[0] - grip[0] * helperSize[0], this.pointerXY[1] - grip[1] * helperSize[1]];
 	      var rect = dom.getPaddingClientRect(this.target.el);
-	      constrained[0] = math.coerce(constrained[0], rect.left, rect.right - this.helper.size[0]);
-	      constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - this.helper.size[1]);
-	      this.constrainedXY = [constrained[0] + this.helper.grip[0] * this.helper.size[0], constrained[1] + this.helper.grip[1] * this.helper.size[1]];
+	      constrained[0] = math.coerce(constrained[0], rect.left, rect.right - helperSize[0]);
+	      constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - helperSize[1]);
+	      this.constrainedXY = [constrained[0] + grip[0] * helperSize[0], constrained[1] + grip[1] * helperSize[1]];
 	    } else {
 	      this.constrainedXY = this.pointerXY;
 	    }
 	  };
 
-	  Drag.prototype.getContainerForElement = function getContainerForElement(el) {
-	    var container = this.knownContainers.get(el);
-	    if (!container) {
-	      container = _ContainerFactoryJs2['default'].makeContainer(el, this);
-	      this.knownContainers.set(el, container);
-	    }
-	    return container;
-	  };
-
-	  Drag.prototype.findAcceptingTargetUnderEl = function findAcceptingTargetUnderEl(el) {
-	    var targetEl = _ContainerFactoryJs2['default'].closest(el);
-	    while (targetEl) {
-	      var target = this.getContainerForElement(targetEl);
-	      if (target.accepts(this.draggable)) return target;
-	      targetEl = _ContainerFactoryJs2['default'].closest(targetEl.parentElement);
-	    }
-	    return null;
-	  };
-
-	  Drag.prototype.updateTargetContainer = function updateTargetContainer() {
+	  Drag.prototype._updateTarget = function _updateTarget() {
 	    if (this.target && this.target.captures(this.draggable)) return;
 
-	    var newTarget = this.findAcceptingTargetUnderEl(this.pointerEl);
+	    var newTarget = this._findAcceptingTarget(this.pointerEl);
 	    if (newTarget === this.target) return;
 
 	    if (newTarget || this.cancelAction !== 'last') {
@@ -406,6 +391,25 @@
 	      if (newTarget) this._enterTarget(newTarget);
 	      return newTarget;
 	    }
+	  };
+
+	  Drag.prototype._findAcceptingTarget = function _findAcceptingTarget(el) {
+	    var targetEl = _ContainerFactoryJs2['default'].closest(el);
+	    while (targetEl) {
+	      var target = this._getContainer(targetEl);
+	      if (target.accepts(this.draggable)) return target;
+	      targetEl = _ContainerFactoryJs2['default'].closest(targetEl.parentElement);
+	    }
+	    return null;
+	  };
+
+	  Drag.prototype._getContainer = function _getContainer(el) {
+	    var container = this._knownContainers.get(el);
+	    if (!container) {
+	      container = _ContainerFactoryJs2['default'].makeContainer(el, this);
+	      this._knownContainers.set(el, container);
+	    }
+	    return container;
 	  };
 
 	  Drag.prototype._enterTarget = function _enterTarget(container) {
@@ -428,16 +432,12 @@
 	    }
 	  };
 
-	  Drag.prototype.dispose = function dispose() {
-	    if (this.target) {
-	      this.target.el.classList.remove('dd-drag-over');
-	    }
-
-	    this.knownContainers.forEach(function (t) {
-	      return t.dispose();
-	    });
-	    this.helper.dispose();
-	    this.helper = null;
+	  Drag.prototype._start = function _start() {
+	    this.helper = new _HelperJs2['default'](this);
+	    this._updateConstrainedPosition();
+	    this.pointerEl = dom.elementFromPoint(this.pointerXY);
+	    this._updateTarget();
+	    events.raiseEvent(this.draggable.el, 'dragstart', this);
 	  };
 
 	  return Drag;
