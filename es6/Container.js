@@ -51,6 +51,7 @@ export default class Container {
   }
 
   captures(draggable) {
+    // TODO clean up logic
     if (this.el.hasAttribute('data-drag-capture')) return true;
     if (draggable.el.hasAttribute('data-drag-containment')) {
       let containmentSelector = draggable.el.getAttribute('data-drag-containment');

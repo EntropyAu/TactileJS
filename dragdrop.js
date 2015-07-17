@@ -367,7 +367,7 @@
 	  Drag.prototype.updateConstrainedPosition = function updateConstrainedPosition() {
 	    if (this.target && this.target.captures(this.draggable)) {
 	      var constrained = [this.pointerXY[0] - this.helper.grip[0] * this.helper.size[0], this.pointerXY[1] - this.helper.grip[1] * this.helper.size[1]];
-	      var rect = this.target.el.getBoundingClientRect();
+	      var rect = dom.getPaddingClientRect(this.target.el);
 	      constrained[0] = math.coerce(constrained[0], rect.left, rect.right - this.helper.size[0]);
 	      constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - this.helper.size[1]);
 	      this.constrainedXY = [constrained[0] + this.helper.grip[0] * this.helper.size[0], constrained[1] + this.helper.grip[1] * this.helper.size[1]];
@@ -598,6 +598,7 @@
 	exports.indexOf = indexOf;
 	exports.isChild = isChild;
 	exports.closest = closest;
+	exports.getPaddingClientRect = getPaddingClientRect;
 	exports.childElementArray = childElementArray;
 	exports.ancestors = ancestors;
 	exports.clientScale = clientScale;
@@ -631,6 +632,23 @@
 	    if (el.matches && el.matches(selector)) return el;
 	  } while (el = el.parentNode);
 	  return null;
+	}
+
+	function getPaddingClientRect(el) {
+	  var style = getComputedStyle(el);
+	  var rect = el.getBoundingClientRect();
+	  var l = parseInt(style.borderLeftWidth, 10);
+	  var t = parseInt(style.borderTopWidth, 10);
+	  var r = parseInt(style.borderRightWidth, 10);
+	  var b = parseInt(style.borderBottomWidth, 10);
+	  return {
+	    top: rect.top + t,
+	    left: rect.left + l,
+	    right: rect.right - r,
+	    bottom: rect.bottom - b,
+	    width: rect.width - l - r,
+	    height: rect.height - t - b
+	  };
 	}
 
 	function childElementArray(el) {
@@ -867,6 +885,7 @@
 	  };
 
 	  Container.prototype.captures = function captures(draggable) {
+	    // TODO clean up logic
 	    if (this.el.hasAttribute('data-drag-capture')) return true;
 	    if (draggable.el.hasAttribute('data-drag-containment')) {
 	      var containmentSelector = draggable.el.getAttribute('data-drag-containment');
@@ -1088,7 +1107,6 @@
 	    this.drag = drag;
 	    this.isDraggableEl = !!draggableEl;
 	    this.el = draggableEl;
-	    this.visible = true;
 	    this.state = 'none';
 	    this.initialize();
 	  }
@@ -1382,16 +1400,36 @@
 	    this.childMeasures = new WeakMap();
 	    this.style = null;
 	    this.forceFeedClearRequired = true;
+	    this.propertiesForDimension = null;
 	    this.initializeSortable();
 	  }
 
 	  _inherits(SortableContainer, _Container);
 
 	  SortableContainer.prototype.initializeSortable = function initializeSortable() {
-	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
-	    this.initializeSiblingEls();
-	    this.initializePlaceholder();
 	    this.style = getComputedStyle(this.el);
+	    this.initializeDirection();
+	    this.initializePlaceholder();
+	    this.initializeChildAndSiblingEls();
+	  };
+
+	  SortableContainer.prototype.initializeDirection = function initializeDirection() {
+	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
+	    this.directionProperties = this.direction === "vertical" ? {
+	      index: 1,
+	      translate: "translateY",
+	      paddingStart: "paddingTop",
+	      endMargin: "marginBottom",
+	      layoutOffset: "offsetTop",
+	      outerDimension: "outerHeight"
+	    } : {
+	      index: 0,
+	      translate: "translateX",
+	      paddingStart: "paddingLeft",
+	      endMargin: "marginRight",
+	      layoutOffset: "offsetLeft",
+	      outerDimension: "outerWidth"
+	    };
 	  };
 
 	  SortableContainer.prototype.initializePlaceholder = function initializePlaceholder() {
@@ -1405,22 +1443,21 @@
 	    this._addNegativeMarginToLastChild();
 	  };
 
-	  SortableContainer.prototype.initializeSiblingEls = function initializeSiblingEls() {
+	  SortableContainer.prototype.initializeChildAndSiblingEls = function initializeChildAndSiblingEls() {
 	    this.childEls = dom.childElementArray(this.el);
-	    this.siblingEls = dom.childElementArray(this.el);
-	    var draggableElIndex = this.siblingEls.indexOf(this.drag.draggable.el);
-	    if (draggableElIndex !== -1) {
-	      this.siblingEls.splice(draggableElIndex, 1);
-	      this.index = draggableElIndex;
+	    this.siblingEls = this.childEls.slice(0);
+	    var placeholderElIndex = this.childEls.indexOf(this.placeholder.el);
+	    if (placeholderElIndex !== -1) {
+	      this.siblingEls.splice(placeholderElIndex, 1);
 	    }
 	  };
 
 	  SortableContainer.prototype.enter = function enter() {
 	    this.placeholder.setState("ghosted");
-	    this._removeNegativeMarginFromLastChild();
-	    // clear any negative margins on the last child
 	    this.placeholderSize = this.placeholder.size;
 	    this.placeholderScale = this.placeholder.scale;
+	    this._removeNegativeMarginFromLastChild();
+	    this.childMeasures = new WeakMap();
 	  };
 
 	  SortableContainer.prototype.leave = function leave() {
@@ -1429,10 +1466,9 @@
 	    } else {
 	      this.index = null;
 	      this.forceFeedClearRequired = true;
+	      this.childMeasures = new WeakMap();
 	      this.placeholder.setState("hidden");
 	      this._addNegativeMarginToLastChild();
-	      // add negative margin to last child the outer width/height of the
-	      // placeholder - so as far as layout is concerned, it doesn't exist
 	      this.updateChildTranslations();
 	    }
 	  };
@@ -1441,14 +1477,14 @@
 	    if (this.el.children.length === 0) return;
 	    var lastChildEl = this.el.children[this.el.children.length - 1];
 	    var lastChildStyle = getComputedStyle(lastChildEl);
-	    var newMarginBottom = parseInt(lastChildStyle.marginBottom, 10) - this.placeholder.outerSize[1];
-	    lastChildEl.style.marginBottom = newMarginBottom + "px";
+	    var newMargin = parseInt(lastChildStyle[this.directionProperties.endMargin], 10) - this.placeholder.outerSize[this.directionProperties.index];
+	    lastChildEl.style[this.directionProperties.endMargin] = newMargin + "px";
 	  };
 
 	  SortableContainer.prototype._removeNegativeMarginFromLastChild = function _removeNegativeMarginFromLastChild() {
 	    if (this.el.children.length === 0) return;
 	    var lastChildEl = this.el.children[this.el.children.length - 1];
-	    lastChildEl.style.marginBottom = "";
+	    lastChildEl.style[this.directionProperties.endMargin] = "";
 	  };
 
 	  SortableContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
@@ -1459,14 +1495,11 @@
 	  };
 
 	  SortableContainer.prototype.getChildMeasure = function getChildMeasure(el) {
-	    var layoutOffsetProperty = this.direction === "vertical" ? "offsetTop" : "offsetLeft";
-	    var paddingTopOrLeftProperty = this.direction === "vertical" ? "paddingTop" : "paddingLeft";
-	    var outerWidthOrHeightProperty = this.direction === "vertical" ? "outerHeight" : "outerWidth";
 	    var measure = this.childMeasures.get(el);
 	    if (!measure) {
 	      measure = {
-	        offset: el[layoutOffsetProperty] - parseInt(this.style[paddingTopOrLeftProperty], 10),
-	        measure: dom[outerWidthOrHeightProperty](el, true),
+	        offset: el[this.directionProperties.layoutOffset] - parseInt(this.style[this.directionProperties.paddingStart], 10),
+	        measure: dom[this.directionProperties.outerDimension](el, true),
 	        translation: null
 	      };
 	      this.childMeasures.set(el, measure);
@@ -1479,14 +1512,12 @@
 	    if (this.siblingEls.length === 0) {
 	      if (this.index !== 0) {
 	        this.index = 0;
-	        console.log(0);
 	        this.updateChildTranslations();
 	      }
 	      return;
 	    }
 
-	    var dimensionIndex = this.direction === "vertical" ? 1 : 0;
-	    var translateProperty = this.direction === "vertical" ? "translateY" : "translateX";
+	    this._removeNegativeMarginFromLastChild();
 
 	    var bounds = this.el.getBoundingClientRect();
 	    // calculate the position of the item relative to this container
@@ -1496,30 +1527,31 @@
 	    var naturalOffset = 0;
 	    var newIndex = 0;
 	    do {
-	      var measure = this.getChildMeasure(this.childEls[newIndex]);
-	      if (adjustedXY[dimensionIndex] < naturalOffset + measure.measure / 2) break;
+	      var measure = this.getChildMeasure(this.siblingEls[newIndex]);
+	      if (adjustedXY[this.directionProperties.index] < naturalOffset + measure.measure / 2) break;
 	      naturalOffset += measure.measure;
 	      newIndex++;
-	    } while (newIndex < this.childEls.length);
+	    } while (newIndex < this.siblingEls.length);
 
 	    if (this.index !== newIndex) {
 	      this.index = newIndex;
-	      console.log(newIndex);
 	      this.updateChildTranslations();
 	    }
 	  };
 
 	  SortableContainer.prototype.updateChildTranslations = function updateChildTranslations() {
-	    var dimensionIndex = this.direction === "vertical" ? 1 : 0;
-	    var translateProperty = this.direction === "vertical" ? "translateY" : "translateX";
-
 	    var offset = 0;
 	    var placeholderOffset = null;
 
 	    this.siblingEls.forEach((function (el, index) {
+	      if (this.placeholder.outerSize[this.directionProperties.index] === 0) {
+	        debugger;
+	      }
+
 	      if (index === this.index) {
 	        placeholderOffset = offset;
-	        offset += this.placeholder.outerSize[dimensionIndex];
+	        offset += this.placeholder.outerSize[this.directionProperties.index];
+	        console.log(this.placeholder.outerSize);
 	      }
 	      var measure = this.getChildMeasure(el);
 	      var newTranslation = offset - measure.offset;
@@ -1527,7 +1559,7 @@
 	        var _ref, _ref2;
 
 	        measure.translation = newTranslation;
-	        var props = this.forceFeedClearRequired ? (_ref = {}, _ref[translateProperty] = [measure.translation, Math.random() / 100], _ref) : (_ref2 = {}, _ref2[translateProperty] = measure.translation + Math.random() / 100, _ref2);
+	        var props = this.forceFeedClearRequired ? (_ref = {}, _ref[this.directionProperties.translate] = [measure.translation, Math.random() / 100], _ref) : (_ref2 = {}, _ref2[this.directionProperties.translate] = measure.translation + Math.random() / 100, _ref2);
 	        animation.set(el, props, this.drag.options.reorderAnimation);
 	      }
 	      offset += measure.measure;
@@ -1539,7 +1571,7 @@
 	    if (placeholderMeasure.translation !== newPlaceholderTranslation || this.forceFeedCleanRequired) {
 	      var _animation$set;
 
-	      animation.set(this.placeholder.el, (_animation$set = {}, _animation$set[translateProperty] = newPlaceholderTranslation, _animation$set));
+	      animation.set(this.placeholder.el, (_animation$set = {}, _animation$set[this.directionProperties.translate] = newPlaceholderTranslation, _animation$set));
 	      placeholderMeasure.translation = newPlaceholderTranslation;
 	    }
 	    this.forceFeedClearRequired = false;

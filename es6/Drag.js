@@ -117,7 +117,7 @@ export default class Drag {
     if (this.target && this.target.captures(this.draggable)) {
       let constrained = [this.pointerXY[0] - this.helper.grip[0] * this.helper.size[0],
                          this.pointerXY[1] - this.helper.grip[1] * this.helper.size[1]];
-      let rect = this.target.el.getBoundingClientRect();
+      let rect = dom.getPaddingClientRect(this.target.el);
       constrained[0] = math.coerce(constrained[0], rect.left, rect.right - this.helper.size[0]);
       constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - this.helper.size[1]);
       this.constrainedXY = [constrained[0] + this.helper.grip[0] * this.helper.size[0],

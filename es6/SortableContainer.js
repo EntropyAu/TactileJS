@@ -16,17 +16,39 @@ export default class SortableContainer extends Container {
     this.childMeasures = new WeakMap();
     this.style = null;
     this.forceFeedClearRequired = true;
+    this.propertiesForDimension = null;
     this.initializeSortable();
   }
 
 
   initializeSortable() {
-    this.direction = this.el.getAttribute('data-drag-sortable') || 'vertical';
-    this.initializeSiblingEls();
-    this.initializePlaceholder();
     this.style = getComputedStyle(this.el);
+    this.initializeDirection();
+    this.initializePlaceholder();
+    this.initializeChildAndSiblingEls();
   }
 
+
+  initializeDirection() {
+    this.direction = this.el.getAttribute('data-drag-sortable') || 'vertical';
+    this.directionProperties = this.direction === 'vertical'
+                             ? {
+                                 index: 1,
+                                 translate: 'translateY',
+                                 paddingStart: 'paddingTop',
+                                 endMargin: 'marginBottom',
+                                 layoutOffset: 'offsetTop',
+                                 outerDimension: 'outerHeight'
+                               }
+                             : {
+                                 index: 0,
+                                 translate: 'translateX',
+                                 paddingStart: 'paddingLeft',
+                                 endMargin: 'marginRight',
+                                 layoutOffset: 'offsetLeft',
+                                 outerDimension: 'outerWidth'
+                               };
+  }
 
   initializePlaceholder() {
     if (this.drag.draggable.originalParentEl === this.el) {
@@ -40,23 +62,22 @@ export default class SortableContainer extends Container {
   }
 
 
-  initializeSiblingEls() {
+  initializeChildAndSiblingEls() {
     this.childEls = dom.childElementArray(this.el);
-    this.siblingEls = dom.childElementArray(this.el);
-    let draggableElIndex = this.siblingEls.indexOf(this.drag.draggable.el);
-    if (draggableElIndex !== -1) {
-      this.siblingEls.splice(draggableElIndex, 1);
-      this.index = draggableElIndex;
+    this.siblingEls = this.childEls.slice(0);
+    let placeholderElIndex = this.childEls.indexOf(this.placeholder.el);
+    if (placeholderElIndex !== -1) {
+      this.siblingEls.splice(placeholderElIndex, 1);
     }
   }
 
 
   enter() {
     this.placeholder.setState("ghosted");
-    this._removeNegativeMarginFromLastChild();
-    // clear any negative margins on the last child
     this.placeholderSize = this.placeholder.size;
     this.placeholderScale = this.placeholder.scale;
+    this._removeNegativeMarginFromLastChild();
+    this.childMeasures = new WeakMap();
   }
 
 
@@ -66,10 +87,9 @@ export default class SortableContainer extends Container {
     } else {
       this.index = null;
       this.forceFeedClearRequired = true;
+      this.childMeasures = new WeakMap();
       this.placeholder.setState("hidden");
       this._addNegativeMarginToLastChild();
-      // add negative margin to last child the outer width/height of the
-      // placeholder - so as far as layout is concerned, it doesn't exist
       this.updateChildTranslations();
     }
   }
@@ -79,14 +99,15 @@ export default class SortableContainer extends Container {
     if (this.el.children.length === 0) return;
     let lastChildEl = this.el.children[this.el.children.length - 1];
     let lastChildStyle = getComputedStyle(lastChildEl);
-    let newMarginBottom = parseInt(lastChildStyle.marginBottom, 10) - this.placeholder.outerSize[1];
-    lastChildEl.style.marginBottom = newMarginBottom + 'px';
+    let newMargin = parseInt(lastChildStyle[this.directionProperties.endMargin], 10) - this.placeholder.outerSize[this.directionProperties.index];
+    lastChildEl.style[this.directionProperties.endMargin] = newMargin + 'px';
   }
+
 
   _removeNegativeMarginFromLastChild() {
     if (this.el.children.length === 0) return;
     let lastChildEl = this.el.children[this.el.children.length - 1];
-    lastChildEl.style.marginBottom = '';
+    lastChildEl.style[this.directionProperties.endMargin] = '';
   }
 
 
@@ -99,14 +120,11 @@ export default class SortableContainer extends Container {
 
 
   getChildMeasure(el) {
-    let layoutOffsetProperty = this.direction === "vertical" ? "offsetTop" : "offsetLeft";
-    let paddingTopOrLeftProperty = this.direction === "vertical" ? "paddingTop" : "paddingLeft";
-    let outerWidthOrHeightProperty = this.direction === "vertical" ? "outerHeight" : "outerWidth";
     let measure = this.childMeasures.get(el);
     if (!measure) {
       measure = {
-        offset: el[layoutOffsetProperty] - parseInt(this.style[paddingTopOrLeftProperty], 10),
-        measure: dom[outerWidthOrHeightProperty](el, true),
+        offset: el[this.directionProperties.layoutOffset] - parseInt(this.style[this.directionProperties.paddingStart], 10),
+        measure: dom[this.directionProperties.outerDimension](el, true),
         translation: null
       };
       this.childMeasures.set(el, measure);
@@ -120,14 +138,12 @@ export default class SortableContainer extends Container {
     if (this.siblingEls.length === 0) {
       if (this.index !== 0) {
         this.index = 0;
-        console.log(0);
         this.updateChildTranslations();
       }
       return;
     }
 
-    let dimensionIndex = this.direction === 'vertical' ? 1 : 0;
-    let translateProperty = this.direction === 'vertical' ? 'translateY' : 'translateX';
+    this._removeNegativeMarginFromLastChild()
 
     const bounds = this.el.getBoundingClientRect();
     // calculate the position of the item relative to this container
@@ -139,40 +155,41 @@ export default class SortableContainer extends Container {
     let naturalOffset = 0;
     let newIndex = 0;
     do {
-      let measure = this.getChildMeasure(this.childEls[newIndex]);
-      if (adjustedXY[dimensionIndex] < naturalOffset + measure.measure / 2) break;
+      let measure = this.getChildMeasure(this.siblingEls[newIndex]);
+      if (adjustedXY[this.directionProperties.index] < naturalOffset + measure.measure / 2) break;
       naturalOffset += measure.measure;
       newIndex++;
     }
-    while (newIndex < this.childEls.length);
+    while (newIndex < this.siblingEls.length);
 
     if (this.index !== newIndex) {
       this.index = newIndex;
-      console.log(newIndex);
       this.updateChildTranslations();
     }
   }
 
 
   updateChildTranslations() {
-    let dimensionIndex = this.direction === 'vertical' ? 1 : 0;
-    let translateProperty = this.direction === 'vertical' ? 'translateY' : 'translateX';
-
     let offset = 0;
     let placeholderOffset = null;
 
     this.siblingEls.forEach(function (el, index) {
+      if (this.placeholder.outerSize[this.directionProperties.index] === 0) {
+        debugger
+      }
+
       if (index === this.index) {
         placeholderOffset = offset;
-        offset += this.placeholder.outerSize[dimensionIndex];
+        offset += this.placeholder.outerSize[this.directionProperties.index];
+        console.log(this.placeholder.outerSize)
       }
       let measure = this.getChildMeasure(el);
       let newTranslation = offset - measure.offset
       if (measure.translation !== newTranslation || this.forceFeedClearRequired) {
         measure.translation = newTranslation;
         let props = this.forceFeedClearRequired
-                  ? { [translateProperty]: [measure.translation, Math.random() / 100] }
-                  : { [translateProperty]: measure.translation + Math.random() / 100 };
+                  ? { [this.directionProperties.translate]: [measure.translation, Math.random() / 100] }
+                  : { [this.directionProperties.translate]: measure.translation + Math.random() / 100 };
         animation.set(el, props, this.drag.options.reorderAnimation);
       }
       offset += measure.measure;
@@ -182,7 +199,7 @@ export default class SortableContainer extends Container {
     let placeholderMeasure = this.getChildMeasure(this.placeholder.el);
     let newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
     if (placeholderMeasure.translation !== newPlaceholderTranslation || this.forceFeedCleanRequired) {
-      animation.set(this.placeholder.el, { [translateProperty]: newPlaceholderTranslation });
+      animation.set(this.placeholder.el, { [this.directionProperties.translate]: newPlaceholderTranslation });
       placeholderMeasure.translation = newPlaceholderTranslation;
     }
     this.forceFeedClearRequired = false;

@@ -11,6 +11,7 @@ ol[data-drag-sortable],
 ul[data-drag-canvas] {
   position: relative;
   z-index: 0;
+  box-sizing: border-box;
 }
 
 *[data-drag-draggable],

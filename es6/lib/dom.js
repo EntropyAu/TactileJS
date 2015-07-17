@@ -17,6 +17,23 @@ export function closest(el, selector) {
   return null;
 }
 
+export function getPaddingClientRect(el) {
+  const style = getComputedStyle(el);
+  const rect = el.getBoundingClientRect();
+  let l = parseInt(style.borderLeftWidth,   10);
+  let t = parseInt(style.borderTopWidth,    10);
+  let r = parseInt(style.borderRightWidth,  10);
+  let b = parseInt(style.borderBottomWidth, 10);
+  return {
+    top:    rect.top    + t,
+    left:   rect.left   + l,
+    right:  rect.right  - r,
+    bottom: rect.bottom - b,
+    width:  rect.width  - l - r,
+    height: rect.height - t - b
+  }
+}
+
 export function childElementArray(el) {
   let childEls = [];
   let childNodeList = el.children;

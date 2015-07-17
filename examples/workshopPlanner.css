@@ -59,7 +59,7 @@
   flex-direction: column;
   -webkit-flex-direction: column;
   height: 100%;
-  margin: 8px !important;
+  margin: 8px;
 }
 
 .day-activities {

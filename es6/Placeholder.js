@@ -23,7 +23,6 @@ export default class Placeholder {
     this.drag = drag;
     this.isDraggableEl = !!draggableEl;
     this.el = draggableEl;
-    this.visible = true;
     this.state = "none";
     this.initialize();
   }

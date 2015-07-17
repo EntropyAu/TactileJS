@@ -70,3 +70,10 @@ body {
 li {
   line-height:1.5;
 }
+
+ol.with-borders {
+  border: 12px solid black !important;
+}
+li.with-borders {
+  border: 6px solid gray;
+}
