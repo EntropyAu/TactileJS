@@ -12,7 +12,7 @@ const defaultOptions = {
   pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
   resizeAnimation:   { duration: 300, easing: 'ease-in-out' },
   dropAnimation:     { duration: 300, easing: 'ease-in-out' },
-  reorderAnimation:  { duration: 300, easing: 'ease-in-out' },
+  reorderAnimation:  { duration: 150, easing: 'ease-in-out' },
   pickUpDelay: 0,
   pickUpDistance: 0,
   helperRotation: -1,

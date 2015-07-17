@@ -36,11 +36,13 @@ export default class SortableContainer extends Container {
       this.el.appendChild(this.placeholder.el);
     }
     this.placeholder.setState("hidden");
+    this._addNegativeMarginToLastChild();
   }
 
 
   initializeSiblingEls() {
-    this.siblingEls = this.childEls = Array.prototype.splice.call(this.el.children, 0);
+    this.childEls = dom.childElementArray(this.el);
+    this.siblingEls = dom.childElementArray(this.el);
     let draggableElIndex = this.siblingEls.indexOf(this.drag.draggable.el);
     if (draggableElIndex !== -1) {
       this.siblingEls.splice(draggableElIndex, 1);
@@ -51,21 +53,40 @@ export default class SortableContainer extends Container {
 
   enter() {
     this.placeholder.setState("ghosted");
+    this._removeNegativeMarginFromLastChild();
     // clear any negative margins on the last child
     this.placeholderSize = this.placeholder.size;
     this.placeholderScale = this.placeholder.scale;
   }
+
 
   leave() {
     if (this.dragOutAction === 'copy' && this.placeholder.isDraggableEl) {
       this.placeholder.setState("materialized");
     } else {
       this.index = null;
+      this.forceFeedClearRequired = true;
       this.placeholder.setState("hidden");
+      this._addNegativeMarginToLastChild();
       // add negative margin to last child the outer width/height of the
       // placeholder - so as far as layout is concerned, it doesn't exist
       this.updateChildTranslations();
     }
+  }
+
+
+  _addNegativeMarginToLastChild() {
+    if (this.el.children.length === 0) return;
+    let lastChildEl = this.el.children[this.el.children.length - 1];
+    let lastChildStyle = getComputedStyle(lastChildEl);
+    let newMarginBottom = parseInt(lastChildStyle.marginBottom, 10) - this.placeholder.outerSize[1];
+    lastChildEl.style.marginBottom = newMarginBottom + 'px';
+  }
+
+  _removeNegativeMarginFromLastChild() {
+    if (this.el.children.length === 0) return;
+    let lastChildEl = this.el.children[this.el.children.length - 1];
+    lastChildEl.style.marginBottom = '';
   }
 
 
@@ -96,7 +117,14 @@ export default class SortableContainer extends Container {
 
   updatePosition(xy) {
     // if it's empty, answer is simple
-    if (this.siblingEls.length === 0) return this.index = 0;
+    if (this.siblingEls.length === 0) {
+      if (this.index !== 0) {
+        this.index = 0;
+        console.log(0);
+        this.updateChildTranslations();
+      }
+      return;
+    }
 
     let dimensionIndex = this.direction === 'vertical' ? 1 : 0;
     let translateProperty = this.direction === 'vertical' ? 'translateY' : 'translateX';
@@ -118,9 +146,9 @@ export default class SortableContainer extends Container {
     }
     while (newIndex < this.childEls.length);
 
-    this.forceFeedClearRequired = this.forceFeedClearRequired || (this.index === null);
     if (this.index !== newIndex) {
       this.index = newIndex;
+      console.log(newIndex);
       this.updateChildTranslations();
     }
   }

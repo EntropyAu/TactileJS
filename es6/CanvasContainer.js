@@ -19,6 +19,7 @@ export default class CanvasContainer extends Container {
     let cellSizeTokens = grid.split(',');
     this.grid = [parseInt(cellSizeTokens[0], 10) || 1,
                  parseInt(cellSizeTokens[1], 10) || parseInt(cellSizeTokens[0], 10) || 1];
+    this.insertPlaceholder();
   }
 
 
@@ -30,48 +31,38 @@ export default class CanvasContainer extends Container {
     t = Math.round((t - rect.top ) / this.grid[1]) * this.grid[1] + rect.top;
     l = Math.round((l - rect.left) / this.grid[0]) * this.grid[0] + rect.left;
     this.offset = [l,t];
+    dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
   }
 
 
   insertPlaceholder(originalEl) {
     if (!this.placeholder) {
       this.placeholder = new Placeholder(this.drag, originalEl);
-      dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
       if (!originalEl) {
         this.el.appendChild(this.placeholder.el);
       }
       this.placeholderSize = this.placeholder.size;
       this.placeholderScale = this.placeholder.scale;
+      this.placeholder.setState("hidden");
     }
   }
 
 
-  updatePlaceholder() {
-    dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
-  }
-
-
-  removePlaceholder() {
-    this.placeholder.el.style.visibility = 'hidden';
-  }
-
   enter() {
-    this.insertPlaceholder();
+    this.placeholder.setState("ghosted");
   }
 
   leave() {
     if (this.dragOutAction === 'copy' && this.placeholder.isOriginal) {
-      // return to full opacity
+      this.placeholder.setState("materialized");
     } else {
-      this.removePlaceholder();
-      // hide the placeholder
+      this.placeholder.setState("hidden");
     }
   }
 
 
   finalizeDrop(draggable) {
     this.placeholder.dispose();
-    draggable.clean();
     dom.topLeft(draggable.el, this.offset);
     this.el.appendChild(draggable.el);
   }

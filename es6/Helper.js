@@ -15,7 +15,6 @@ export default class Helper {
     this.initialize();
   }
 
-
   initialize() {
     this.el = this.drag.draggable.el.cloneNode(true);
     this.el.removeAttribute('id');
@@ -39,12 +38,12 @@ export default class Helper {
     dom.topLeft(this.el, [-this.grip[0] * this.size[0], -this.grip[1] * this.size[1]]);
     dom.translate(this.el, this.drag.pointerXY);
     document.body.appendChild(this.el);
+
     this.setPosition(this.drag.pointerXY);
     this.setSizeAndScale(this.drag.draggable.originalSize,
                          this.drag.draggable.originalScale,
                          false);
     this._applyGripOffset();
-
     this.el.focus()
     this.pickUp();
   }
@@ -82,7 +81,6 @@ export default class Helper {
      && this.size[1] === size[1]
      && this.scale[0] === scale[0]
      && this.scale[1] === scale[1]) return;
-    console.log(size);
 
     animation.set(this.el, {
       width: size[0],
@@ -103,6 +101,7 @@ export default class Helper {
     // prevent velocity from immediately applying the new value, when the
     // new and old values are equal. This causes flickering in some
     // circumstances
+
     const minimalDelta = 0.001;
     animation.set(this.el, {
       rotateZ: 0,

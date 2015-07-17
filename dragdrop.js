@@ -81,7 +81,7 @@
 	  pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
 	  resizeAnimation: { duration: 300, easing: 'ease-in-out' },
 	  dropAnimation: { duration: 300, easing: 'ease-in-out' },
-	  reorderAnimation: { duration: 300, easing: 'ease-in-out' },
+	  reorderAnimation: { duration: 150, easing: 'ease-in-out' },
 	  pickUpDelay: 0,
 	  pickUpDistance: 0,
 	  helperRotation: -1,
@@ -409,7 +409,6 @@
 	  };
 
 	  Drag.prototype._enterTarget = function _enterTarget(container) {
-	    console.log('_enterTarget', container);
 	    if (events.raiseEvent(container.el, 'dragenter', this).returnValue) {
 	      container.updatePosition(this.constrainedXY);
 	      container.enter();
@@ -422,7 +421,6 @@
 	  };
 
 	  Drag.prototype._leaveTarget = function _leaveTarget(container) {
-	    console.log('_leaveTarget', container);
 	    if (events.raiseEvent(container.el, 'dragleave', this).returnValue) {
 	      container.leave();
 	      container.el.classList.remove(this.options.containerHoverClass);
@@ -600,6 +598,7 @@
 	exports.indexOf = indexOf;
 	exports.isChild = isChild;
 	exports.closest = closest;
+	exports.childElementArray = childElementArray;
 	exports.ancestors = ancestors;
 	exports.clientScale = clientScale;
 	exports.outerHeight = outerHeight;
@@ -632,6 +631,15 @@
 	    if (el.matches && el.matches(selector)) return el;
 	  } while (el = el.parentNode);
 	  return null;
+	}
+
+	function childElementArray(el) {
+	  var childEls = [];
+	  var childNodeList = el.children;
+	  for (var i = 0; i < childNodeList.length; i++) {
+	    if (childNodeList.item(i).nodeType === 1) childEls.push(childNodeList.item(i));
+	  }
+	  return childEls;
 	}
 
 	function ancestors(el, selector) {
@@ -805,6 +813,7 @@
 	    this.placeholderScale = 1;
 	    this.options = drag.options;
 	    this.dragOutAction = null;
+	    this.acceptsTags = [];
 	    this.initialize();
 	  }
 
@@ -814,19 +823,47 @@
 
 	  Container.prototype.initialize = function initialize() {
 	    this.dragOutAction = this.el.getAttribute('data-drag-out-action') || 'move';
+	    this.initializeAcceptsTags();
 	  };
 
 	  Container.prototype.setPointerXY = function setPointerXY(constrainedXY) {
 	    this.updatePosition(constrainedXY);
 	  };
 
+	  Container.prototype.initializeAcceptsTags = function initializeAcceptsTags() {
+	    if (!this.el.hasAttribute('data-drag-accepts')) {
+	      // by default, a container accepts the tag of items it contains
+	      this.acceptsTags = (this.el.getAttribute('data-drag-tag') || '').split(' ');
+	    } else {
+	      // however this can be overwritten by an explicit accepts attribute
+	      this.acceptsTags = (this.el.getAttribute('data-drag-accepts') || '').split(' ');
+	    }
+	  };
+
 	  Container.prototype.accepts = function accepts(draggable) {
+	    // a container always accepts it's own draggable children back
 	    if (draggable.originalParentEl === this.el) return true;
 	    if (this.el.hasAttribute('data-drag-disabled')) return false;
-	    var acceptsSelector = this.el.getAttribute('data-drag-accepts');
-	    if (!acceptsSelector) return false;
 
-	    return acceptsSelector ? draggable.el.matches(acceptsSelector) : draggable.originalParentEl === this.el;
+	    if (this.acceptsTags.indexOf('*') !== -1) return true;
+
+	    for (var _iterator = draggable.tags, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+	      var _ref;
+
+	      if (_isArray) {
+	        if (_i >= _iterator.length) break;
+	        _ref = _iterator[_i++];
+	      } else {
+	        _i = _iterator.next();
+	        if (_i.done) break;
+	        _ref = _i.value;
+	      }
+
+	      var tag = _ref;
+
+	      if (this.acceptsTags.indexOf(tag) !== -1) return true;
+	    }
+	    return false;
 	  };
 
 	  Container.prototype.captures = function captures(draggable) {
@@ -963,6 +1000,7 @@
 	    var grid = this.el.getAttribute("data-drag-grid") || "";
 	    var cellSizeTokens = grid.split(",");
 	    this.grid = [parseInt(cellSizeTokens[0], 10) || 1, parseInt(cellSizeTokens[1], 10) || parseInt(cellSizeTokens[0], 10) || 1];
+	    this.insertPlaceholder();
 	  };
 
 	  CanvasContainer.prototype.updatePosition = function updatePosition(constrainedXY) {
@@ -973,42 +1011,35 @@
 	    t = Math.round((t - rect.top) / this.grid[1]) * this.grid[1] + rect.top;
 	    l = Math.round((l - rect.left) / this.grid[0]) * this.grid[0] + rect.left;
 	    this.offset = [l, t];
+	    dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
 	  };
 
 	  CanvasContainer.prototype.insertPlaceholder = function insertPlaceholder(originalEl) {
 	    if (!this.placeholder) {
 	      this.placeholder = new _PlaceholderJs2["default"](this.drag, originalEl);
-	      dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
 	      if (!originalEl) {
 	        this.el.appendChild(this.placeholder.el);
 	      }
 	      this.placeholderSize = this.placeholder.size;
 	      this.placeholderScale = this.placeholder.scale;
+	      this.placeholder.setState("hidden");
 	    }
 	  };
 
-	  CanvasContainer.prototype.updatePlaceholder = function updatePlaceholder() {
-	    dom.translate(this.placeholder.el, this.offset[0], this.offset[1]);
-	  };
-
-	  CanvasContainer.prototype.removePlaceholder = function removePlaceholder() {
-	    this.placeholder.el.style.visibility = "hidden";
-	  };
-
 	  CanvasContainer.prototype.enter = function enter() {
-	    this.insertPlaceholder();
+	    this.placeholder.setState("ghosted");
 	  };
 
 	  CanvasContainer.prototype.leave = function leave() {
-	    if (this.dragOutAction === "copy" && this.placeholder.isOriginal) {} else {
-	      this.removePlaceholder();
-	      // hide the placeholder
+	    if (this.dragOutAction === "copy" && this.placeholder.isOriginal) {
+	      this.placeholder.setState("materialized");
+	    } else {
+	      this.placeholder.setState("hidden");
 	    }
 	  };
 
 	  CanvasContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
 	    this.placeholder.dispose();
-	    draggable.clean();
 	    dom.topLeft(draggable.el, this.offset);
 	    this.el.appendChild(draggable.el);
 	  };
@@ -1025,8 +1056,6 @@
 
 	exports["default"] = CanvasContainer;
 	module.exports = exports["default"];
-
-	// return to full opacity
 
 /***/ },
 /* 7 */
@@ -1373,10 +1402,12 @@
 	      this.el.appendChild(this.placeholder.el);
 	    }
 	    this.placeholder.setState("hidden");
+	    this._addNegativeMarginToLastChild();
 	  };
 
 	  SortableContainer.prototype.initializeSiblingEls = function initializeSiblingEls() {
-	    this.siblingEls = this.childEls = Array.prototype.splice.call(this.el.children, 0);
+	    this.childEls = dom.childElementArray(this.el);
+	    this.siblingEls = dom.childElementArray(this.el);
 	    var draggableElIndex = this.siblingEls.indexOf(this.drag.draggable.el);
 	    if (draggableElIndex !== -1) {
 	      this.siblingEls.splice(draggableElIndex, 1);
@@ -1386,6 +1417,7 @@
 
 	  SortableContainer.prototype.enter = function enter() {
 	    this.placeholder.setState("ghosted");
+	    this._removeNegativeMarginFromLastChild();
 	    // clear any negative margins on the last child
 	    this.placeholderSize = this.placeholder.size;
 	    this.placeholderScale = this.placeholder.scale;
@@ -1396,11 +1428,27 @@
 	      this.placeholder.setState("materialized");
 	    } else {
 	      this.index = null;
+	      this.forceFeedClearRequired = true;
 	      this.placeholder.setState("hidden");
+	      this._addNegativeMarginToLastChild();
 	      // add negative margin to last child the outer width/height of the
 	      // placeholder - so as far as layout is concerned, it doesn't exist
 	      this.updateChildTranslations();
 	    }
+	  };
+
+	  SortableContainer.prototype._addNegativeMarginToLastChild = function _addNegativeMarginToLastChild() {
+	    if (this.el.children.length === 0) return;
+	    var lastChildEl = this.el.children[this.el.children.length - 1];
+	    var lastChildStyle = getComputedStyle(lastChildEl);
+	    var newMarginBottom = parseInt(lastChildStyle.marginBottom, 10) - this.placeholder.outerSize[1];
+	    lastChildEl.style.marginBottom = newMarginBottom + "px";
+	  };
+
+	  SortableContainer.prototype._removeNegativeMarginFromLastChild = function _removeNegativeMarginFromLastChild() {
+	    if (this.el.children.length === 0) return;
+	    var lastChildEl = this.el.children[this.el.children.length - 1];
+	    lastChildEl.style.marginBottom = "";
 	  };
 
 	  SortableContainer.prototype.finalizeDrop = function finalizeDrop(draggable) {
@@ -1428,7 +1476,14 @@
 
 	  SortableContainer.prototype.updatePosition = function updatePosition(xy) {
 	    // if it's empty, answer is simple
-	    if (this.siblingEls.length === 0) return this.index = 0;
+	    if (this.siblingEls.length === 0) {
+	      if (this.index !== 0) {
+	        this.index = 0;
+	        console.log(0);
+	        this.updateChildTranslations();
+	      }
+	      return;
+	    }
 
 	    var dimensionIndex = this.direction === "vertical" ? 1 : 0;
 	    var translateProperty = this.direction === "vertical" ? "translateY" : "translateX";
@@ -1447,9 +1502,9 @@
 	      newIndex++;
 	    } while (newIndex < this.childEls.length);
 
-	    this.forceFeedClearRequired = this.forceFeedClearRequired || this.index === null;
 	    if (this.index !== newIndex) {
 	      this.index = newIndex;
+	      console.log(newIndex);
 	      this.updateChildTranslations();
 	    }
 	  };
@@ -1577,10 +1632,10 @@
 	    dom.topLeft(this.el, [-this.grip[0] * this.size[0], -this.grip[1] * this.size[1]]);
 	    dom.translate(this.el, this.drag.pointerXY);
 	    document.body.appendChild(this.el);
+
 	    this.setPosition(this.drag.pointerXY);
 	    this.setSizeAndScale(this.drag.draggable.originalSize, this.drag.draggable.originalScale, false);
 	    this._applyGripOffset();
-
 	    this.el.focus();
 	    this.pickUp();
 	  };
@@ -1612,7 +1667,6 @@
 	    var animate = arguments[2] === undefined ? true : arguments[2];
 
 	    if (this.size[0] === size[0] && this.size[1] === size[1] && this.scale[0] === scale[0] && this.scale[1] === scale[1]) return;
-	    console.log(size);
 
 	    animation.set(this.el, {
 	      width: size[0],
@@ -1632,6 +1686,7 @@
 	    // prevent velocity from immediately applying the new value, when the
 	    // new and old values are equal. This causes flickering in some
 	    // circumstances
+
 	    var minimalDelta = 0.001;
 	    animation.set(this.el, {
 	      rotateZ: 0,
@@ -1753,6 +1808,8 @@
 	    this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
 	    this.originalOffset = [this.el.offsetLeft, this.el.offsetTop];
 	    this.originalScale = dom.clientScale(el);
+	    this.tags = [];
+	    this.initialize();
 	  }
 
 	  Draggable.closest = function closest(el) {
@@ -1766,14 +1823,34 @@
 	      return dragEl ? new Draggable(dragEl) : null;
 	    }
 
-	    // if the item contains a handle (which was not the the pointer down spot)
-	    // then ignore
-	    // TODO: fix this
-	    if (dragEl.querySelectorAll(this.handleSelector).length > dragEl.querySelectorAll(this.handleUnderDraggableSelector).length) {
-	      return null;
+	    // check all of the drag handles underneath this draggable element,
+	    // and make sure they all belong to other (child) draggables
+	    for (var _iterator = dragEl.querySelectorAll(this.handleSelector), _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+	      var _ref;
+
+	      if (_isArray) {
+	        if (_i >= _iterator.length) break;
+	        _ref = _iterator[_i++];
+	      } else {
+	        _i = _iterator.next();
+	        if (_i.done) break;
+	        _ref = _i.value;
+	      }
+
+	      var childHandleEl = _ref;
+
+	      if (dom.closest(childHandleEl, this.draggableSelector) === dragEl) return null;
 	    }
 
 	    return dragEl ? new Draggable(dragEl) : null;
+	  };
+
+	  Draggable.prototype.initialize = function initialize() {
+	    if (this.el.hasAttribute('data-drag-tag')) {
+	      this.tags = (this.el.getAttribute('data-drag-tag') || '').split(' ');
+	    } else {
+	      this.tags = (this.el.parentElement.getAttribute('data-drag-tag') || '').split(' ');
+	    }
 	  };
 
 	  Draggable.prototype.removeOriginal = function removeOriginal() {

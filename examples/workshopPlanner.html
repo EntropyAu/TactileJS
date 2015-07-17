@@ -30,6 +30,8 @@
       </div>
 
       <ol data-drag-sortable
+          data-drag-tag="activity"
+          data-drag-accepts="none"
           data-drag-out-action="copy">
         <li class="ui card">
           <div class="content">
@@ -82,10 +84,15 @@
           </div>
         </li>
       </ol>
+
     </div>
+
+
+
     <div class="layout-plan">
       <ol class="days-list"
           data-drag-sortable="horizontal"
+          data-drag-tag="day"
           data-drag-scrollable
           data-drag-capture=".day">
         <li class="day">
@@ -97,7 +104,7 @@
           <ol class="day-activities"
               data-drag-scrollable
               data-drag-sortable
-              data-drag-accepts='.card'>
+              data-drag-tag='activity'>
           </ol>
         </li><li class="day">
           <header class="day-header">
@@ -108,7 +115,7 @@
           <ol class="day-activities"
               data-drag-scrollable
               data-drag-sortable
-              data-drag-accepts='.card'>
+              data-drag-tag='activity'>
           </ol>
         </li><li class="day">
           <header class="day-header">
@@ -119,7 +126,7 @@
           <ol class="day-activities"
               data-drag-scrollable
               data-drag-sortable
-              data-drag-accepts='.card'>
+              data-drag-tag='activity'>
           </ol>
         </li><li class="day">
           <header class="day-header">
@@ -130,7 +137,7 @@
           <ol class="day-activities"
               data-drag-scrollable
               data-drag-sortable
-              data-drag-accepts='.card'>
+              data-drag-tag='activity'>
           </ol>
         </li><li class="day">
           <header class="day-header">
@@ -141,7 +148,7 @@
           <ol class="day-activities"
               data-drag-scrollable
               data-drag-sortable
-              data-drag-accepts='.card'>
+              data-drag-tag='activity'>
           </ol>
         </li>
       </ol>

@@ -63,14 +63,16 @@
 
 
           <h3>Sortable with Accepts</h3>
-          <li data-drag-draggable class='red'>Item 1</li>
-          <li data-drag-draggable class='orange'>Item 2</li>
-          <li data-drag-draggable class='yellow'>Item 3</li>
-          <li data-drag-draggable class='lime'>Item 4</li>
-          <li data-drag-draggable class='green'>Item 5</li>
-          <ol data-drag-sortable data-drag-accepts=".red"></ol>
-          <ol data-drag-sortable data-drag-accepts=".orange"></ol>
-          <ol data-drag-sortable data-drag-accepts=".yellow"></ol>
+          <li data-drag-draggable data-drag-tag='red'    class="red">Red</li>
+          <li data-drag-draggable data-drag-tag='orange' class="orange">Orange</li>
+          <li data-drag-draggable data-drag-tag='yellow' class="yellow">Yellow</li>
+          <li data-drag-draggable data-drag-tag='lime'   class="lime">Lime</li>
+          <li data-drag-draggable data-drag-tag='green'  class="green">Green</li>
+          <ol data-drag-sortable data-drag-accepts="red"></ol>
+          <ol data-drag-sortable data-drag-accepts="orange"></ol>
+          <ol data-drag-sortable data-drag-accepts="yellow"></ol>
+          <ol data-drag-sortable data-drag-accepts="lime"></ol>
+          <ol data-drag-sortable data-drag-accepts="green"></ol>
 
           <h3>Sortable with Containment</h3>
           <ol data-drag-sortable

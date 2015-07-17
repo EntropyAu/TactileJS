@@ -17,6 +17,17 @@ export function closest(el, selector) {
   return null;
 }
 
+export function childElementArray(el) {
+  let childEls = [];
+  let childNodeList = el.children;
+  for (let i = 0; i < childNodeList.length; i++) {
+    if (childNodeList.item(i).nodeType === 1)
+      childEls.push(childNodeList.item(i));
+  }
+  return childEls;
+}
+
+
 export function ancestors(el, selector) {
   if (el === null) return [];
   let ancestors = [];

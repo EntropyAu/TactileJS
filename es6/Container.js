@@ -14,25 +14,40 @@ export default class Container {
     this.placeholderScale = 1;
     this.options = drag.options;
     this.dragOutAction = null;
+    this.acceptsTags = [];
     this.initialize();
   }
 
   initialize() {
     this.dragOutAction = this.el.getAttribute('data-drag-out-action') || 'move';
+    this.initializeAcceptsTags();
   }
 
   setPointerXY(constrainedXY) {
     this.updatePosition(constrainedXY)
   }
 
+  initializeAcceptsTags() {
+    if (!this.el.hasAttribute('data-drag-accepts')) {
+      // by default, a container accepts the tag of items it contains
+      this.acceptsTags = (this.el.getAttribute('data-drag-tag') || '').split(' ');
+    } else {
+      // however this can be overwritten by an explicit accepts attribute
+      this.acceptsTags = (this.el.getAttribute('data-drag-accepts') || '').split(' ');
+    }
+  }
+
   accepts(draggable) {
+    // a container always accepts it's own draggable children back
     if (draggable.originalParentEl === this.el) return true;
     if (this.el.hasAttribute('data-drag-disabled')) return false;
-    let acceptsSelector = this.el.getAttribute('data-drag-accepts');
-    if (!acceptsSelector) return false;
 
-    return acceptsSelector ? draggable.el.matches(acceptsSelector)
-                           : draggable.originalParentEl === this.el;
+    if (this.acceptsTags.indexOf('*') !== -1) return true;
+
+    for (let tag of draggable.tags) {
+      if (this.acceptsTags.indexOf(tag) !== -1) return true;
+    }
+    return false;
   }
 
   captures(draggable) {
@@ -50,7 +65,5 @@ export default class Container {
 
   enter() { }
   leave() { }
-
-
   dispose() {}
 }

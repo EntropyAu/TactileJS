@@ -29,12 +29,11 @@ export default class Draggable {
       return dragEl ? new Draggable(dragEl) : null;
     }
 
-    // if the item contains a handle (which was not the the pointer down spot)
-    // then ignore
-    // TODO: fix this
-    if (dragEl.querySelectorAll(this.handleSelector).length >
-        dragEl.querySelectorAll(this.handleUnderDraggableSelector).length) {
-      return null;
+    // check all of the drag handles underneath this draggable element,
+    // and make sure they all belong to other (child) draggables
+    for (let childHandleEl of dragEl.querySelectorAll(this.handleSelector)) {
+      if (dom.closest(childHandleEl, this.draggableSelector) === dragEl)
+        return null;
     }
 
     return dragEl ? new Draggable(dragEl) : null;
@@ -53,6 +52,16 @@ export default class Draggable {
     this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
     this.originalOffset = [this.el.offsetLeft, this.el.offsetTop];
     this.originalScale = dom.clientScale(el);
+    this.tags = [];
+    this.initialize();
+  }
+
+  initialize() {
+    if (this.el.hasAttribute('data-drag-tag')) {
+      this.tags = (this.el.getAttribute('data-drag-tag') || '').split(' ');
+    } else {
+      this.tags = (this.el.parentElement.getAttribute('data-drag-tag') || '').split(' ');
+    }
   }
 
   removeOriginal() {
