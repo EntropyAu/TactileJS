@@ -51,6 +51,7 @@ export default class SortableContainer extends Container {
 
   enter() {
     this.placeholder.setState("ghosted");
+    // clear any negative margins on the last child
     this.placeholderSize = this.placeholder.size;
     this.placeholderScale = this.placeholder.scale;
   }
@@ -61,6 +62,8 @@ export default class SortableContainer extends Container {
     } else {
       this.index = null;
       this.placeholder.setState("hidden");
+      // add negative margin to last child the outer width/height of the
+      // placeholder - so as far as layout is concerned, it doesn't exist
       this.updateChildTranslations();
     }
   }
@@ -124,10 +127,11 @@ export default class SortableContainer extends Container {
 
 
   updateChildTranslations() {
-    let offset = 0;
-    let placeholderOffset = null;
     let dimensionIndex = this.direction === 'vertical' ? 1 : 0;
     let translateProperty = this.direction === 'vertical' ? 'translateY' : 'translateX';
+
+    let offset = 0;
+    let placeholderOffset = null;
 
     this.siblingEls.forEach(function (el, index) {
       if (index === this.index) {

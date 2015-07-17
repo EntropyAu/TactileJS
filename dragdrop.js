@@ -677,7 +677,10 @@
 	  document.body.classList.toggle('not-ios', !iOS);
 	});
 
-	function translate(el, x, y) {
+	function translate(el, _ref) {
+	  var x = _ref[0];
+	  var y = _ref[1];
+
 	  el.style[vendorTransform] = 'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(0)';
 	}
 
@@ -692,17 +695,17 @@
 	  el.style[vendorTransform] = transform.join(' ');
 	}
 
-	function topLeft(el, _ref) {
-	  var l = _ref[0];
-	  var t = _ref[1];
+	function topLeft(el, _ref2) {
+	  var l = _ref2[0];
+	  var t = _ref2[1];
 
 	  el.style.top = t + 'px';
 	  el.style.left = l + 'px';
 	}
 
-	function transformOrigin(el, _ref2) {
-	  var l = _ref2[0];
-	  var t = _ref2[1];
+	function transformOrigin(el, _ref3) {
+	  var l = _ref3[0];
+	  var t = _ref3[1];
 
 	  el.style.transformOrigin = l + '% ' + t + '%';
 	  el.style.webkitTransformOrigin = l + '% ' + t + '%';
@@ -1383,6 +1386,7 @@
 
 	  SortableContainer.prototype.enter = function enter() {
 	    this.placeholder.setState("ghosted");
+	    // clear any negative margins on the last child
 	    this.placeholderSize = this.placeholder.size;
 	    this.placeholderScale = this.placeholder.scale;
 	  };
@@ -1393,6 +1397,8 @@
 	    } else {
 	      this.index = null;
 	      this.placeholder.setState("hidden");
+	      // add negative margin to last child the outer width/height of the
+	      // placeholder - so as far as layout is concerned, it doesn't exist
 	      this.updateChildTranslations();
 	    }
 	  };
@@ -1449,10 +1455,11 @@
 	  };
 
 	  SortableContainer.prototype.updateChildTranslations = function updateChildTranslations() {
-	    var offset = 0;
-	    var placeholderOffset = null;
 	    var dimensionIndex = this.direction === "vertical" ? 1 : 0;
 	    var translateProperty = this.direction === "vertical" ? "translateY" : "translateX";
+
+	    var offset = 0;
+	    var placeholderOffset = null;
 
 	    this.siblingEls.forEach((function (el, index) {
 	      if (index === this.index) {
@@ -1560,14 +1567,20 @@
 	    this.el.style.mozTransition = "none";
 	    this.el.style.msTransition = "none";
 	    this.el.style.transition = "none";
+	    this.el.style.margin = "0 !important";
 
 	    var rect = this.drag.draggable.el.getBoundingClientRect();
 	    this.grip = [(this.drag.pointerXY[0] - rect.left) / rect.width, (this.drag.pointerXY[1] - rect.top) / rect.height];
 
+	    // set the layout offset and translation synchronously to avoid flickering
+	    // velocityJS will update these values asynchronously.
+	    dom.topLeft(this.el, [-this.grip[0] * this.size[0], -this.grip[1] * this.size[1]]);
+	    dom.translate(this.el, this.drag.pointerXY);
 	    document.body.appendChild(this.el);
 	    this.setPosition(this.drag.pointerXY);
 	    this.setSizeAndScale(this.drag.draggable.originalSize, this.drag.draggable.originalScale, false);
 	    this._applyGripOffset();
+
 	    this.el.focus();
 	    this.pickUp();
 	  };

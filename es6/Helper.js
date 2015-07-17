@@ -28,17 +28,23 @@ export default class Helper {
     this.el.style.mozTransition = 'none';
     this.el.style.msTransition = 'none';
     this.el.style.transition = 'none';
+    this.el.style.margin = '0 !important';
 
     const rect = this.drag.draggable.el.getBoundingClientRect();
     this.grip = [(this.drag.pointerXY[0] - rect.left) / rect.width,
                  (this.drag.pointerXY[1] - rect.top) / rect.height];
 
+    // set the layout offset and translation synchronously to avoid flickering
+    // velocityJS will update these values asynchronously.
+    dom.topLeft(this.el, [-this.grip[0] * this.size[0], -this.grip[1] * this.size[1]]);
+    dom.translate(this.el, this.drag.pointerXY);
     document.body.appendChild(this.el);
     this.setPosition(this.drag.pointerXY);
     this.setSizeAndScale(this.drag.draggable.originalSize,
                          this.drag.draggable.originalScale,
                          false);
     this._applyGripOffset();
+
     this.el.focus()
     this.pickUp();
   }

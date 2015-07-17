@@ -59,7 +59,7 @@ setTimeout(function() {
   document.body.classList.toggle('not-ios', !iOS);
 });
 
-export function translate(el, x, y) {
+export function translate(el, [x, y]) {
   el.style[vendorTransform] = `translateX(${x}px) translateY(${y}px) translateZ(0)`;
 }
 

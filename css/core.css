@@ -133,10 +133,10 @@ body[data-drag-in-progress] {
   cursor:    -moz-grabbing;
   cursor:     -ms-grabbing;
   cursor:         grabbing;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+  -webkit-user-select: none !important;
+     -moz-user-select: none !important;
+      -ms-user-select: none !important;
+          user-select: none !important;
 }
 
 body[data-drag-in-progress] > * {
@@ -165,21 +165,9 @@ body[data-drag-in-progress] ul[data-drag-canvas] {
       -ms-pointer-events: all !important;
           pointer-events: all !important;
 }
-body[data-drag-in-progress] ol[data-drag-sortable] {
-  -webkit-user-select: all;
-     -moz-user-select: all;
-      -ms-user-select: all;
-          user-select: all;
-}
-body[data-drag-in-progress] ol[data-drag-sortable] > li > * {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-}
+
 [data-drag-placeholder] {
   z-index: -1;
-  opacity: 0.1;
 }
 
 .dd-drag-hover > * {
