@@ -14,7 +14,7 @@ import * as dom from './lib/dom.js';
 // TODO: Animated pickUp
 
 // TODO: Scroll only if scrollable is an ancestor of the target element
-// TODO: Scroll does not propagate if target element is constrained
+// TODO: Scroll does not propagate if target element is tl
 // TODO: Scroll adjust scroll maxV based on number of items
 // TODO: Scroll trigger placeholder update when scroll stops
 // TODO: Copy behaviour
@@ -33,7 +33,7 @@ export default class Drag {
     this.dropAction = "move"; // "copy"
     this.cancelAction = "last"; // "remove", "last"
 
-    this._knownContainers = new Map();
+    this._knownContainers = new WeakMap();
     this._start();
   }
 
@@ -44,10 +44,12 @@ export default class Drag {
 
     if (!this.scroller || !this.scroller.updateVelocity(this.pointerXY)) {
       this.pointerEl = dom.elementFromPoint(pointerXY);
-      this._updateTarget();
-      if (this.target) this.target.setPointerXY(this.constrainedXY);
+      if (!this.target || !this.target.willCapture(this.draggable))
+        this._updateTarget();
+      // check first to see if the we are in the target bounds
+      if (this.target) this.target.updatePosition(this.constrainedXY);
+      this._checkForScrolling();
       events.raiseEvent(this.draggable.el, 'drag', this);
-      this._updateScroll();
     }
     this.helper.setPosition(this.constrainedXY);
   }
@@ -68,7 +70,7 @@ export default class Drag {
   }
 
 
-  _updateScroll() {
+  _checkForScrolling() {
     this.scroller = false;
     var scrollEls = dom.ancestors(this.target ? this.target.el : document.body, Scrollable.selector);
     scrollEls.every(function(scrollEl) {
@@ -113,16 +115,16 @@ export default class Drag {
 
   _updateConstrainedPosition() {
     const grip = this.helper.grip;
-    const helperSize = this.helper.size;
+    const size = this.helper.size;
 
-    if (this.target && this.target.captures(this.draggable)) {
-      let constrained = [this.pointerXY[0] - grip[0] * helperSize[0],
-                         this.pointerXY[1] - grip[1] * helperSize[1]];
+    if (this.target && this.target.willCapture(this.draggable)) {
+      let tl = [this.pointerXY[0] - grip[0] * size[0],
+                this.pointerXY[1] - grip[1] * size[1]];
       let rect = dom.getPaddingClientRect(this.target.el);
-      constrained[0] = math.coerce(constrained[0], rect.left, rect.right - helperSize[0]);
-      constrained[1] = math.coerce(constrained[1], rect.top, rect.bottom - helperSize[1]);
-      this.constrainedXY = [constrained[0] + grip[0] * helperSize[0],
-                            constrained[1] + grip[1] * helperSize[1]];
+      tl[0] = math.coerce(tl[0], rect.left, rect.right - size[0]);
+      tl[1] = math.coerce(tl[1], rect.top, rect.bottom - size[1]);
+      this.constrainedXY = [tl[0] + grip[0] * size[0],
+                            tl[1] + grip[1] * size[1]];
     } else {
       this.constrainedXY = this.pointerXY;
     }
@@ -130,15 +132,13 @@ export default class Drag {
 
 
   _updateTarget() {
-    if (this.target && this.target.captures(this.draggable)) return;
-
+    const oldTarget = this.target;
     let newTarget = this._findAcceptingTarget(this.pointerEl);
-    if (newTarget === this.target) return;
+    if (newTarget === oldTarget) return;
 
     if (newTarget || this.cancelAction !== 'last') {
-      if (this.target) this._leaveTarget(this.target);
+      if (oldTarget) this._leaveTarget(oldTarget);
       if (newTarget) this._enterTarget(newTarget);
-      return newTarget;
     }
   }
 
@@ -147,7 +147,7 @@ export default class Drag {
     let targetEl = ContainerFactory.closest(el);
     while (targetEl) {
       let target = this._getContainer(targetEl);
-      if (target.accepts(this.draggable)) return target;
+      if (target.willAccept(this.draggable)) return target;
       targetEl = ContainerFactory.closest(targetEl.parentElement);
     }
     return null;
@@ -165,7 +165,7 @@ export default class Drag {
 
 
   _enterTarget(container) {
-    if (events.raiseEvent(container.el, 'dragenter', this).returnValue) {
+    if (events.raiseEvent(container.el, 'dragenter', this)) {
       container.updatePosition(this.constrainedXY);
       container.enter();
       if (container.placeholderSize && this.options.helperResize) {
@@ -180,7 +180,7 @@ export default class Drag {
 
 
   _leaveTarget(container) {
-    if (events.raiseEvent(container.el, 'dragleave', this).returnValue) {
+    if (events.raiseEvent(container.el, 'dragleave', this)) {
       container.leave();
       container.el.classList.remove(this.options.containerHoverClass);
       this.target = null;

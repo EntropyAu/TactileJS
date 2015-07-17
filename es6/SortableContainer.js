@@ -50,6 +50,7 @@ export default class SortableContainer extends Container {
                                };
   }
 
+
   initializePlaceholder() {
     if (this.drag.draggable.originalParentEl === this.el) {
       this.placeholder = new Placeholder(this.drag, this.drag.draggable.el);
@@ -174,14 +175,9 @@ export default class SortableContainer extends Container {
     let placeholderOffset = null;
 
     this.siblingEls.forEach(function (el, index) {
-      if (this.placeholder.outerSize[this.directionProperties.index] === 0) {
-        debugger
-      }
-
       if (index === this.index) {
         placeholderOffset = offset;
         offset += this.placeholder.outerSize[this.directionProperties.index];
-        console.log(this.placeholder.outerSize)
       }
       let measure = this.getChildMeasure(el);
       let newTranslation = offset - measure.offset

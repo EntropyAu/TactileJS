@@ -2,7 +2,6 @@ import * as dom from "./lib/dom.js";
 import * as animation from "./lib/animation.js";
 
 export default class Helper {
-  /* members */
 
   constructor(drag) {
     this.options = drag.options;
@@ -17,17 +16,17 @@ export default class Helper {
 
   initialize() {
     this.el = this.drag.draggable.el.cloneNode(true);
-    this.el.removeAttribute('id');
-    this.el.setAttribute('data-drag-helper', '');
+    this.el.removeAttribute("id");
+    this.el.setAttribute("data-drag-helper", "");
     this.el.style.position = "fixed";
 
-    // any existing transitions may screw up velocity's work
+    // any existing transitions may screw up velocity"s work
     // TODO: deal with iOS where a 10ms transition makes movement smoother
-    this.el.style.webkitTransition = 'none';
-    this.el.style.mozTransition = 'none';
-    this.el.style.msTransition = 'none';
-    this.el.style.transition = 'none';
-    this.el.style.margin = '0 !important';
+    this.el.style.webkitTransition = "none";
+    this.el.style.mozTransition = "none";
+    this.el.style.msTransition = "none";
+    this.el.style.transition = "none";
+    this.el.style.margin = "0 !important";
 
     const rect = this.drag.draggable.el.getBoundingClientRect();
     this.grip = [(this.drag.pointerXY[0] - rect.left) / rect.width,
@@ -39,21 +38,13 @@ export default class Helper {
     dom.translate(this.el, this.drag.pointerXY);
     document.body.appendChild(this.el);
 
+    this._applyGripOffset();
     this.setPosition(this.drag.pointerXY);
     this.setSizeAndScale(this.drag.draggable.originalSize,
                          this.drag.draggable.originalScale,
                          false);
-    this._applyGripOffset();
     this.el.focus()
-    this.pickUp();
-  }
-
-
-  pickUp() {
-    animation.set(this.el, {
-      rotateZ: [this.options.helperRotation, 0],
-      boxShadowBlur: this.options.helperShadowSize
-    }, this.options.pickUpAnimation);
+    this._pickUp();
   }
 
 
@@ -65,14 +56,6 @@ export default class Helper {
       translateY: positionXY[1]
     });
     this.position = positionXY;
-  }
-
-
-  _applyGripOffset() {
-    animation.set(this.el, {
-      left: (-this.grip[0] * this.size[0]),
-      top: (-this.grip[1] * this.size[1]),
-    });
   }
 
 
@@ -98,21 +81,37 @@ export default class Helper {
 
   animateToElementAndPutDown(el, complete) {
     const rect = el.getBoundingClientRect();
+
     // prevent velocity from immediately applying the new value, when the
     // new and old values are equal. This causes flickering in some
     // circumstances
-
-    const minimalDelta = 0.001;
+    const minimalDelta = 0.0001;
     animation.set(this.el, {
       rotateZ: 0,
       boxShadowBlur: 0,
       top: [0, 0 + minimalDelta],
       left: [0, 0 + minimalDelta],
-      translateX: [rect.left, this.position[0] - this.grip[0] * this.size[0] + minimalDelta],
-      translateY: [rect.top, this.position[1] - this.grip[1] * this.size[1] + minimalDelta],
-      width: rect.width,
-      height: rect.height
+      translateX: [rect.left, this.position[0] - this.grip[0] * el.offsetWidth + minimalDelta],
+      translateY: [rect.top, this.position[1] - this.grip[1] * el.offsetHeight + minimalDelta],
+      width: el.offsetWidth,
+      height: el.offsetHeight
     }, this.options.dropAnimation, complete);
+  }
+
+
+  _pickUp() {
+    animation.set(this.el, {
+      rotateZ: [this.options.helperRotation, 0],
+      boxShadowBlur: this.options.helperShadowSize
+    }, this.options._pickUpAnimation);
+  }
+
+
+  _applyGripOffset() {
+    animation.set(this.el, {
+      left: (-this.grip[0] * this.size[0]),
+      top: (-this.grip[1] * this.size[1]),
+    });
   }
 
 

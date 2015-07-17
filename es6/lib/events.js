@@ -1,4 +1,3 @@
-
 export const pointerDownEvent = document['ontouchstart'] !== undefined ? 'touchstart' : 'mousedown';
 export const pointerMoveEvent = document['ontouchmove'] !== undefined ? 'touchmove' : 'mousemove';
 export const pointerUpEvent   = document['ontouchend'] !== undefined ? 'touchend' : 'mouseup';
@@ -13,7 +12,7 @@ export function cancelEvent(e) {
 export function raiseEvent(source, eventName, eventData) {
   let event = new CustomEvent(eventName, eventData);
   source.dispatchEvent(event);
-  return event;
+  return !event.defaultPrevented;
 }
 
 export function pointerEventXY(e) {

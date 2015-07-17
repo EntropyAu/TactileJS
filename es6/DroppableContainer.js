@@ -9,19 +9,7 @@ export default class DroppableContainer extends Container {
   }
 
 
-  updatePosition(constrainedXY) {
-  }
-
-
-  insertPlaceholder(originalEl) {
-  }
-
-
-  updatePlaceholder() {
-  }
-
-
-  removePlaceholder() {
+  updatePosition(xy) {
   }
 
 

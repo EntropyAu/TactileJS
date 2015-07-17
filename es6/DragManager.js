@@ -73,7 +73,9 @@ export default class DragManager {
     const pointerId = events.pointerEventId(e);
 
     let draggable = Draggable.closest(e.target);
-    if (!draggable || !draggable.enabled) return false;
+    if (!draggable || !draggable.enabled) {
+      return false;
+    };
 
 
     if (this.options.pickUpDelay === null || this.options.pickUpDelay === 0) {
@@ -143,9 +145,6 @@ export default class DragManager {
     document.body.setAttribute('data-drag-in-progress', '');
     this.drags[pointerId] = new Drag(draggable, pointerXY, defaultOptions);
   }
-
-
-
 }
 
 window.dragManager = new DragManager();

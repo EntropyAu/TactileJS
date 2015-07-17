@@ -3,15 +3,15 @@ import DroppableContainer from './DroppableContainer.js';
 import SortableContainer from './SortableContainer.js';
 import * as dom from "./lib/dom.js";
 
+const containerSelector = '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]';
+
 export default class ContainerFactory {
 
-  static get selector() { return '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]'; }
-
   static closest(el) {
-    let closestEl = dom.closest(el, this.selector);
-    while (closestEl && dom.closest(closestEl, '[data-drag-placeholder]'))
-      closestEl = dom.closest(closestEl.parentElement, this.selector)
-    return closestEl;
+    el = dom.closest(el, containerSelector);
+    while (el && dom.closest(el, '[data-drag-placeholder]'))
+      el = dom.closest(el.parentElement, containerSelector)
+    return el;
   }
 
   static makeContainer(el, drag) {
