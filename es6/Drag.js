@@ -6,6 +6,7 @@ import Scrollable from './Scrollable.js';
 import * as events from './lib/events.js';
 import * as math from './lib/math.js';
 import * as dom from './lib/dom.js';
+import * as rect from './lib/rect.js';
 
 
 // TODO: Animated revert
@@ -20,15 +21,15 @@ import * as dom from './lib/dom.js';
 // TODO: Copy behaviour
 
 export default class Drag {
-  constructor(draggable, pointerXY, options) {
+  constructor(draggable, xy, options) {
     this.options = options;
-    this.pointerXY = pointerXY;
-    this.constrainedXY = null;
+    this.xy = xy;
     this.pointerEl = null;
     this.helper = null;
     this.draggable = draggable;
     this.target = null;
     this.source = null;
+    this.captor = null;
     this.revertOnCancel = true;
     this.dropAction = "move"; // "copy"
     this.cancelAction = "last"; // "remove", "last"
@@ -38,20 +39,22 @@ export default class Drag {
   }
 
 
-  move(pointerXY) {
-    this.pointerXY = pointerXY;
-    this._updateConstrainedPosition();
+  move(xy) {
+    this.xy = this._getConstrainedPosition(xy);
 
-    if (!this.scroller || !this.scroller.updateVelocity(this.pointerXY)) {
-      this.pointerEl = dom.elementFromPoint(pointerXY);
+    if (!this.scroller || !this.scroller.updateVelocity(this.xy)) {
+      this.pointerEl = dom.elementFromPoint(this.xy);
       if (!this.target || !this.target.willCapture(this.draggable))
         this._updateTarget();
       // check first to see if the we are in the target bounds
-      if (this.target) this.target.updatePosition(this.constrainedXY);
-      this._checkForScrolling();
+      // note this would be calling for the second time.. FIX THIS
+      if (this.target && rect.contains(this.target.el.getBoundingClientRect(), this.xy)) {
+        this.target.updatePosition(this.xy);
+      }
+      this._checkForScrolling(this.xy);
       events.raiseEvent(this.draggable.el, 'drag', this);
     }
-    this.helper.setPosition(this.constrainedXY);
+    this.helper.setPosition(this.xy);
   }
 
 
@@ -69,12 +72,12 @@ export default class Drag {
   }
 
 
-  _checkForScrolling() {
+  _checkForScrolling(xy) {
     this.scroller = false;
     var scrollEls = dom.ancestors(this.target ? this.target.el : document.body, Scrollable.selector);
     scrollEls.every(function(scrollEl) {
       let scrollable = new Scrollable(this, scrollEl);
-      if (scrollable.tryScroll(this.pointerXY)) {
+      if (scrollable.tryScroll(xy)) {
         this.scroller = scrollable;
         return false;
       }
@@ -112,20 +115,18 @@ export default class Drag {
   }
 
 
-  _updateConstrainedPosition() {
+  _getConstrainedPosition(xy) {
     const grip = this.helper.grip;
     const size = this.helper.size;
 
     if (this.target && this.target.willCapture(this.draggable)) {
-      let tl = [this.pointerXY[0] - grip[0] * size[0],
-                this.pointerXY[1] - grip[1] * size[1]];
+      let tl = [xy[0] - grip[0] * size[0], xy[1] - grip[1] * size[1]];
       let rect = dom.getPaddingClientRect(this.target.el);
       tl[0] = math.coerce(tl[0], rect.left, rect.right - size[0]);
       tl[1] = math.coerce(tl[1], rect.top, rect.bottom - size[1]);
-      this.constrainedXY = [tl[0] + grip[0] * size[0],
-                            tl[1] + grip[1] * size[1]];
+      return [tl[0] + grip[0] * size[0], tl[1] + grip[1] * size[1]];
     } else {
-      this.constrainedXY = this.pointerXY;
+      return xy;
     }
   }
 
@@ -165,7 +166,7 @@ export default class Drag {
 
   _enterTarget(container) {
     if (events.raiseEvent(container.el, 'dragenter', this)) {
-      container.updatePosition(this.constrainedXY);
+      container.updatePosition(this.xy);
       container.enter();
       if (container.placeholderSize && this.options.helperResize) {
         this.helper.setSizeAndScale(
@@ -187,8 +188,7 @@ export default class Drag {
 
   _start() {
     this.helper = new Helper(this);
-    this._updateConstrainedPosition();
-    this.pointerEl = dom.elementFromPoint(this.pointerXY);
+    this.pointerEl = dom.elementFromPoint(this.xy);
     this._updateTarget();
     events.raiseEvent(this.draggable.el, 'dragstart', this)
   }

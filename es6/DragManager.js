@@ -69,7 +69,7 @@ export default class DragManager {
     if (e.which !== 0 && e.which !== 1) return;
     if (dom.ancestors(e.target, this.options.cancel).length > 0) return;
 
-    const pointerXY = events.pointerEventXY(e);
+    const xy = events.pointerEventXY(e);
     const pointerId = events.pointerEventId(e);
 
     let draggable = Draggable.closest(e.target);
@@ -80,14 +80,14 @@ export default class DragManager {
 
     if (this.options.pickUpDelay === null || this.options.pickUpDelay === 0) {
       events.cancelEvent(e);
-      this.startDrag(draggable, pointerId, pointerXY);
+      this.startDrag(draggable, pointerId, xy);
     } else {
       let onpickUpTimeoutHandler = function() {
         this.onpickUpTimeout(pointerId);
       }
       this.pendingDrags[pointerId] = {
         draggable: draggable,
-        pointerXY: pointerXY,
+        xy: xy,
         timerId: setTimeout(onpickUpTimeoutHandler.bind(this), this.options.pickUpDelay)
       };
     }
@@ -97,27 +97,27 @@ export default class DragManager {
   onpickUpTimeout(pointerId) {
     if (this.pendingDrags[pointerId]) {
       let pendingDrag = this.pendingDrags[pointerId];
-      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
+      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.xy);
       delete this.pendingDrags[pointerId];
     }
   }
 
 
   onPointerMove(e) {
-    const pointerXY = events.pointerEventXY(e);
+    const xy = events.pointerEventXY(e);
     const pointerId = events.pointerEventId(e);
 
     if (this.drags[pointerId]) {
       let drag = this.drags[pointerId];
       events.cancelEvent(e);
-      drag.move(pointerXY);
+      drag.move(xy);
     }
     if (this.pendingDrags[pointerId]) {
       let pendingDrag = this.pendingDrags[pointerId];
       // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
-      if (this.options.pickUpDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickUpDistance)
+      if (this.options.pickUpDistance && math.distance(pendingDrag.xy, xy) > this.options.pickUpDistance)
       clearTimeout(pendingDrag.timerId);
-      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
+      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.xy);
       delete this.pendingDrags[pointerId];
     }
   }
@@ -140,10 +140,10 @@ export default class DragManager {
     }
   }
 
-  startDrag(draggable, pointerId, pointerXY) {
+  startDrag(draggable, pointerId, xy) {
     dom.clearSelection();
     document.body.setAttribute('data-drag-in-progress', '');
-    this.drags[pointerId] = new Drag(draggable, pointerXY, defaultOptions);
+    this.drags[pointerId] = new Drag(draggable, xy, defaultOptions);
   }
 }
 

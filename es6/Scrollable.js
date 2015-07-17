@@ -56,8 +56,8 @@ export default class Scrollable {
   }
 
 
-  tryScroll(pointerXY) {
-    this.updateVelocity(pointerXY);
+  tryScroll(xy) {
+    this.updateVelocity(xy);
     if (this.velocity[0] !== 0 || this.velocity[1] !== 0) {
       this.offset = [this.el.scrollLeft, this.el.scrollTop];
       this.requestId = requestAnimationFrame(this.continueScroll.bind(this));

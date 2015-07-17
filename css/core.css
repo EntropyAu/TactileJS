@@ -12,6 +12,10 @@ ul[data-drag-canvas] {
   position: relative;
   z-index: 0;
   box-sizing: border-box;
+  -webkit-user-select: none !important;
+     -moz-user-select: none !important;
+      -ms-user-select: none !important;
+          user-select: none !important;
 }
 
 *[data-drag-draggable],

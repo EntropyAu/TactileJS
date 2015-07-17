@@ -138,7 +138,7 @@
 	    if (e.which !== 0 && e.which !== 1) return;
 	    if (dom.ancestors(e.target, this.options.cancel).length > 0) return;
 
-	    var pointerXY = events.pointerEventXY(e);
+	    var xy = events.pointerEventXY(e);
 	    var pointerId = events.pointerEventId(e);
 
 	    var draggable = _DraggableJs2['default'].closest(e.target);
@@ -148,14 +148,14 @@
 
 	    if (this.options.pickUpDelay === null || this.options.pickUpDelay === 0) {
 	      events.cancelEvent(e);
-	      this.startDrag(draggable, pointerId, pointerXY);
+	      this.startDrag(draggable, pointerId, xy);
 	    } else {
 	      var onpickUpTimeoutHandler = function onpickUpTimeoutHandler() {
 	        this.onpickUpTimeout(pointerId);
 	      };
 	      this.pendingDrags[pointerId] = {
 	        draggable: draggable,
-	        pointerXY: pointerXY,
+	        xy: xy,
 	        timerId: setTimeout(onpickUpTimeoutHandler.bind(this), this.options.pickUpDelay)
 	      };
 	    }
@@ -165,25 +165,25 @@
 	  DragManager.prototype.onpickUpTimeout = function onpickUpTimeout(pointerId) {
 	    if (this.pendingDrags[pointerId]) {
 	      var pendingDrag = this.pendingDrags[pointerId];
-	      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
+	      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.xy);
 	      delete this.pendingDrags[pointerId];
 	    }
 	  };
 
 	  DragManager.prototype.onPointerMove = function onPointerMove(e) {
-	    var pointerXY = events.pointerEventXY(e);
+	    var xy = events.pointerEventXY(e);
 	    var pointerId = events.pointerEventId(e);
 
 	    if (this.drags[pointerId]) {
 	      var drag = this.drags[pointerId];
 	      events.cancelEvent(e);
-	      drag.move(pointerXY);
+	      drag.move(xy);
 	    }
 	    if (this.pendingDrags[pointerId]) {
 	      var pendingDrag = this.pendingDrags[pointerId];
 	      // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
-	      if (this.options.pickUpDistance && math.distance(pendingDrag.pointerXY, pointerXY) > this.options.pickUpDistance) clearTimeout(pendingDrag.timerId);
-	      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.pointerXY);
+	      if (this.options.pickUpDistance && math.distance(pendingDrag.xy, xy) > this.options.pickUpDistance) clearTimeout(pendingDrag.timerId);
+	      this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.xy);
 	      delete this.pendingDrags[pointerId];
 	    }
 	  };
@@ -205,10 +205,10 @@
 	    }
 	  };
 
-	  DragManager.prototype.startDrag = function startDrag(draggable, pointerId, pointerXY) {
+	  DragManager.prototype.startDrag = function startDrag(draggable, pointerId, xy) {
 	    dom.clearSelection();
 	    document.body.setAttribute('data-drag-in-progress', '');
-	    this.drags[pointerId] = new _DragJs2['default'](draggable, pointerXY, defaultOptions);
+	    this.drags[pointerId] = new _DragJs2['default'](draggable, xy, defaultOptions);
 	  };
 
 	  return DragManager;
@@ -265,6 +265,10 @@
 
 	var dom = _interopRequireWildcard(_libDomJs);
 
+	var _libRectJs = __webpack_require__(19);
+
+	var rect = _interopRequireWildcard(_libRectJs);
+
 	// TODO: Animated revert
 	// TODO: Animated resize
 	// TODO: Animated destroy (_beginDrop elsewhere)
@@ -277,17 +281,17 @@
 	// TODO: Copy behaviour
 
 	var Drag = (function () {
-	  function Drag(draggable, pointerXY, options) {
+	  function Drag(draggable, xy, options) {
 	    _classCallCheck(this, Drag);
 
 	    this.options = options;
-	    this.pointerXY = pointerXY;
-	    this.constrainedXY = null;
+	    this.xy = xy;
 	    this.pointerEl = null;
 	    this.helper = null;
 	    this.draggable = draggable;
 	    this.target = null;
 	    this.source = null;
+	    this.captor = null;
 	    this.revertOnCancel = true;
 	    this.dropAction = 'move'; // "copy"
 	    this.cancelAction = 'last'; // "remove", "last"
@@ -296,19 +300,21 @@
 	    this._start();
 	  }
 
-	  Drag.prototype.move = function move(pointerXY) {
-	    this.pointerXY = pointerXY;
-	    this._updateConstrainedPosition();
+	  Drag.prototype.move = function move(xy) {
+	    this.xy = this._getConstrainedPosition(xy);
 
-	    if (!this.scroller || !this.scroller.updateVelocity(this.pointerXY)) {
-	      this.pointerEl = dom.elementFromPoint(pointerXY);
+	    if (!this.scroller || !this.scroller.updateVelocity(this.xy)) {
+	      this.pointerEl = dom.elementFromPoint(this.xy);
 	      if (!this.target || !this.target.willCapture(this.draggable)) this._updateTarget();
 	      // check first to see if the we are in the target bounds
-	      if (this.target) this.target.updatePosition(this.constrainedXY);
-	      this._checkForScrolling();
+	      // note this would be calling for the second time.. FIX THIS
+	      if (this.target && rect.contains(this.target.el.getBoundingClientRect(), this.xy)) {
+	        this.target.updatePosition(this.xy);
+	      }
+	      this._checkForScrolling(this.xy);
 	      events.raiseEvent(this.draggable.el, 'drag', this);
 	    }
-	    this.helper.setPosition(this.constrainedXY);
+	    this.helper.setPosition(this.xy);
 	  };
 
 	  Drag.prototype.end = function end() {
@@ -325,12 +331,12 @@
 	    this.helper = null;
 	  };
 
-	  Drag.prototype._checkForScrolling = function _checkForScrolling() {
+	  Drag.prototype._checkForScrolling = function _checkForScrolling(xy) {
 	    this.scroller = false;
 	    var scrollEls = dom.ancestors(this.target ? this.target.el : document.body, _ScrollableJs2['default'].selector);
 	    scrollEls.every((function (scrollEl) {
 	      var scrollable = new _ScrollableJs2['default'](this, scrollEl);
-	      if (scrollable.tryScroll(this.pointerXY)) {
+	      if (scrollable.tryScroll(xy)) {
 	        this.scroller = scrollable;
 	        return false;
 	      }
@@ -367,18 +373,18 @@
 	    }
 	  };
 
-	  Drag.prototype._updateConstrainedPosition = function _updateConstrainedPosition() {
+	  Drag.prototype._getConstrainedPosition = function _getConstrainedPosition(xy) {
 	    var grip = this.helper.grip;
 	    var size = this.helper.size;
 
 	    if (this.target && this.target.willCapture(this.draggable)) {
-	      var tl = [this.pointerXY[0] - grip[0] * size[0], this.pointerXY[1] - grip[1] * size[1]];
-	      var rect = dom.getPaddingClientRect(this.target.el);
-	      tl[0] = math.coerce(tl[0], rect.left, rect.right - size[0]);
-	      tl[1] = math.coerce(tl[1], rect.top, rect.bottom - size[1]);
-	      this.constrainedXY = [tl[0] + grip[0] * size[0], tl[1] + grip[1] * size[1]];
+	      var tl = [xy[0] - grip[0] * size[0], xy[1] - grip[1] * size[1]];
+	      var _rect = dom.getPaddingClientRect(this.target.el);
+	      tl[0] = math.coerce(tl[0], _rect.left, _rect.right - size[0]);
+	      tl[1] = math.coerce(tl[1], _rect.top, _rect.bottom - size[1]);
+	      return [tl[0] + grip[0] * size[0], tl[1] + grip[1] * size[1]];
 	    } else {
-	      this.constrainedXY = this.pointerXY;
+	      return xy;
 	    }
 	  };
 
@@ -414,7 +420,7 @@
 
 	  Drag.prototype._enterTarget = function _enterTarget(container) {
 	    if (events.raiseEvent(container.el, 'dragenter', this)) {
-	      container.updatePosition(this.constrainedXY);
+	      container.updatePosition(this.xy);
 	      container.enter();
 	      if (container.placeholderSize && this.options.helperResize) {
 	        this.helper.setSizeAndScale(container.placeholderSize, container.placeholderScale);
@@ -432,8 +438,7 @@
 
 	  Drag.prototype._start = function _start() {
 	    this.helper = new _HelperJs2['default'](this);
-	    this._updateConstrainedPosition();
-	    this.pointerEl = dom.elementFromPoint(this.pointerXY);
+	    this.pointerEl = dom.elementFromPoint(this.xy);
 	    this._updateTarget();
 	    events.raiseEvent(this.draggable.el, 'dragstart', this);
 	  };
@@ -518,8 +523,8 @@
 	    this.sensitivityV = Math.min(sensitivityPercent ? sensitivityPercent * this.bounds.height : parseInt(sensitivity, 10), this.bounds.height / 3);
 	  };
 
-	  Scrollable.prototype.tryScroll = function tryScroll(pointerXY) {
-	    this.updateVelocity(pointerXY);
+	  Scrollable.prototype.tryScroll = function tryScroll(xy) {
+	    this.updateVelocity(xy);
 	    if (this.velocity[0] !== 0 || this.velocity[1] !== 0) {
 	      this.offset = [this.el.scrollLeft, this.el.scrollTop];
 	      this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
@@ -836,7 +841,7 @@
 
 	    this.accepts = el.hasAttribute("data-drag-accepts") ? attr.getTokenSet(el, "data-drag-accepts") : attr.getTokenSet(el, "data-drag-tag");
 
-	    this.captures = attr.getTokenSet(el, "data-drag-capture");
+	    this.captures = attr.getTokenSet(el, "data-drag-capture", "*");
 
 	    this.dragOutAction = this.el.getAttribute("data-drag-out-action") || "move";
 	  }
@@ -892,8 +897,10 @@
 	exports.overrideOptions = overrideOptions;
 
 	function getTokenSet(el, attr) {
+	  var def = arguments[2] === undefined ? '' : arguments[2];
+
 	  var set = new Set();
-	  (el.getAttribute(attr) || '').split(' ').forEach(function (t) {
+	  (el.getAttribute(attr) || def).split(' ').forEach(function (t) {
 	    return set.add(t);
 	  });
 	  return set;
@@ -1250,16 +1257,16 @@
 	    this.el.style.margin = "0 !important";
 
 	    var rect = this.drag.draggable.el.getBoundingClientRect();
-	    this.grip = [(this.drag.pointerXY[0] - rect.left) / rect.width, (this.drag.pointerXY[1] - rect.top) / rect.height];
+	    this.grip = [(this.drag.xy[0] - rect.left) / rect.width, (this.drag.xy[1] - rect.top) / rect.height];
 
 	    // set the layout offset and translation synchronously to avoid flickering
 	    // velocityJS will update these values asynchronously.
 	    dom.topLeft(this.el, [-this.grip[0] * this.size[0], -this.grip[1] * this.size[1]]);
-	    dom.translate(this.el, this.drag.pointerXY);
+	    dom.translate(this.el, this.drag.xy);
 	    document.body.appendChild(this.el);
 
 	    this._applyGripOffset();
-	    this.setPosition(this.drag.pointerXY);
+	    this.setPosition(this.drag.xy);
 	    this.setSizeAndScale(this.drag.draggable.originalSize, this.drag.draggable.originalScale, false);
 	    this.el.focus();
 	    this._pickUp();
@@ -1325,7 +1332,7 @@
 	    });
 	  };
 
-	  Helper.prototype.dispose = function dispose(drag) {
+	  Helper.prototype.dispose = function dispose() {
 	    this.el.remove();
 	  };
 
@@ -1393,12 +1400,12 @@
 	  return value > max ? max : value < min ? min : value;
 	}
 
-	function midpointTop(clientRect) {
-	  return clientRect.top + clientRect.height / 2;
+	function midpointTop(rect) {
+	  return rect.top + rect.height / 2;
 	}
 
-	function midpointLeft(clientRect) {
-	  return clientRect.left + clientRect.width / 2;
+	function midpointLeft(rect) {
+	  return rect.left + rect.width / 2;
 	}
 
 	function distance(p1, p2) {
@@ -1690,17 +1697,13 @@
 	    this.style = null;
 	    this.forceFeedClearRequired = true;
 	    this.propertiesForDimension = null;
-	    this.initializeSortable();
-	  }
-
-	  _inherits(Sortable, _Container);
-
-	  Sortable.prototype.initializeSortable = function initializeSortable() {
 	    this.style = getComputedStyle(this.el);
 	    this.initializeDirection();
 	    this.initializePlaceholder();
 	    this.initializeChildAndSiblingEls();
-	  };
+	  }
+
+	  _inherits(Sortable, _Container);
 
 	  Sortable.prototype.initializeDirection = function initializeDirection() {
 	    this.direction = this.el.getAttribute("data-drag-sortable") || "vertical";
@@ -1891,6 +1894,19 @@
 
 	exports["default"] = Sortable;
 	module.exports = exports["default"];
+
+/***/ },
+/* 19 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	exports.__esModule = true;
+	exports.contains = contains;
+
+	function contains(rect, xy) {
+	  return xy[0] >= rect.left && xy[0] <= rect.right && xy[1] >= rect.top && xy[1] <= rect.bottom;
+	}
 
 /***/ }
 /******/ ]);

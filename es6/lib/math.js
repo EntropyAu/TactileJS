@@ -2,12 +2,12 @@ export function coerce(value, min, max) {
   return value > max ? max : (value < min ? min : value);
 }
 
-export function midpointTop(clientRect) {
-  return clientRect.top + clientRect.height / 2;
+export function midpointTop(rect) {
+  return rect.top + rect.height / 2;
 }
 
-export function midpointLeft(clientRect) {
-  return clientRect.left + clientRect.width / 2;
+export function midpointLeft(rect) {
+  return rect.left + rect.width / 2;
 }
 
 export function distance(p1, p2) {

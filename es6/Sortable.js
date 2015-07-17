@@ -17,11 +17,6 @@ export default class Sortable extends Container {
     this.style = null;
     this.forceFeedClearRequired = true;
     this.propertiesForDimension = null;
-    this.initializeSortable();
-  }
-
-
-  initializeSortable() {
     this.style = getComputedStyle(this.el);
     this.initializeDirection();
     this.initializePlaceholder();

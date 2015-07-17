@@ -1,6 +1,6 @@
-export function getTokenSet(el, attr) {
+export function getTokenSet(el, attr, def = '') {
   const set = new Set();
-  (el.getAttribute(attr) || '').split(' ').forEach(t => set.add(t));
+  (el.getAttribute(attr) || def).split(' ').forEach(t => set.add(t));
   return set;
 }
 

@@ -20,7 +20,7 @@ export default class Container {
                  ? attr.getTokenSet(el, 'data-drag-accepts')
                  : attr.getTokenSet(el, 'data-drag-tag');
 
-    this.captures = attr.getTokenSet(el, 'data-drag-capture')
+    this.captures = attr.getTokenSet(el, 'data-drag-capture', '*');
 
     this.dragOutAction = this.el.getAttribute('data-drag-out-action') || 'move';
   }
