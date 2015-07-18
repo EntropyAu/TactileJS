@@ -75,7 +75,6 @@ export default class Placeholder {
         this.el.style.transform = '';
         this.el.style.visibility = '';
         this.el.style.opacity = '';
-        this.el = null;
         break;
     }
   }

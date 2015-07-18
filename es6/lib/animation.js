@@ -1,8 +1,16 @@
+
 export function set(el, target, options = { duration: 0 }, complete = null) {
   if (window["Velocity"]) {
     options.complete = complete;
     options.queue = false;
     Velocity(el, target, options);
+  }
+}
+
+
+export function stop(el) {
+  if (window["Velocity"]) {
+    Velocity(el, 'stop');
   }
 }
 

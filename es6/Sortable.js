@@ -1,7 +1,8 @@
 import Container from "./Container.js";
 import Placeholder from "./Placeholder.js";
-import * as dom from "./lib/dom.js";
 import * as animation from "./lib/animation.js";
+import * as attr from "./lib/attr.js";
+import * as dom from "./lib/dom.js";
 
 export default class Sortable extends Container {
 
@@ -9,48 +10,49 @@ export default class Sortable extends Container {
 
   constructor(el, drag) {
     super(el, drag);
-    this.index = null;
-    this.direction = 'vertical';
-    this.childEls = null;
-    this.siblingEls = null;
-    this.childMeasures = new WeakMap();
-    this.style = null;
-    this.forceFeedClearRequired = true;
-    this.propertiesForDimension = null;
-    this.style = getComputedStyle(this.el);
-    this.initializeDirection();
-    this.initializePlaceholder();
-    this.initializeChildAndSiblingEls();
+    this._index = null;
+    this._drag = drag;
+    this._direction = null;
+    this._directionProperties = null;
+    this._childEls = null;
+    this._siblingEls = null;
+    this._childMeasures = new WeakMap();
+    this._style = getComputedStyle(this.el);
+    this._forceFeedRequired = true;
+
+    this._initializeDirection();
+    this._initializePlaceholder();
+    this._initializeChildAndSiblingEls();
   }
 
 
-  initializeDirection() {
-    this.direction = this.el.getAttribute('data-drag-sortable') || 'vertical';
-    this.directionProperties = this.direction === 'vertical'
-                             ? {
-                                 index: 1,
-                                 translate: 'translateY',
-                                 paddingStart: 'paddingTop',
-                                 endMargin: 'marginBottom',
-                                 layoutOffset: 'offsetTop',
-                                 outerDimension: 'outerHeight'
-                               }
-                             : {
-                                 index: 0,
-                                 translate: 'translateX',
-                                 paddingStart: 'paddingLeft',
-                                 endMargin: 'marginRight',
-                                 layoutOffset: 'offsetLeft',
-                                 outerDimension: 'outerWidth'
-                               };
+  _initializeDirection() {
+    this._direction = this.el.getAttribute('data-drag-sortable') || 'vertical';
+    this._directionProperties = this._direction === 'vertical'
+                              ? {
+                                  index: 1,
+                                  translate: 'translateY',
+                                  paddingStart: 'paddingTop',
+                                  endMargin: 'marginBottom',
+                                  layoutOffset: 'offsetTop',
+                                  outerDimension: 'outerHeight'
+                                }
+                              : {
+                                  index: 0,
+                                  translate: 'translateX',
+                                  paddingStart: 'paddingLeft',
+                                  endMargin: 'marginRight',
+                                  layoutOffset: 'offsetLeft',
+                                  outerDimension: 'outerWidth'
+                                };
   }
 
 
-  initializePlaceholder() {
-    if (this.drag.draggable.originalParentEl === this.el) {
-      this.placeholder = new Placeholder(this.drag, this.drag.draggable.el);
+  _initializePlaceholder() {
+    if (this._drag.draggable.originalParentEl === this.el) {
+      this.placeholder = new Placeholder(this._drag, this._drag.draggable.el);
     } else {
-      this.placeholder = new Placeholder(this.drag);
+      this.placeholder = new Placeholder(this._drag);
       this.el.appendChild(this.placeholder.el);
     }
     this.placeholder.setState("hidden");
@@ -58,12 +60,12 @@ export default class Sortable extends Container {
   }
 
 
-  initializeChildAndSiblingEls() {
-    this.childEls = dom.childElementArray(this.el);
-    this.siblingEls = this.childEls.slice(0);
-    let placeholderElIndex = this.childEls.indexOf(this.placeholder.el);
+  _initializeChildAndSiblingEls() {
+    this._childEls = dom.childElementArray(this.el);
+    this._siblingEls = this._childEls.slice(0);
+    let placeholderElIndex = this._childEls.indexOf(this.placeholder.el);
     if (placeholderElIndex !== -1) {
-      this.siblingEls.splice(placeholderElIndex, 1);
+      this._siblingEls.splice(placeholderElIndex, 1);
     }
   }
 
@@ -74,7 +76,7 @@ export default class Sortable extends Container {
     this.placeholderSize = this.placeholder.size;
     this.placeholderScale = this.placeholder.scale;
     this._removeNegativeMarginFromLastChild();
-    this.childMeasures = new WeakMap();
+    this._childMeasures = new WeakMap();
   }
 
 
@@ -83,12 +85,12 @@ export default class Sortable extends Container {
     if (this.dragOutAction === 'copy' && this.placeholder.isDraggableEl) {
       this.placeholder.setState("materialized");
     } else {
-      this.index = null;
-      this.forceFeedClearRequired = true;
-      this.childMeasures = new WeakMap();
+      this._index = null;
+      this._forceFeedRequired = true;
+      this._childMeasures = new WeakMap();
       this.placeholder.setState("hidden");
       this._addNegativeMarginToLastChild();
-      this.updateChildTranslations();
+      this._updateChildTranslations();
     }
   }
 
@@ -97,35 +99,35 @@ export default class Sortable extends Container {
     if (this.el.children.length === 0) return;
     let lastChildEl = this.el.children[this.el.children.length - 1];
     let lastChildStyle = getComputedStyle(lastChildEl);
-    let newMargin = parseInt(lastChildStyle[this.directionProperties.endMargin], 10) - this.placeholder.outerSize[this.directionProperties.index];
-    lastChildEl.style[this.directionProperties.endMargin] = newMargin + 'px';
+    let newMargin = parseInt(lastChildStyle[this._directionProperties.endMargin], 10) - this.placeholder.outerSize[this._directionProperties.index];
+    lastChildEl.style[this._directionProperties.endMargin] = newMargin + 'px';
   }
 
 
   _removeNegativeMarginFromLastChild() {
     if (this.el.children.length === 0) return;
     let lastChildEl = this.el.children[this.el.children.length - 1];
-    lastChildEl.style[this.directionProperties.endMargin] = '';
+    lastChildEl.style[this._directionProperties.endMargin] = '';
   }
 
 
   finalizeDrop(draggable) {
-    this.clearChildTransforms();
-    this.el.insertBefore(this.placeholder.el, this.siblingEls[this.index]);
-    this.placeholder.dispose(this.drag.action === 'copy');
+    this._clearChildTranslations();
+    this.el.insertBefore(this.placeholder.el, this._siblingEls[this._index]);
+    this.placeholder.dispose(this._drag.action === 'copy');
     this.placeholder = null;
   }
 
 
-  getChildMeasure(el) {
-    let measure = this.childMeasures.get(el);
+  _getChildMeasure(el) {
+    let measure = this._childMeasures.get(el);
     if (!measure) {
       measure = {
-        offset: el[this.directionProperties.layoutOffset] - parseInt(this.style[this.directionProperties.paddingStart], 10),
-        measure: dom[this.directionProperties.outerDimension](el, true),
+        offset: el[this._directionProperties.layoutOffset] - parseInt(this._style[this._directionProperties.paddingStart], 10),
+        measure: dom[this._directionProperties.outerDimension](el, true),
         translation: null
       };
-      this.childMeasures.set(el, measure);
+      this._childMeasures.set(el, measure);
     }
     return measure;
   }
@@ -133,85 +135,85 @@ export default class Sortable extends Container {
 
   updatePosition(xy) {
     // if it's empty, answer is simple
-    if (this.siblingEls.length === 0) {
-      if (this.index !== 0) {
-        this.index = 0;
-        this.updateChildTranslations();
+    if (this._siblingEls.length === 0) {
+      if (this._index !== 0) {
+        this._index = 0;
+        this._updateChildTranslations();
       }
       return;
     }
 
-    this._removeNegativeMarginFromLastChild()
-
-    const bounds = this.el.getBoundingClientRect();
+    const bounds = this._drag.cache.scrollInvalidatedCache(this.el, 'cr', () => this.el.getBoundingClientRect());
+    const sl = this._drag.cache.scrollInvalidatedCache(this.el, 'sl', () => this.el.scrollLeft);
+    const st = this._drag.cache.scrollInvalidatedCache(this.el, 'st', () => this.el.scrollTop);
     // calculate the position of the item relative to this container
-    const innerXY = [xy[0] - bounds.left + this.el.scrollLeft - parseInt(this.style.paddingLeft, 10),
-                     xy[1] - bounds.top  + this.el.scrollTop  - parseInt(this.style.paddingTop, 10)];
-    const adjustedXY = [innerXY[0] - this.drag.helper.grip[0] * this.drag.helper.size[0],
-                        innerXY[1] - this.drag.helper.grip[1] * this.drag.helper.size[1]];
+    const innerXY = [xy[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
+                     xy[1] - bounds.top  + st - parseInt(this._style.paddingTop, 10)];
+    const adjustedXY = [innerXY[0] - this._drag.helper.grip[0] * this._drag.helper.size[0],
+                        innerXY[1] - this._drag.helper.grip[1] * this._drag.helper.size[1]];
 
     let naturalOffset = 0;
     let newIndex = 0;
     do {
-      let measure = this.getChildMeasure(this.siblingEls[newIndex]);
-      if (adjustedXY[this.directionProperties.index] < naturalOffset + measure.measure / 2) break;
+      let measure = this._getChildMeasure(this._siblingEls[newIndex]);
+      if (adjustedXY[this._directionProperties.index] < naturalOffset + measure.measure / 2) break;
       naturalOffset += measure.measure;
       newIndex++;
     }
-    while (newIndex < this.siblingEls.length);
+    while (newIndex < this._siblingEls.length);
 
-    if (this.index !== newIndex) {
-      this.index = newIndex;
-      this.updateChildTranslations();
+    if (this._index !== newIndex) {
+      this._index = newIndex;
+      this._updateChildTranslations();
     }
   }
 
 
-  updateChildTranslations() {
+  _updateChildTranslations() {
     let offset = 0;
     let placeholderOffset = null;
 
-    this.siblingEls.forEach(function (el, index) {
-      if (index === this.index) {
+    this._siblingEls.forEach(function (el, index) {
+      if (index === this._index) {
         placeholderOffset = offset;
-        offset += this.placeholder.outerSize[this.directionProperties.index];
+        offset += this.placeholder.outerSize[this._directionProperties.index];
       }
-      let measure = this.getChildMeasure(el);
+      let measure = this._getChildMeasure(el);
       let newTranslation = offset - measure.offset
-      if (measure.translation !== newTranslation || this.forceFeedClearRequired) {
+      if (measure.translation !== newTranslation || this._forceFeedRequired) {
         measure.translation = newTranslation;
-        let props = this.forceFeedClearRequired
-                  ? { [this.directionProperties.translate]: [measure.translation, Math.random() / 100] }
-                  : { [this.directionProperties.translate]: measure.translation + Math.random() / 100 };
-        animation.set(el, props, this.drag.options.reorderAnimation);
+        let props = this._forceFeedRequired
+                  ? { [this._directionProperties.translate]: [measure.translation, Math.random() / 100] }
+                  : { [this._directionProperties.translate]: measure.translation + Math.random() / 100 };
+        animation.set(el, props, this._drag.options.reorderAnimation);
       }
       offset += measure.measure;
     }.bind(this));
 
     if (placeholderOffset === null)  placeholderOffset = offset;
-    let placeholderMeasure = this.getChildMeasure(this.placeholder.el);
+    let placeholderMeasure = this._getChildMeasure(this.placeholder.el);
     let newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
-    if (placeholderMeasure.translation !== newPlaceholderTranslation || this.forceFeedCleanRequired) {
-      animation.set(this.placeholder.el, { [this.directionProperties.translate]: newPlaceholderTranslation });
+    if (placeholderMeasure.translation !== newPlaceholderTranslation || this._forceFeedRequired) {
+      animation.set(this.placeholder.el, { [this._directionProperties.translate]: newPlaceholderTranslation });
       placeholderMeasure.translation = newPlaceholderTranslation;
     }
-    this.forceFeedClearRequired = false;
+    this._forceFeedRequired = false;
   }
 
 
-  clearChildTransforms() {
+  _clearChildTranslations() {
     // synchronously clear the transform styles (rather than calling
     // velocity.js) to avoid flickering when the dom elements are reordered
-    this.siblingEls.forEach(function(el) {
-      Velocity(el, 'stop');
+    this._siblingEls.forEach(function(el) {
+      animation.stop(el);
       el.setAttribute('style', '');
     });
-    this.forceFeedCleanRequired = true;
+    this._forceFeedRequired = true;
   }
 
 
   dispose() {
-    this.clearChildTransforms();
+    this._clearChildTranslations();
     if (this.placeholder) this.placeholder.dispose()
     super();
   }

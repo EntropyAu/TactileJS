@@ -5,57 +5,75 @@ export default class Helper {
 
   constructor(drag) {
     this.options = drag.options;
-    this.drag = drag;
-    this.el = null;
+    this._drag = drag;
+    this._el = null;
     this.grip = null;
     this.size = [0,0];
     this.scale = [1,1];
-    this.position = [0,0];
-    this.initialize();
+    this._position = [0,0];
+    this._initialize();
   }
 
-  initialize() {
-    this.el = this.drag.draggable.el.cloneNode(true);
-    this.el.removeAttribute("id");
-    this.el.setAttribute("data-drag-helper", "");
-    this.el.style.position = "fixed";
+  _initialize() {
+    this._el = this._drag.draggable.el.cloneNode(true);
+    this._el.removeAttribute("id");
+    this._el.setAttribute("data-drag-helper", "");
+
+    const s = this._el.style;
+    if (this.options.helperCloneStyles) {
+      dom.copyComputedStyles(this._drag.draggable.el, this._el);
+      s.position = 'fixed';
+      s.display = 'block';
+      s.zIndex = '100000';
+      s.top = '';
+      s.left = '';
+      s.webkitTransform = '';
+      s.mozTransform = '';
+      s.msTransform = '';
+      s.transform = '';
+      s.webkitTransition = '';
+      s.mozTransition = '';
+      s.msTransition = '';
+      s.transition = '';
+      s.boxShadow = '';
+    };
 
     // any existing transitions may screw up velocity"s work
     // TODO: deal with iOS where a 10ms transition makes movement smoother
-    this.el.style.webkitTransition = "none";
-    this.el.style.mozTransition = "none";
-    this.el.style.msTransition = "none";
-    this.el.style.transition = "none";
-    this.el.style.margin = "0 !important";
+    s.webkitTransition = "none";
+    s.mozTransition = "none";
+    s.msTransition = "none";
+    s.transition = "none";
+    s.margin = "0 !important";
 
-    const rect = this.drag.draggable.el.getBoundingClientRect();
-    this.grip = [(this.drag.xy[0] - rect.left) / rect.width,
-                 (this.drag.xy[1] - rect.top) / rect.height];
+    const rect = this._drag.draggable.el.getBoundingClientRect();
+    this.grip = [(this._drag.xy[0] - rect.left) / rect.width,
+                 (this._drag.xy[1] - rect.top) / rect.height];
 
     // set the layout offset and translation synchronously to avoid flickering
     // velocityJS will update these values asynchronously.
-    dom.topLeft(this.el, [-this.grip[0] * this.size[0], -this.grip[1] * this.size[1]]);
-    dom.translate(this.el, this.drag.xy);
-    document.body.appendChild(this.el);
+    dom.topLeft(this._el, [-this.grip[0] * this.size[0], -this.grip[1] * this.size[1]]);
+    dom.translate(this._el, this._drag.xy);
+    document.body.appendChild(this._el);
 
-    this._applyGripOffset();
-    this.setPosition(this.drag.xy);
-    this.setSizeAndScale(this.drag.draggable.originalSize,
-                         this.drag.draggable.originalScale,
+    this._offsetGrip();
+    this.setPosition(this._drag.xy);
+    this.setSizeAndScale(this._drag.draggable.originalSize,
+                         this._drag.draggable.originalScale,
                          false);
-    this.el.focus()
+    this._el.focus()
     this._pickUp();
   }
 
 
   setPosition(positionXY) {
-    if (this.position[0] === positionXY[0]
-     && this.position[1] === positionXY[1]) return;
-    animation.set(this.el, {
+    if (this._position[0] === positionXY[0]
+     && this._position[1] === positionXY[1]) return;
+    animation.set(this._el, {
       translateX: positionXY[0],
       translateY: positionXY[1]
     });
-    this.position = positionXY;
+    this._position = positionXY;
   }
 
 
@@ -65,7 +83,7 @@ export default class Helper {
      && this.scale[0] === scale[0]
      && this.scale[1] === scale[1]) return;
 
-    animation.set(this.el, {
+    animation.set(this._el, {
       width: size[0],
       height: size[1],
       left: (-this.grip[0] * size[0]),
@@ -80,42 +98,43 @@ export default class Helper {
 
 
   animateToElementAndPutDown(el, complete) {
-    const rect = el.getBoundingClientRect();
+    animation.stop(this._el);
 
+    const rect = el.getBoundingClientRect();
     // prevent velocity from immediately applying the new value, when the
     // new and old values are equal. This causes flickering in some
     // circumstances
     const minimalDelta = 0.0001;
-    animation.set(this.el, {
+    animation.set(this._el, {
       rotateZ: 0,
       boxShadowBlur: 0,
       top: [0, 0 + minimalDelta],
       left: [0, 0 + minimalDelta],
-      translateX: [rect.left, this.position[0] - this.grip[0] * el.offsetWidth + minimalDelta],
-      translateY: [rect.top, this.position[1] - this.grip[1] * el.offsetHeight + minimalDelta],
+      translateX: [rect.left, this._position[0] - this.grip[0] * el.offsetWidth + minimalDelta],
+      translateY: [rect.top, this._position[1] - this.grip[1] * el.offsetHeight + minimalDelta],
       width: el.offsetWidth,
       height: el.offsetHeight
     }, this.options.dropAnimation, complete);
   }
 
 
-  _pickUp() {
-    animation.set(this.el, {
-      rotateZ: [this.options.helperRotation, 0],
-      boxShadowBlur: this.options.helperShadowSize
-    }, this.options._pickUpAnimation);
+  dispose() {
+    this._el.remove();
   }
 
 
-  _applyGripOffset() {
-    animation.set(this.el, {
+  _pickUp() {
+    animation.set(this._el, {
+      rotateZ: [this.options.helperRotation, 0],
+      boxShadowBlur: this.options.helperShadowSize
+    }, this.options.pickUpAnimation);
+  }
+
+
+  _offsetGrip() {
+    animation.set(this._el, {
       left: (-this.grip[0] * this.size[0]),
       top: (-this.grip[1] * this.size[1]),
     });
-  }
-
-
-  dispose() {
-    this.el.remove();
   }
 }

@@ -4,12 +4,13 @@ import Sortable from './Sortable.js';
 import * as dom from "./lib/dom.js";
 
 const containerSelector = '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]';
+const placeholderSelector = '[data-drag-placeholder]';
 
 export default class ContainerFactory {
 
   static closest(el) {
     el = dom.closest(el, containerSelector);
-    while (el && dom.closest(el, '[data-drag-placeholder]'))
+    while (el && dom.closest(el, placeholderSelector))
       el = dom.closest(el.parentElement, containerSelector)
     return el;
   }

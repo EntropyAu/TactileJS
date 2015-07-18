@@ -1,3 +1,4 @@
+import Cache from './Cache.js';
 import Container from './Container.js';
 import ContainerFactory from './ContainerFactory.js';
 import Helper from './Helper.js';
@@ -9,14 +10,13 @@ import * as math from './lib/math.js';
 import * as dom from './lib/dom.js';
 import * as rect from './lib/rect.js';
 
-
-// TODO: Animated revert
-// TODO: Animated resize
 // TODO: Animated destroy (_beginDrop elsewhere)
-// TODO: Animated pickUp
+// TODO: Event properties
+// TODO: Fade helper when drop will cancel
+// TODO: Copy CSS styles inlines
+// TODO: Non-animated copy
 
-// TODO: Scroll only if scrollable is an ancestor of the target element
-// TODO: Scroll does not propagate if target element is tl
+// TODO: Fix scaling behaviour
 // TODO: Scroll adjust scroll maxV based on number of items
 // TODO: Scroll trigger placeholder update when scroll stops
 // TODO: Copy behaviour
@@ -26,35 +26,31 @@ export default class Drag {
     this.options = options;
     this.xy = xy;
     this.pointerEl = null;
-    this.helper = null;
-    this.draggable = draggable;
-    this.target = null;
-    this.source = null;
-    this.fence = null;
-    this.revertOnCancel = true;
-    this.dropAction = "move"; // "copy"
-    this.cancelAction = "last"; // "remove", "last"
 
-    this._knownContainers = new Map();
+    this.draggable = draggable;
+    this.helper = new Helper(this);
+    this.target = null;
+    this.fence = null;
+    this.cache = new Cache();
+
+    this.dropAction = "move"; // "move", "copy"
+    this.cancelAction = "last"; // "remove", "last"
+    this._knownTargets = new Map();
     this._start();
   }
 
   _start() {
-    this.helper = new Helper(this);
     this.pointerEl = dom.elementFromPoint(this.xy);
     this._updateTarget();
-    this.fence = Fence.closestForDraggable(this.draggable);
+    this.fence = Fence.closestForDraggable(this, this.draggable);
     events.raiseEvent(this.draggable.el, 'dragstart', this)
   }
 
-  move(xy) {
-    if (this.fence) {
-      this.xy = this.fence.getConstrainedXY(this.helper, xy);
-    } else {
-      this.xy = xy;
-    }
 
-    if (!this.scroller || !this.scroller.updateVelocity(this.xy)) {
+  move(xy) {
+    this.xy = this.fence ? this.fence.getConstrainedXY(xy) : xy;
+
+    if (!this.scroller || !this.scroller._updateVelocity(this.xy)) {
       this.pointerEl = dom.elementFromPoint(this.xy);
       this._updateTarget();
       // check first to see if the we are in the target bounds
@@ -77,9 +73,9 @@ export default class Drag {
 
 
   dispose() {
-    this._knownContainers.forEach((t) => t.dispose());
+    this._knownTargets.forEach((t) => t.dispose());
     this.helper.dispose();
-    this.helper = null;
+    this.cache.dispose();
   }
 
 
@@ -111,7 +107,7 @@ export default class Drag {
 
 
   _beginCancel() {
-    this.draggable.restoreOriginal();
+    this.draggable.finalizeRevert();
     // restore draggable to original position
     this.dispose();
   }
@@ -150,10 +146,10 @@ export default class Drag {
 
 
   _getContainer(el) {
-    let container = this._knownContainers.get(el);
+    let container = this._knownTargets.get(el);
     if (!container) {
       container = ContainerFactory.makeContainer(el, this);
-      this._knownContainers.set(el, container);
+      this._knownTargets.set(el, container);
     }
     return container;
   }
@@ -179,6 +175,4 @@ export default class Drag {
       this.target = null;
     }
   }
-
-
 }

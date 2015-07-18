@@ -9,10 +9,8 @@ export default class Droppable extends Container {
   }
 
 
-  updatePosition(xy) {
-  }
+  updatePosition(xy) {}
 
 
-  finalizeDrop(draggable) {
-  }
+  finalizeDrop(draggable) {}
 }

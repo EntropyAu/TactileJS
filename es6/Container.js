@@ -10,11 +10,10 @@ export default class Container {
   constructor(el, drag) {
     this.el = el;
     this.drag = drag;
+    this.options = drag.options;
     this.placeholder = null;
     this.placeholderSize = null;
     this.placeholderScale = 1;
-
-    this.options = drag.options;
 
     this.accepts = el.hasAttribute('data-drag-accepts')
                  ? attr.getAttributeSet(el, 'data-drag-accepts')

@@ -10,57 +10,55 @@ export default class Scrollable {
 
   constructor(drag, el) {
     this.el = el;
-    this.velocity = [0,0];
-    this.offset = [0,0];
+    this._drag = drag;
     this.options = drag.options;
-    this.horizontalEnabled = false;
-    this.verticalEnabled = false;
-    this.lastUpdate = null;
-    this.initialize();
+    this._bounds = null;
+    this._offset = null;
+    this._velocity = [0,0];
+    this._hEnabled = false;
+    this._vEnabled = false;
+    this._hSensitivity = 0;
+    this._vSensitivity = 0;
+    this._requestId = null;
+    this._lastUpdate = null;
+
+    this._initializeDirections();
+    this._initializeBounds();
+    this._initializeSensitivity();
   }
 
-  initialize() {
-    this.initializeDirections();
-    this.initializeBounds();
-    this.initializeSensitivity();
+  _initializeDirections() {
+    const style = getComputedStyle(this.el);
+    this._hEnabled = style.overflowX === 'auto' || style.overflowX === 'scroll';
+    this._vEnabled = style.overflowY === 'auto' || style.overflowY === 'scroll';
   }
 
-  initializeDirections() {
-    let style = getComputedStyle(this.el);
-    this.horizontalEnabled = (style.overflowX === 'auto' || style.overflowX === 'scroll')
-    this.verticalEnabled = (style.overflowY === 'auto' || style.overflowY === 'scroll')
-  }
-
-  initializeBounds() {
+  _initializeBounds() {
     if (this.el.tagName === 'BODY') {
-      this.bounds = {
-        left: 0,
-        top: 0,
-        width: document.documentElement.clientWidth,
-        height: document.documentElement.clientHeight,
-        right: document.documentElement.clientWidth,
-        bottom: document.documentElement.clientHeight
-      }
+      const w = document.documentElement.clientWidth;
+      const h = document.documentElement.clientHeight;
+      this._bounds = { left: 0, top: 0, width: w, height: h, right: w, bottom: h };
     } else {
-      this.bounds = this.el.getBoundingClientRect();
+      this._bounds = this.el.getBoundingClientRect();
     }
   }
 
-  initializeSensitivity() {
+
+  _initializeSensitivity() {
     const sensitivity = this.options.scrollSensitivity;
-    const sensitivityPercent = sensitivity.toString().indexOf('%') !== -1
-                             ? parseInt(sensitivity, 10) / 100
-                             : null;
-    this.sensitivityH = Math.min(sensitivityPercent ? sensitivityPercent * this.bounds.width : parseInt(sensitivity, 10), this.bounds.width / 3);
-    this.sensitivityV = Math.min(sensitivityPercent ? sensitivityPercent * this.bounds.height : parseInt(sensitivity, 10), this.bounds.height / 3);
+    const percent = sensitivity.toString().indexOf('%') !== -1
+                  ? parseInt(sensitivity, 10) / 100
+                  : null;
+    this._hSensitivity = Math.min(percent ? percent * this._bounds.width  : parseInt(sensitivity, 10), this._bounds.width / 3);
+    this._vSensitivity = Math.min(percent ? percent * this._bounds.height : parseInt(sensitivity, 10), this._bounds.height / 3);
   }
 
 
   tryScroll(xy) {
-    this.updateVelocity(xy);
-    if (this.velocity[0] !== 0 || this.velocity[1] !== 0) {
-      this.offset = [this.el.scrollLeft, this.el.scrollTop];
-      this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
+    this._updateVelocity(xy);
+    if (this._velocity[0] !== 0 || this._velocity[1] !== 0) {
+      this._offset = [this.el.scrollLeft, this.el.scrollTop];
+      this._requestId = requestAnimationFrame(this.continueScroll.bind(this));
       return true;
     }
     return false;
@@ -68,49 +66,49 @@ export default class Scrollable {
 
 
   continueScroll() {
-    this.requestId = null;
+    this._requestId = null;
     // calculate the amount we want to scroll
     let currentUpdate = new Date();
-    let elapsedTimeMs = this.lastUpdate ? currentUpdate - this.lastUpdate : 16;
-    this.offset = [this.offset[0] + this.velocity[0] * elapsedTimeMs,
-                   this.offset[1] + this.velocity[1] * elapsedTimeMs];
+    let elapsedTimeMs = this._lastUpdate ? currentUpdate - this._lastUpdate : 16;
+    this._offset = [this._offset[0] + this._velocity[0] * elapsedTimeMs,
+                   this._offset[1] + this._velocity[1] * elapsedTimeMs];
 
     // scroll the scrollable
-    if (this.velocity[0] !== 0) this.el.scrollLeft = this.offset[0];
-    if (this.velocity[1] !== 0) this.el.scrollTop  = this.offset[1];
-    this.lastUpdate = currentUpdate;
+    if (this._velocity[0] !== 0) this.el.scrollLeft = this._offset[0];
+    if (this._velocity[1] !== 0) this.el.scrollTop  = this._offset[1];
+    this._lastUpdate = currentUpdate;
 
     // schedule the next scroll update
-    if (this.velocity[0] !== 0 || this.velocity[1] !== 0)
-      this.requestId = requestAnimationFrame(this.continueScroll.bind(this));
+    if (this._velocity[0] !== 0 || this._velocity[1] !== 0)
+      this._requestId = requestAnimationFrame(this.continueScroll.bind(this));
   }
 
 
   stopScroll() {
-    cancelAnimationFrame(this.requestId);
-    this.requestId = null;
-    this.lastUpdate = null;
+    cancelAnimationFrame(this._requestId);
+    this._requestId = null;
+    this._lastUpdate = null;
   }
 
 
-  updateVelocity(xy) {
+  _updateVelocity(xy) {
     const maxV = this.options.scrollSpeed;
-    const b = this.bounds;
+    const b = this._bounds;
 
     let v = [0,0];
     if (xy[0] >= b.left && xy[0] <= b.right && xy[1] >= b.top && xy[1] <= b.bottom) {
 
-      if (this.horizontalEnabled) {
-        if (xy[0] > b.right - this.sensitivityH && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right-this.sensitivityH, b.right], [0, +maxV]);
-        if (xy[0] < b.left + this.sensitivityH && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left+this.sensitivityH, b.left], [0, -maxV]);
+      if (this._hEnabled) {
+        if (xy[0] > b.right - this._hSensitivity && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right-this._hSensitivity, b.right], [0, +maxV]);
+        if (xy[0] < b.left + this._hSensitivity && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left+this._hSensitivity, b.left], [0, -maxV]);
       }
 
-      if (this.verticalEnabled) {
-        if (xy[1] > b.bottom - this.sensitivityV && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom-this.sensitivityV, b.bottom], [0, +maxV]);
-        if (xy[1] < b.top + this.sensitivityV && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top+this.sensitivityV, b.top], [0, -maxV]);
+      if (this._vEnabled) {
+        if (xy[1] > b.bottom - this._vSensitivity && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom-this._vSensitivity, b.bottom], [0, +maxV]);
+        if (xy[1] < b.top + this._vSensitivity && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top+this._vSensitivity, b.top], [0, -maxV]);
       }
     }
-    this.velocity = v;
-    return this.velocity[0] !== 0 || this.velocity[1] !== 0;
+    this._velocity = v;
+    return this._velocity[0] !== 0 || this._velocity[1] !== 0;
   }
 }

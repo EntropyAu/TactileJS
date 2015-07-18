@@ -48,8 +48,9 @@ export default class Draggable {
   }
 
 
-  restoreOriginal() {
-    this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
+  finalizeRevert() {
+    this.originalParentEl.insertBefore(
+      this.el,
+      this.originalParentEl.children[this.originalIndex]);
   }
-
 }

@@ -1,7 +1,5 @@
 // selectors
 
-
-
 export function indexOf(el) {
   return Array.prototype.indexOf.call(el.parentElement.children, el);
 }
@@ -30,6 +28,13 @@ export function parents(el, selector) {
   }
   return parents;
 }
+
+
+export function copyComputedStyles(sourceEl, targetEl) {
+  targetEl.style.cssText = getComputedStyle(sourceEl).cssText;
+  Array.from(sourceEl.children).forEach((el,i) => copyComputedStyles(el, targetEl.children[i]));
+}
+
 
 export function getPaddingClientRect(el) {
   const style = getComputedStyle(el);

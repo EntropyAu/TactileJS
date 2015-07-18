@@ -8,6 +8,7 @@ import * as math from './lib/math.js';
 const defaultOptions = {
   cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
   helperResize: true,
+  helperCloneStyles: true,
   pickUpAnimation:   { duration: 300, easing: 'ease-in-out' },
   pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
   resizeAnimation:   { duration: 300, easing: 'ease-in-out' },
@@ -29,35 +30,35 @@ const defaultOptions = {
 export default class DragManager {
   constructor() {
     this.options = defaultOptions;
-    this.pendingDrags = {};
-    this.drags = {};
+    this._pendingDrags = {};
+    this._drags = {};
 
-    this.onPointerDownListener = this.onPointerDown.bind(this);
-    this.onPointerMoveListener = this.onPointerMove.bind(this);
-    this.onPointerUpListener   = this.onPointerUp.bind(this);
-    this.bindPointerEvents();
+    this._onPointerDownListener = this._onPointerDown.bind(this);
+    this._onPointerMoveListener = this._onPointerMove.bind(this);
+    this._onPointerUpListener   = this._onPointerUp.bind(this);
+    this._bindPointerEvents();
   }
 
-  bindPointerEvents() {
-    window.addEventListener(events.pointerDownEvent, this.onPointerDownListener, true);
+  _bindPointerEvents() {
+    window.addEventListener(events.pointerDownEvent, this._onPointerDownListener, true);
   }
 
-  unbindPointerEvents() {
-    window.removeEventListener(events.pointerDownEvent, this.onPointerDownListener);
+  _unbindPointerEvents() {
+    window.removeEventListener(events.pointerDownEvent, this._onPointerDownListener);
   }
 
-  bindPointerEventsForDragging(el) {
-    window.addEventListener(events.pointerMoveEvent, this.onPointerMoveListener, true);
-    window.addEventListener(events.pointerUpEvent, this.onPointerUpListener, false);
-    el.addEventListener(events.pointerMoveEvent, this.onPointerMoveListener, true);
-    el.addEventListener(events.pointerUpEvent, this.onPointerUpListener, false);
+  _bindPointerEventsForDragging(el) {
+    window.addEventListener(events.pointerMoveEvent, this._onPointerMoveListener, true);
+    window.addEventListener(events.pointerUpEvent, this._onPointerUpListener, false);
+    el.addEventListener(events.pointerMoveEvent, this._onPointerMoveListener, true);
+    el.addEventListener(events.pointerUpEvent, this._onPointerUpListener, false);
   }
 
-  unbindPointerEventsForDragging(el) {
-    window.removeEventListener(events.pointerMoveEvent, this.onPointerMoveListener, true);
-    window.removeEventListener(events.pointerUpEvent, this.onPointerUpListener, false);
-    el.removeEventListener(events.pointerMoveEvent, this.onPointerMoveListener, true);
-    el.removeEventListener(events.pointerUpEvent, this.onPointerUpListener, false);
+  _unbindPointerEventsForDragging(el) {
+    window.removeEventListener(events.pointerMoveEvent, this._onPointerMoveListener, true);
+    window.removeEventListener(events.pointerUpEvent, this._onPointerUpListener, false);
+    el.removeEventListener(events.pointerMoveEvent, this._onPointerMoveListener, true);
+    el.removeEventListener(events.pointerUpEvent, this._onPointerUpListener, false);
   }
 
 
@@ -65,7 +66,7 @@ export default class DragManager {
   /* EVENT LISTENERS */
   /*******************/
 
-  onPointerDown(e) {
+  _onPointerDown(e) {
     if (e.which !== 0 && e.which !== 1) return;
     if (dom.ancestors(e.target, this.options.cancel).length > 0) return;
 
@@ -83,68 +84,70 @@ export default class DragManager {
       this.startDrag(draggable, pointerId, xy);
     } else {
       let onpickUpTimeoutHandler = function() {
-        this.onpickUpTimeout(pointerId);
+        this._onPickUpTimeout(pointerId);
       }
-      this.pendingDrags[pointerId] = {
+      this._pendingDrags[pointerId] = {
         draggable: draggable,
         xy: xy,
         timerId: setTimeout(onpickUpTimeoutHandler.bind(this), this.options.pickUpDelay)
       };
     }
-    this.bindPointerEventsForDragging(e.target)
+    this._bindPointerEventsForDragging(e.target)
   }
 
-  onpickUpTimeout(pointerId) {
-    if (this.pendingDrags[pointerId]) {
-      let pendingDrag = this.pendingDrags[pointerId];
+  _onPickUpTimeout(pointerId) {
+    if (this._pendingDrags[pointerId]) {
+      let pendingDrag = this._pendingDrags[pointerId];
       this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.xy);
-      delete this.pendingDrags[pointerId];
+      delete this._pendingDrags[pointerId];
     }
   }
 
 
-  onPointerMove(e) {
+  _onPointerMove(e) {
     const xy = events.pointerEventXY(e);
     const pointerId = events.pointerEventId(e);
 
-    if (this.drags[pointerId]) {
-      let drag = this.drags[pointerId];
+    if (this._drags[pointerId]) {
+      let drag = this._drags[pointerId];
       events.cancelEvent(e);
       drag.move(xy);
     }
-    if (this.pendingDrags[pointerId]) {
-      let pendingDrag = this.pendingDrags[pointerId];
+    if (this._pendingDrags[pointerId]) {
+      let pendingDrag = this._pendingDrags[pointerId];
       // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
       if (this.options.pickUpDistance && math.distance(pendingDrag.xy, xy) > this.options.pickUpDistance)
       clearTimeout(pendingDrag.timerId);
       this.startDrag(pendingDrag.draggable, pointerId, pendingDrag.xy);
-      delete this.pendingDrags[pointerId];
+      delete this._pendingDrags[pointerId];
     }
   }
 
 
-  onPointerUp(e) {
+  _onPointerUp(e) {
     const pointerId = events.pointerEventId(e);
 
-    if (this.drags[pointerId]) {
+    if (this._drags[pointerId]) {
       events.cancelEvent(e);
-      this.drags[pointerId].end();
-      delete this.drags[pointerId];
-      if (Object.keys(this.drags).length == 0) {
+      this._drags[pointerId].end();
+      delete this._drags[pointerId];
+      if (Object.keys(this._drags).length == 0) {
         document.body.removeAttribute('data-drag-in-progress');
-        this.unbindPointerEventsForDragging(e.target);
+        this._unbindPointerEventsForDragging(e.target);
       }
     }
-    if (this.pendingDrags[pointerId]) {
-      clearTimeout(this.pendingDrags[pointerId].timerId);
+    if (this._pendingDrags[pointerId]) {
+      clearTimeout(this._pendingDrags[pointerId].timerId);
     }
   }
 
   startDrag(draggable, pointerId, xy) {
     dom.clearSelection();
     document.body.setAttribute('data-drag-in-progress', '');
-    this.drags[pointerId] = new Drag(draggable, xy, defaultOptions);
+    let drag = new Drag(draggable, xy, defaultOptions);
+    this._drags[pointerId] = drag;
   }
 }
+
 
 window.dragManager = new DragManager();
