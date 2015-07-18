@@ -12,9 +12,23 @@ export function isChild(el, childEl) {
 
 export function closest(el, selector) {
   if (el === null) return;
-  do { if (el.matches && el.matches(selector)) return el; }
+  do {
+    if (el.matches && el.matches(selector)) {
+      return el;
+    }
+  }
   while (el = el.parentNode)
   return null;
+}
+
+export function parents(el, selector) {
+  const parents = [];
+  while (el = el.parentNode) {
+    if (el.matches && el.matches(selector)) {
+      parents.push(el);
+    }
+  }
+  return parents;
 }
 
 export function getPaddingClientRect(el) {

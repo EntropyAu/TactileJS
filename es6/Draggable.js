@@ -43,8 +43,8 @@ export default class Draggable {
     this.originalOffset = [this.el.offsetLeft, this.el.offsetTop];
     this.originalScale = dom.clientScale(el);
     this.tags = el.hasAttribute('data-drag-tag')
-              ? attr.getTokenSet(el, 'data-drag-tag')
-              : attr.getTokenSet(el.parentElement, 'data-drag-tag');
+              ? attr.getAttributeSet(el, 'data-drag-tag')
+              : attr.getAttributeSet(el.parentElement, 'data-drag-tag');
   }
 
 

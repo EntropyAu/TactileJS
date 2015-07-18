@@ -17,25 +17,20 @@ export default class Container {
     this.options = drag.options;
 
     this.accepts = el.hasAttribute('data-drag-accepts')
-                 ? attr.getTokenSet(el, 'data-drag-accepts')
-                 : attr.getTokenSet(el, 'data-drag-tag');
+                 ? attr.getAttributeSet(el, 'data-drag-accepts')
+                 : attr.getAttributeSet(el, 'data-drag-tag');
 
-    this.captures = attr.getTokenSet(el, 'data-drag-capture', '*');
-
-    this.dragOutAction = this.el.getAttribute('data-drag-out-action') || 'move';
+    this.dragOutAction = attr.getAttributeWithDefaults(el, 'data-drag-out-action', 'move', 'move');
   }
 
 
   willAccept(draggable) {
     if (this.el === draggable.originalParentEl) return true;
     if (this.el.hasAttribute('data-drag-disabled')) return false;
-    return this.accepts.has('*') || [...draggable.tags].some(t => this.accepts.has(t));
+    return this.accepts.has('*')
+        || Array.from(draggable.tags).some(t => this.accepts.has(t));
   }
 
-
-  willCapture(draggable) {
-    return this.captures.has('*') || [...draggable.tags].some(t => this.captures.has(t));
-  }
 
   enter() {
     this.el.classList.add(this.options.containerHoverClass);

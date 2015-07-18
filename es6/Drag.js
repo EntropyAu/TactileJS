@@ -3,6 +3,7 @@ import ContainerFactory from './ContainerFactory.js';
 import Helper from './Helper.js';
 import Placeholder from './Placeholder.js';
 import Scrollable from './Scrollable.js';
+import Fence from './Fence.js';
 import * as events from './lib/events.js';
 import * as math from './lib/math.js';
 import * as dom from './lib/dom.js';
@@ -29,7 +30,7 @@ export default class Drag {
     this.draggable = draggable;
     this.target = null;
     this.source = null;
-    this.captor = null;
+    this.fence = null;
     this.revertOnCancel = true;
     this.dropAction = "move"; // "copy"
     this.cancelAction = "last"; // "remove", "last"
@@ -38,14 +39,24 @@ export default class Drag {
     this._start();
   }
 
+  _start() {
+    this.helper = new Helper(this);
+    this.pointerEl = dom.elementFromPoint(this.xy);
+    this._updateTarget();
+    this.fence = Fence.closestForDraggable(this.draggable);
+    events.raiseEvent(this.draggable.el, 'dragstart', this)
+  }
 
   move(xy) {
-    this.xy = this._getConstrainedPosition(xy);
+    if (this.fence) {
+      this.xy = this.fence.getConstrainedXY(this.helper, xy);
+    } else {
+      this.xy = xy;
+    }
 
     if (!this.scroller || !this.scroller.updateVelocity(this.xy)) {
       this.pointerEl = dom.elementFromPoint(this.xy);
-      if (!this.target || !this.target.willCapture(this.draggable))
-        this._updateTarget();
+      this._updateTarget();
       // check first to see if the we are in the target bounds
       // note this would be calling for the second time.. FIX THIS
       if (this.target && rect.contains(this.target.el.getBoundingClientRect(), this.xy)) {
@@ -115,22 +126,6 @@ export default class Drag {
   }
 
 
-  _getConstrainedPosition(xy) {
-    const grip = this.helper.grip;
-    const size = this.helper.size;
-
-    if (this.target && this.target.willCapture(this.draggable)) {
-      let tl = [xy[0] - grip[0] * size[0], xy[1] - grip[1] * size[1]];
-      let rect = dom.getPaddingClientRect(this.target.el);
-      tl[0] = math.coerce(tl[0], rect.left, rect.right - size[0]);
-      tl[1] = math.coerce(tl[1], rect.top, rect.bottom - size[1]);
-      return [tl[0] + grip[0] * size[0], tl[1] + grip[1] * size[1]];
-    } else {
-      return xy;
-    }
-  }
-
-
   _updateTarget() {
     const oldTarget = this.target;
     let newTarget = this._findAcceptingTarget(this.pointerEl);
@@ -186,10 +181,4 @@ export default class Drag {
   }
 
 
-  _start() {
-    this.helper = new Helper(this);
-    this.pointerEl = dom.elementFromPoint(this.xy);
-    this._updateTarget();
-    events.raiseEvent(this.draggable.el, 'dragstart', this)
-  }
 }

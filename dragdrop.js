@@ -253,6 +253,10 @@
 
 	var _ScrollableJs2 = _interopRequireDefault(_ScrollableJs);
 
+	var _FenceJs = __webpack_require__(20);
+
+	var _FenceJs2 = _interopRequireDefault(_FenceJs);
+
 	var _libEventsJs = __webpack_require__(13);
 
 	var events = _interopRequireWildcard(_libEventsJs);
@@ -291,7 +295,7 @@
 	    this.draggable = draggable;
 	    this.target = null;
 	    this.source = null;
-	    this.captor = null;
+	    this.fence = null;
 	    this.revertOnCancel = true;
 	    this.dropAction = 'move'; // "copy"
 	    this.cancelAction = 'last'; // "remove", "last"
@@ -300,12 +304,24 @@
 	    this._start();
 	  }
 
+	  Drag.prototype._start = function _start() {
+	    this.helper = new _HelperJs2['default'](this);
+	    this.pointerEl = dom.elementFromPoint(this.xy);
+	    this._updateTarget();
+	    this.fence = _FenceJs2['default'].closestForDraggable(this.draggable);
+	    events.raiseEvent(this.draggable.el, 'dragstart', this);
+	  };
+
 	  Drag.prototype.move = function move(xy) {
-	    this.xy = this._getConstrainedPosition(xy);
+	    if (this.fence) {
+	      this.xy = this.fence.getConstrainedXY(this.helper, xy);
+	    } else {
+	      this.xy = xy;
+	    }
 
 	    if (!this.scroller || !this.scroller.updateVelocity(this.xy)) {
 	      this.pointerEl = dom.elementFromPoint(this.xy);
-	      if (!this.target || !this.target.willCapture(this.draggable)) this._updateTarget();
+	      this._updateTarget();
 	      // check first to see if the we are in the target bounds
 	      // note this would be calling for the second time.. FIX THIS
 	      if (this.target && rect.contains(this.target.el.getBoundingClientRect(), this.xy)) {
@@ -373,21 +389,6 @@
 	    }
 	  };
 
-	  Drag.prototype._getConstrainedPosition = function _getConstrainedPosition(xy) {
-	    var grip = this.helper.grip;
-	    var size = this.helper.size;
-
-	    if (this.target && this.target.willCapture(this.draggable)) {
-	      var tl = [xy[0] - grip[0] * size[0], xy[1] - grip[1] * size[1]];
-	      var _rect = dom.getPaddingClientRect(this.target.el);
-	      tl[0] = math.coerce(tl[0], _rect.left, _rect.right - size[0]);
-	      tl[1] = math.coerce(tl[1], _rect.top, _rect.bottom - size[1]);
-	      return [tl[0] + grip[0] * size[0], tl[1] + grip[1] * size[1]];
-	    } else {
-	      return xy;
-	    }
-	  };
-
 	  Drag.prototype._updateTarget = function _updateTarget() {
 	    var oldTarget = this.target;
 	    var newTarget = this._findAcceptingTarget(this.pointerEl);
@@ -434,13 +435,6 @@
 	      container.leave();
 	      this.target = null;
 	    }
-	  };
-
-	  Drag.prototype._start = function _start() {
-	    this.helper = new _HelperJs2['default'](this);
-	    this.pointerEl = dom.elementFromPoint(this.xy);
-	    this._updateTarget();
-	    events.raiseEvent(this.draggable.el, 'dragstart', this);
 	  };
 
 	  return Drag;
@@ -601,6 +595,7 @@
 	exports.indexOf = indexOf;
 	exports.isChild = isChild;
 	exports.closest = closest;
+	exports.parents = parents;
 	exports.getPaddingClientRect = getPaddingClientRect;
 	exports.childElementArray = childElementArray;
 	exports.ancestors = ancestors;
@@ -632,9 +627,21 @@
 	function closest(el, selector) {
 	  if (el === null) return;
 	  do {
-	    if (el.matches && el.matches(selector)) return el;
+	    if (el.matches && el.matches(selector)) {
+	      return el;
+	    }
 	  } while (el = el.parentNode);
 	  return null;
+	}
+
+	function parents(el, selector) {
+	  var parents = [];
+	  while (el = el.parentNode) {
+	    if (el.matches && el.matches(selector)) {
+	      parents.push(el);
+	    }
+	  }
+	  return parents;
 	}
 
 	function getPaddingClientRect(el) {
@@ -839,11 +846,9 @@
 
 	    this.options = drag.options;
 
-	    this.accepts = el.hasAttribute("data-drag-accepts") ? attr.getTokenSet(el, "data-drag-accepts") : attr.getTokenSet(el, "data-drag-tag");
+	    this.accepts = el.hasAttribute("data-drag-accepts") ? attr.getAttributeSet(el, "data-drag-accepts") : attr.getAttributeSet(el, "data-drag-tag");
 
-	    this.captures = attr.getTokenSet(el, "data-drag-capture", "*");
-
-	    this.dragOutAction = this.el.getAttribute("data-drag-out-action") || "move";
+	    this.dragOutAction = attr.getAttributeWithDefaults(el, "data-drag-out-action", "move", "move");
 	  }
 
 	  Container.matches = function matches(el) {
@@ -855,16 +860,8 @@
 
 	    if (this.el === draggable.originalParentEl) return true;
 	    if (this.el.hasAttribute("data-drag-disabled")) return false;
-	    return this.accepts.has("*") || [].concat(draggable.tags).some(function (t) {
+	    return this.accepts.has("*") || Array.from(draggable.tags).some(function (t) {
 	      return _this.accepts.has(t);
-	    });
-	  };
-
-	  Container.prototype.willCapture = function willCapture(draggable) {
-	    var _this2 = this;
-
-	    return this.captures.has("*") || [].concat(draggable.tags).some(function (t) {
-	      return _this2.captures.has(t);
 	    });
 	  };
 
@@ -893,17 +890,37 @@
 	'use strict';
 
 	exports.__esModule = true;
-	exports.getTokenSet = getTokenSet;
+	exports.getAttributeWithDefaults = getAttributeWithDefaults;
+	exports.getAttributeSetWithDefaults = getAttributeSetWithDefaults;
+	exports.getAttributeSet = getAttributeSet;
 	exports.overrideOptions = overrideOptions;
 
-	function getTokenSet(el, attr) {
-	  var def = arguments[2] === undefined ? '' : arguments[2];
+	function getAttributeWithDefaults(element, attributeName) {
+	  var defaultIfPresent = arguments[2] === undefined ? '' : arguments[2];
+	  var defaultIfNotPresent = arguments[3] === undefined ? null : arguments[3];
 
-	  var set = new Set();
-	  (el.getAttribute(attr) || def).split(' ').forEach(function (t) {
-	    return set.add(t);
-	  });
-	  return set;
+	  if (element.hasAttribute(attributeName)) {
+	    return element.getAttribute(attributeName) || defaultIfPresent;
+	  } else {
+	    return defaultIfNotPresent;
+	  }
+	}
+
+	function getAttributeSetWithDefaults(element, attributeName, defaultIfPresent, defaultIfNotPresent) {
+	  if (element.hasAttribute(attributeName)) {
+	    var attributeValue = element.getAttribute(attributeName);
+	    if (attributeValue && attributeValue.length > 0) {
+	      return new Set(attributeValue.split(/[\ ,]/g));
+	    } else {
+	      return new Set(defaultIfPresent);
+	    }
+	  } else {
+	    return new Set(defaultIfNotPresent);
+	  }
+	}
+
+	function getAttributeSet(element, attributeName) {
+	  return getAttributeSetWithDefaults(element, attributeName, [], []);
 	}
 
 	function overrideOptions(el) {
@@ -1448,7 +1465,7 @@
 	    this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
 	    this.originalOffset = [this.el.offsetLeft, this.el.offsetTop];
 	    this.originalScale = dom.clientScale(el);
-	    this.tags = el.hasAttribute("data-drag-tag") ? attr.getTokenSet(el, "data-drag-tag") : attr.getTokenSet(el.parentElement, "data-drag-tag");
+	    this.tags = el.hasAttribute("data-drag-tag") ? attr.getAttributeSet(el, "data-drag-tag") : attr.getAttributeSet(el.parentElement, "data-drag-tag");
 	  }
 
 	  Draggable.closest = function closest(el) {
@@ -1907,6 +1924,83 @@
 	function contains(rect, xy) {
 	  return xy[0] >= rect.left && xy[0] <= rect.right && xy[1] >= rect.top && xy[1] <= rect.bottom;
 	}
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	exports.__esModule = true;
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var _libDomJs = __webpack_require__(3);
+
+	var dom = _interopRequireWildcard(_libDomJs);
+
+	var _libAttrJs = __webpack_require__(5);
+
+	var attr = _interopRequireWildcard(_libAttrJs);
+
+	var _libMathJs = __webpack_require__(14);
+
+	var math = _interopRequireWildcard(_libMathJs);
+
+	var fenceAttribute = "data-drag-fence";
+	var fenceSelector = "[data-drag-fence]";
+
+	var Fence = (function () {
+	  function Fence(el) {
+	    _classCallCheck(this, Fence);
+
+	    this.el = el;
+	    this.constrains = attr.getAttributeSetWithDefaults(el, fenceAttribute, ["*"], []);
+	  }
+
+	  Fence.closestForDraggable = function closestForDraggable(draggable) {
+	    var el = draggable.el;
+	    while (el = dom.closest(el.parentElement, fenceSelector)) {
+	      var candidateFence = new Fence(el);
+	      if (candidateFence.willConstrain(draggable)) {
+	        return candidateFence;
+	      }
+	    }
+	    return null;
+	  };
+
+	  Fence.prototype.willConstrain = function willConstrain(draggable) {
+	    var _this = this;
+
+	    return this.constrains.has("*") || Array.from(draggable.tags).some(function (t) {
+	      return _this.captures.has(t);
+	    });
+	  };
+
+	  Fence.prototype.getConstrainedXY = function getConstrainedXY(helper, xy) {
+	    var grip = helper.grip;
+	    var size = helper.size;
+
+	    // adjust for helper grip offset
+	    var tl = [xy[0] - grip[0] * size[0], xy[1] - grip[1] * size[1]];
+
+	    // coerce the top-left coordinates to fit within the fence element bounds
+	    // TODO cache this
+	    var rect = dom.getPaddingClientRect(this.el);
+	    tl[0] = math.coerce(tl[0], rect.left, rect.right - size[0]);
+	    tl[1] = math.coerce(tl[1], rect.top, rect.bottom - size[1]);
+
+	    // return the coerced values, restoring the helper grip offset
+	    return [tl[0] + grip[0] * size[0], tl[1] + grip[1] * size[1]];
+	  };
+
+	  return Fence;
+	})();
+
+	exports["default"] = Fence;
+	module.exports = exports["default"];
 
 /***/ }
 /******/ ]);
