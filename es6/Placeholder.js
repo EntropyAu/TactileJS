@@ -24,7 +24,7 @@ export default class Placeholder {
     this.isDraggableEl = !!draggableEl;
     this.el = draggableEl;
     this.state = "none";
-    this.initialize();
+    this._initialize();
   }
 
   setState(state, animate = true) {
@@ -48,7 +48,7 @@ export default class Placeholder {
     this.el.style.visibility = '';
   }
 
-  initialize(draggable) {
+  _initialize(draggable) {
     if (!this.isDraggableEl) {
       this.el = this.drag.draggable.el.cloneNode(true);
       this.el.removeAttribute('id');

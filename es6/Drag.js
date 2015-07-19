@@ -25,8 +25,8 @@ export default class Drag {
     this.xy = xy;
     this.pointerEl = null;
 
+    this.helper = new Helper(this, draggable);
     this.draggable = draggable;
-    this.helper = new Helper(this);
     this.source = null;
     this.target = null;
     this.fence = null;
@@ -38,6 +38,7 @@ export default class Drag {
     this._knownTargets = new Map();
     this._start(xy);
   }
+
 
   _start(xy) {
     this.pointerEl = dom.elementFromPoint(xy);
@@ -96,12 +97,17 @@ export default class Drag {
 
   _beginDrop() {
     events.raiseEvent(this.draggable.el, 'beginDrop', this)
-    if (this.target.placeholder) {
+    if (this.target.placeholder && (this.action === 'copy' || this.action === 'move')) {
       this.helper.animateToElementAndPutDown(this.target.placeholder.el, function() {
         requestAnimationFrame(function() {
           this.target.finalizeDrop(this.draggable);
           this.dispose();
         }.bind(this));
+      }.bind(this));
+    }
+    if (this.action === 'delete') {
+      this.helper.animateDelete(function() {
+        this.dispose();
       }.bind(this));
     }
   }
@@ -133,7 +139,8 @@ export default class Drag {
     if (newTarget || this.revertPosition !== 'last') {
       if (oldTarget) this._leaveTarget(oldTarget);
       if (newTarget) this._enterTarget(newTarget);
-      this._computeAction();
+      let [action, copy] = this._computeAction(this.source, newTarget);
+      this._setAction(action, copy);
     }
   }
 
@@ -189,24 +196,24 @@ export default class Drag {
   // delete | *      | delete | original
   _computeAction(source, target) {
     if (source === target) return ['move', 'original'];
-
-    let [action, appliesTo] = ['move', 'original'];
+    let [action, copy] = ['move', false];
     const leave = this.source ? this.source.leaveAction : 'move';
     const enter = this.target ? this.target.enterAction : 'revert';
     if (leave === 'copy' || enter === 'copy') {
       action = 'copy';
-      appliesTo = 'copy';
+      copy = true;
     }
     if (enter === 'revert') action = 'revert';
     if (leave === 'delete' || enter === 'delete') action = 'delete';
-    return [action, appliesTo];
+    return [action, copy];
   }
 
 
-  setAction(action, appliesTo) {
+  _setAction(action, copy) {
     if (this.action === action) return;
     this.helper.setAction(action);
     this.action = action;
+    this.copy = copy;
   }
 
 

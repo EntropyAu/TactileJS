@@ -3,7 +3,7 @@ import * as animation from "./lib/animation.js";
 
 export default class Helper {
 
-  constructor(drag) {
+  constructor(drag, draggable) {
     this.options = drag.options;
     this._drag = drag;
     this._el = null;
@@ -11,17 +11,17 @@ export default class Helper {
     this.size = [0,0];
     this.scale = [1,1];
     this._position = [0,0];
-    this._initialize();
+    this._initialize(draggable);
   }
 
-  _initialize() {
-    this._el = this._drag.draggable.el.cloneNode(true);
+  _initialize(draggable) {
+    this._el = draggable.el.cloneNode(true);
     this._el.removeAttribute("id");
     this._el.setAttribute("data-drag-helper", "");
 
     const s = this._el.style;
     if (this.options.helperCloneStyles) {
-      dom.copyComputedStyles(this._drag.draggable.el, this._el);
+      dom.copyComputedStyles(draggable.el, this._el);
       dom.stripClasses(this._el);
       s.setProperty('position', 'fixed', 'important');
       s.setProperty('display', 'block', 'important');
@@ -47,7 +47,7 @@ export default class Helper {
     s.transition = "none";
     s.margin = "0";
 
-    const rect = this._drag.draggable.el.getBoundingClientRect();
+    const rect = draggable.el.getBoundingClientRect();
     this.grip = [(this._drag.xy[0] - rect.left) / rect.width,
                  (this._drag.xy[1] - rect.top) / rect.height];
 
@@ -59,8 +59,8 @@ export default class Helper {
 
     this._offsetGrip();
     this.setPosition(this._drag.xy);
-    this.setSizeAndScale(this._drag.draggable.originalSize,
-                         this._drag.draggable.originalScale,
+    this.setSizeAndScale(draggable.originalSize,
+                         draggable.originalScale,
                          false);
     this._el.focus()
     this._pickUp();
@@ -126,6 +126,12 @@ export default class Helper {
       width: el.offsetWidth,
       height: el.offsetHeight
     }, this.options.dropAnimation, complete);
+  }
+
+
+  animateDelete(complete) {
+    animation.stop(this._el);
+    animation.set(this._el, { opacity: 0 }, this.options.deleteAnimation, complete);
   }
 
 

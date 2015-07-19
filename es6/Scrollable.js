@@ -1,5 +1,5 @@
 import * as dom from "./lib/dom.js";
-import * as rect from "./lib/dom.js";
+import * as rect from "./lib/rect.js";
 
 export default class Scrollable {
 

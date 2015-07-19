@@ -178,6 +178,20 @@ export function clearSelection() {
 
 // utilities
 
+export function scrollDirections(el) {
+  const style = getComputedStyle(this.el);
+  let he = style.overflowX === 'auto' || style.overflowX === 'scroll',
+      ve = style.overflowY === 'auto' || style.overflowY === 'scroll',
+      st = el.scrollTop,
+      sl = el.scrollLeft;
+  return {
+    up: ve ? st : 0,
+    left: he ? sl : 0,
+    down: ve ? (el.scrollHeight - el.clientHeight) - st : 0,
+    right: he ? (el.scrollWidth - el.clientWidth) - sl : 0
+  }
+}
+
 export function canScrollDown(el) {
   return el.scrollTop < el.scrollHeight - el.clientHeight;
 }
@@ -192,12 +206,4 @@ export function canScrollRight(el) {
 
 export function canScrollLeft(el) {
   return el.scrollLeft > 0;
-}
-
-export function canScrollVertical(el) {
-  return el.scrollHeight > el.clientHeight;
-}
-
-export function canScrollHorizontal(el) {
-  return el.scrollWidth > el.clientWidth;
 }

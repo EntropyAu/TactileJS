@@ -78,21 +78,21 @@
 	  cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
 	  helperResize: true,
 	  helperCloneStyles: true,
+	  animation: false,
 	  pickUpAnimation: { duration: 300, easing: 'ease-in-out' },
 	  pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
 	  resizeAnimation: { duration: 300, easing: 'ease-in-out' },
 	  dropAnimation: { duration: 300, easing: 'ease-in-out' },
 	  reorderAnimation: { duration: 150, easing: 'ease-in-out' },
+	  deleteAnimation: { duration: 300, easing: 'ease-out' },
 	  pickUpDelay: 0,
 	  pickUpDistance: 0,
 	  helperRotation: -1,
 	  helperShadowSize: 15,
 	  placeholderClass: 'dd-drag-placeholder',
 	  containerHoverClass: 'dd-drag-hover',
-	  scrollDelay: 500,
-	  scrollSensitivity: '15%',
-	  scrollSpeed: 1,
-	  animation: false
+	  scrollSensitivity: '20%',
+	  scrollSpeed: 1
 	};
 
 	var DragManager = (function () {
@@ -296,8 +296,8 @@
 	    this.xy = xy;
 	    this.pointerEl = null;
 
+	    this.helper = new _HelperJs2['default'](this, draggable);
 	    this.draggable = draggable;
-	    this.helper = new _HelperJs2['default'](this);
 	    this.source = null;
 	    this.target = null;
 	    this.fence = null;
@@ -364,12 +364,17 @@
 
 	  Drag.prototype._beginDrop = function _beginDrop() {
 	    events.raiseEvent(this.draggable.el, 'beginDrop', this);
-	    if (this.target.placeholder) {
+	    if (this.target.placeholder && (this.action === 'copy' || this.action === 'move')) {
 	      this.helper.animateToElementAndPutDown(this.target.placeholder.el, (function () {
 	        requestAnimationFrame((function () {
 	          this.target.finalizeDrop(this.draggable);
 	          this.dispose();
 	        }).bind(this));
+	      }).bind(this));
+	    }
+	    if (this.action === 'delete') {
+	      this.helper.animateDelete((function () {
+	        this.dispose();
 	      }).bind(this));
 	    }
 	  };
@@ -399,7 +404,13 @@
 	    if (newTarget || this.revertPosition !== 'last') {
 	      if (oldTarget) this._leaveTarget(oldTarget);
 	      if (newTarget) this._enterTarget(newTarget);
-	      this._computeAction();
+
+	      var _computeAction2 = this._computeAction(this.source, newTarget);
+
+	      var action = _computeAction2[0];
+	      var copy = _computeAction2[1];
+
+	      this._setAction(action, copy);
 	    }
 	  };
 
@@ -450,25 +461,25 @@
 
 	  Drag.prototype._computeAction = function _computeAction(source, target) {
 	    if (source === target) return ['move', 'original'];
-
 	    var action = 'move';
-	    var appliesTo = 'original';
+	    var copy = false;
 
 	    var leave = this.source ? this.source.leaveAction : 'move';
 	    var enter = this.target ? this.target.enterAction : 'revert';
 	    if (leave === 'copy' || enter === 'copy') {
 	      action = 'copy';
-	      appliesTo = 'copy';
+	      copy = true;
 	    }
 	    if (enter === 'revert') action = 'revert';
 	    if (leave === 'delete' || enter === 'delete') action = 'delete';
-	    return [action, appliesTo];
+	    return [action, copy];
 	  };
 
-	  Drag.prototype.setAction = function setAction(action, appliesTo) {
+	  Drag.prototype._setAction = function _setAction(action, copy) {
 	    if (this.action === action) return;
 	    this.helper.setAction(action);
 	    this.action = action;
+	    this.copy = copy;
 	  };
 
 	  Drag.prototype._leaveTarget = function _leaveTarget(container) {
@@ -644,12 +655,11 @@
 	exports.elementFromPoint = elementFromPoint;
 	exports.elementFromPointViaSelection = elementFromPointViaSelection;
 	exports.clearSelection = clearSelection;
+	exports.scrollDirections = scrollDirections;
 	exports.canScrollDown = canScrollDown;
 	exports.canScrollUp = canScrollUp;
 	exports.canScrollRight = canScrollRight;
 	exports.canScrollLeft = canScrollLeft;
-	exports.canScrollVertical = canScrollVertical;
-	exports.canScrollHorizontal = canScrollHorizontal;
 
 	function indexOf(el) {
 	  return Array.prototype.indexOf.call(el.parentElement.children, el);
@@ -839,6 +849,20 @@
 
 	// utilities
 
+	function scrollDirections(el) {
+	  var style = getComputedStyle(this.el);
+	  var he = style.overflowX === 'auto' || style.overflowX === 'scroll',
+	      ve = style.overflowY === 'auto' || style.overflowY === 'scroll',
+	      st = el.scrollTop,
+	      sl = el.scrollLeft;
+	  return {
+	    up: ve ? st : 0,
+	    left: he ? sl : 0,
+	    down: ve ? el.scrollHeight - el.clientHeight - st : 0,
+	    right: he ? el.scrollWidth - el.clientWidth - sl : 0
+	  };
+	}
+
 	function canScrollDown(el) {
 	  return el.scrollTop < el.scrollHeight - el.clientHeight;
 	}
@@ -853,14 +877,6 @@
 
 	function canScrollLeft(el) {
 	  return el.scrollLeft > 0;
-	}
-
-	function canScrollVertical(el) {
-	  return el.scrollHeight > el.clientHeight;
-	}
-
-	function canScrollHorizontal(el) {
-	  return el.scrollWidth > el.clientWidth;
 	}
 
 /***/ },
@@ -1132,7 +1148,7 @@
 	    this.isDraggableEl = !!draggableEl;
 	    this.el = draggableEl;
 	    this.state = 'none';
-	    this.initialize();
+	    this._initialize();
 	  }
 
 	  Placeholder.closest = function closest(el) {
@@ -1163,7 +1179,7 @@
 	    this.el.style.visibility = '';
 	  };
 
-	  Placeholder.prototype.initialize = function initialize(draggable) {
+	  Placeholder.prototype._initialize = function _initialize(draggable) {
 	    if (!this.isDraggableEl) {
 	      this.el = this.drag.draggable.el.cloneNode(true);
 	      this.el.removeAttribute('id');
@@ -1422,8 +1438,6 @@
 	  }
 
 	  _inherits(Droppable, _Container);
-
-	  Droppable.prototype.updatePosition = function updatePosition(xy) {};
 
 	  Droppable.prototype.finalizeDrop = function finalizeDrop(draggable) {};
 
@@ -1720,7 +1734,7 @@
 	var animation = _interopRequireWildcard(_libAnimationJs);
 
 	var Helper = (function () {
-	  function Helper(drag) {
+	  function Helper(drag, draggable) {
 	    _classCallCheck(this, Helper);
 
 	    this.options = drag.options;
@@ -1730,17 +1744,17 @@
 	    this.size = [0, 0];
 	    this.scale = [1, 1];
 	    this._position = [0, 0];
-	    this._initialize();
+	    this._initialize(draggable);
 	  }
 
-	  Helper.prototype._initialize = function _initialize() {
-	    this._el = this._drag.draggable.el.cloneNode(true);
+	  Helper.prototype._initialize = function _initialize(draggable) {
+	    this._el = draggable.el.cloneNode(true);
 	    this._el.removeAttribute("id");
 	    this._el.setAttribute("data-drag-helper", "");
 
 	    var s = this._el.style;
 	    if (this.options.helperCloneStyles) {
-	      dom.copyComputedStyles(this._drag.draggable.el, this._el);
+	      dom.copyComputedStyles(draggable.el, this._el);
 	      dom.stripClasses(this._el);
 	      s.setProperty("position", "fixed", "important");
 	      s.setProperty("display", "block", "important");
@@ -1766,7 +1780,7 @@
 	    s.transition = "none";
 	    s.margin = "0";
 
-	    var rect = this._drag.draggable.el.getBoundingClientRect();
+	    var rect = draggable.el.getBoundingClientRect();
 	    this.grip = [(this._drag.xy[0] - rect.left) / rect.width, (this._drag.xy[1] - rect.top) / rect.height];
 
 	    // set the layout offset and translation synchronously to avoid flickering
@@ -1777,7 +1791,7 @@
 
 	    this._offsetGrip();
 	    this.setPosition(this._drag.xy);
-	    this.setSizeAndScale(this._drag.draggable.originalSize, this._drag.draggable.originalScale, false);
+	    this.setSizeAndScale(draggable.originalSize, draggable.originalScale, false);
 	    this._el.focus();
 	    this._pickUp();
 	  };
@@ -1840,6 +1854,11 @@
 	    }, this.options.dropAnimation, complete);
 	  };
 
+	  Helper.prototype.animateDelete = function animateDelete(complete) {
+	    animation.stop(this._el);
+	    animation.set(this._el, { opacity: 0 }, this.options.deleteAnimation, complete);
+	  };
+
 	  Helper.prototype.dispose = function dispose() {
 	    this._el.remove();
 	  };
@@ -1882,7 +1901,9 @@
 
 	var dom = _interopRequireWildcard(_libDomJs);
 
-	var rect = _interopRequireWildcard(_libDomJs);
+	var _libRectJs = __webpack_require__(17);
+
+	var rect = _interopRequireWildcard(_libRectJs);
 
 	var Scrollable = (function () {
 	  function Scrollable(drag, el) {
