@@ -1,4 +1,5 @@
 import * as dom from "./lib/dom.js";
+import * as rect from "./lib/dom.js";
 
 export default class Scrollable {
 
@@ -96,13 +97,11 @@ export default class Scrollable {
     const b = this._bounds;
 
     let v = [0,0];
-    if (xy[0] >= b.left && xy[0] <= b.right && xy[1] >= b.top && xy[1] <= b.bottom) {
-
+    if (rect.contains(b, xy)) {
       if (this._hEnabled) {
         if (xy[0] > b.right - this._hSensitivity && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right-this._hSensitivity, b.right], [0, +maxV]);
         if (xy[0] < b.left + this._hSensitivity && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left+this._hSensitivity, b.left], [0, -maxV]);
       }
-
       if (this._vEnabled) {
         if (xy[1] > b.bottom - this._vSensitivity && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom-this._vSensitivity, b.bottom], [0, +maxV]);
         if (xy[1] < b.top + this._vSensitivity && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top+this._vSensitivity, b.top], [0, -maxV]);

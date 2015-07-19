@@ -282,8 +282,6 @@
 	// TODO: Animated destroy (_beginDrop elsewhere)
 	// TODO: Event properties
 	// TODO: Fade helper when drop will cancel
-	// TODO: Copy CSS styles inlines
-	// TODO: Non-animated copy
 
 	// TODO: Fix scaling behaviour
 	// TODO: Scroll adjust scroll maxV based on number of items
@@ -300,19 +298,22 @@
 
 	    this.draggable = draggable;
 	    this.helper = new _HelperJs2['default'](this);
+	    this.source = null;
 	    this.target = null;
 	    this.fence = null;
-	    this.cache = new _CacheJs2['default']();
+	    this.action = null;
+	    this.copy = false;
 
-	    this.dropAction = 'move'; // "move", "copy"
-	    this.cancelAction = 'last'; // "remove", "last"
+	    this.cache = new _CacheJs2['default']();
+	    this.revertPosition = 'last'; // "remove", "last"
 	    this._knownTargets = new Map();
-	    this._start();
+	    this._start(xy);
 	  }
 
-	  Drag.prototype._start = function _start() {
-	    this.pointerEl = dom.elementFromPoint(this.xy);
+	  Drag.prototype._start = function _start(xy) {
+	    this.pointerEl = dom.elementFromPoint(xy);
 	    this._updateTarget();
+	    this.source = this.target;
 	    this.fence = _FenceJs2['default'].closestForDraggable(this, this.draggable);
 	    events.raiseEvent(this.draggable.el, 'dragstart', this);
 	  };
@@ -392,12 +393,13 @@
 
 	  Drag.prototype._updateTarget = function _updateTarget() {
 	    var oldTarget = this.target;
-	    var newTarget = this._findAcceptingTarget(this.pointerEl);
+	    var newTarget = this.source && this.source.leaveAction === 'delete' ? null : this._findAcceptingTarget(this.pointerEl);
 	    if (newTarget === oldTarget) return;
 
-	    if (newTarget || this.cancelAction !== 'last') {
+	    if (newTarget || this.revertPosition !== 'last') {
 	      if (oldTarget) this._leaveTarget(oldTarget);
 	      if (newTarget) this._enterTarget(newTarget);
+	      this._computeAction();
 	    }
 	  };
 
@@ -429,6 +431,44 @@
 	      }
 	      this.target = container;
 	    }
+	  };
+
+	  // SOURCE | TARGET | ACTION | DRAGGABLE
+	  // NULL   | NULL   | revert | original
+	  // NULL   | move   | move   | original
+	  // NULL   | copy   | copy   | copy
+	  // NULL   | delete | delete | original
+	  // move   | NULL   | revert | original
+	  // move   | move   | move   | original
+	  // move   | copy   | copy   | copy
+	  // move   | delete | delete | original
+	  // copy   | NULL   | delete | copy
+	  // copy   | move   | copy   | copy
+	  // copy   | copy   | copy   | copy
+	  // copy   | delete | delete | copy
+	  // delete | *      | delete | original
+
+	  Drag.prototype._computeAction = function _computeAction(source, target) {
+	    if (source === target) return ['move', 'original'];
+
+	    var action = 'move';
+	    var appliesTo = 'original';
+
+	    var leave = this.source ? this.source.leaveAction : 'move';
+	    var enter = this.target ? this.target.enterAction : 'revert';
+	    if (leave === 'copy' || enter === 'copy') {
+	      action = 'copy';
+	      appliesTo = 'copy';
+	    }
+	    if (enter === 'revert') action = 'revert';
+	    if (leave === 'delete' || enter === 'delete') action = 'delete';
+	    return [action, appliesTo];
+	  };
+
+	  Drag.prototype.setAction = function setAction(action, appliesTo) {
+	    if (this.action === action) return;
+	    this.helper.setAction(action);
+	    this.action = action;
 	  };
 
 	  Drag.prototype._leaveTarget = function _leaveTarget(container) {
@@ -538,7 +578,8 @@
 
 	    this.accepts = el.hasAttribute("data-drag-accepts") ? attr.getAttributeSet(el, "data-drag-accepts") : attr.getAttributeSet(el, "data-drag-tag");
 
-	    this.dragOutAction = attr.getAttributeWithDefaults(el, "data-drag-out-action", "move", "move");
+	    this.leaveAction = attr.getAttributeWithDefaults(el, "data-drag-leave-action", "move");
+	    this.enterAction = attr.getAttributeWithDefaults(el, "data-drag-enter-action", "move");
 	  }
 
 	  Container.matches = function matches(el) {
@@ -566,6 +607,8 @@
 	  Container.prototype.dispose = function dispose() {
 	    this.el.classList.remove(this.options.containerHoverClass);
 	  };
+
+	  Container.prototype.updatePosition = function updatePosition(xy) {};
 
 	  return Container;
 	})();
@@ -1004,6 +1047,7 @@
 	  Canvas.prototype.updatePosition = function updatePosition(xy) {
 	    var _this = this;
 
+	    _Container.prototype.updatePosition.call(this, xy);
 	    var rect = this._drag.cache.scrollInvalidatedCache(this.el, "cr", function () {
 	      return _this.el.getBoundingClientRect();
 	    });
@@ -1030,7 +1074,7 @@
 
 	  Canvas.prototype.leave = function leave() {
 	    _Container.prototype.leave.call(this);
-	    if (this.dragOutAction === "copy" && this.placeholder.isOriginal) {
+	    if (this.leaveAction === "copy" && this.placeholder.isOriginal) {
 	      this.placeholder.setState("materialized");
 	    } else {
 	      this.placeholder.setState("hidden");
@@ -1506,7 +1550,7 @@
 
 	  Sortable.prototype.leave = function leave() {
 	    _Container.prototype.leave.call(this);
-	    if (this.dragOutAction === "copy" && this.placeholder.isDraggableEl) {
+	    if (this.leaveAction === "copy" && this.placeholder.isDraggableEl) {
 	      this.placeholder.setState("materialized");
 	    } else {
 	      this._index = null;
@@ -1555,6 +1599,7 @@
 	  Sortable.prototype.updatePosition = function updatePosition(xy) {
 	    var _this = this;
 
+	    _Container.prototype.updatePosition.call(this, xy);
 	    // if it's empty, answer is simple
 	    if (this._siblingEls.length === 0) {
 	      if (this._index !== 0) {
@@ -1737,6 +1782,17 @@
 	    this._pickUp();
 	  };
 
+	  Helper.prototype.setAction = function setAction(action) {
+	    var opacity = 1;
+	    switch (action) {
+	      case "revert":
+	        opacity = 0.50;break;
+	      case "delete":
+	        opacity = 0.25;break;
+	    }
+	    animation.set(this._el, { opacity: opacity }, { duration: 200 });
+	  };
+
 	  Helper.prototype.setPosition = function setPosition(positionXY) {
 	    if (this._position[0] === positionXY[0] && this._position[1] === positionXY[1]) return;
 	    animation.set(this._el, {
@@ -1812,19 +1868,21 @@
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	"use strict";
 
 	exports.__esModule = true;
 
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
 
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var _libDomJs = __webpack_require__(4);
 
 	var dom = _interopRequireWildcard(_libDomJs);
+
+	var rect = _interopRequireWildcard(_libDomJs);
 
 	var Scrollable = (function () {
 	  function Scrollable(drag, el) {
@@ -1858,12 +1916,12 @@
 
 	  Scrollable.prototype._initializeDirections = function _initializeDirections() {
 	    var style = getComputedStyle(this.el);
-	    this._hEnabled = style.overflowX === 'auto' || style.overflowX === 'scroll';
-	    this._vEnabled = style.overflowY === 'auto' || style.overflowY === 'scroll';
+	    this._hEnabled = style.overflowX === "auto" || style.overflowX === "scroll";
+	    this._vEnabled = style.overflowY === "auto" || style.overflowY === "scroll";
 	  };
 
 	  Scrollable.prototype._initializeBounds = function _initializeBounds() {
-	    if (this.el.tagName === 'BODY') {
+	    if (this.el.tagName === "BODY") {
 	      var w = document.documentElement.clientWidth;
 	      var h = document.documentElement.clientHeight;
 	      this._bounds = { left: 0, top: 0, width: w, height: h, right: w, bottom: h };
@@ -1874,7 +1932,7 @@
 
 	  Scrollable.prototype._initializeSensitivity = function _initializeSensitivity() {
 	    var sensitivity = this.options.scrollSensitivity;
-	    var percent = sensitivity.toString().indexOf('%') !== -1 ? parseInt(sensitivity, 10) / 100 : null;
+	    var percent = sensitivity.toString().indexOf("%") !== -1 ? parseInt(sensitivity, 10) / 100 : null;
 	    this._hSensitivity = Math.min(percent ? percent * this._bounds.width : parseInt(sensitivity, 10), this._bounds.width / 3);
 	    this._vSensitivity = Math.min(percent ? percent * this._bounds.height : parseInt(sensitivity, 10), this._bounds.height / 3);
 	  };
@@ -1916,13 +1974,11 @@
 	    var b = this._bounds;
 
 	    var v = [0, 0];
-	    if (xy[0] >= b.left && xy[0] <= b.right && xy[1] >= b.top && xy[1] <= b.bottom) {
-
+	    if (rect.contains(b, xy)) {
 	      if (this._hEnabled) {
 	        if (xy[0] > b.right - this._hSensitivity && dom.canScrollRight(this.el)) v[0] = Scrollable.scale(xy[0], [b.right - this._hSensitivity, b.right], [0, +maxV]);
 	        if (xy[0] < b.left + this._hSensitivity && dom.canScrollLeft(this.el)) v[0] = Scrollable.scale(xy[0], [b.left + this._hSensitivity, b.left], [0, -maxV]);
 	      }
-
 	      if (this._vEnabled) {
 	        if (xy[1] > b.bottom - this._vSensitivity && dom.canScrollDown(this.el)) v[1] = Scrollable.scale(xy[1], [b.bottom - this._vSensitivity, b.bottom], [0, +maxV]);
 	        if (xy[1] < b.top + this._vSensitivity && dom.canScrollUp(this.el)) v[1] = Scrollable.scale(xy[1], [b.top + this._vSensitivity, b.top], [0, -maxV]);
@@ -1933,17 +1989,17 @@
 	  };
 
 	  _createClass(Scrollable, null, [{
-	    key: 'selector',
+	    key: "selector",
 	    get: function get() {
-	      return '[data-drag-scrollable]';
+	      return "[data-drag-scrollable]";
 	    }
 	  }]);
 
 	  return Scrollable;
 	})();
 
-	exports['default'] = Scrollable;
-	module.exports = exports['default'];
+	exports["default"] = Scrollable;
+	module.exports = exports["default"];
 
 /***/ },
 /* 14 */

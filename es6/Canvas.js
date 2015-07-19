@@ -39,6 +39,7 @@ export default class Canvas extends Container {
 
 
   updatePosition(xy) {
+    super(xy);
     const rect = this._drag.cache.scrollInvalidatedCache(this.el, 'cr', () => this.el.getBoundingClientRect());
     const sl = this._drag.cache.scrollInvalidatedCache(this.el, 'sl', () => this.el.scrollLeft);
     const st = this._drag.cache.scrollInvalidatedCache(this.el, 'st', () => this.el.scrollTop);
@@ -61,7 +62,7 @@ export default class Canvas extends Container {
 
   leave() {
     super();
-    if (this.dragOutAction === 'copy' && this.placeholder.isOriginal) {
+    if (this.leaveAction === 'copy' && this.placeholder.isOriginal) {
       this.placeholder.setState("materialized");
     } else {
       this.placeholder.setState("hidden");

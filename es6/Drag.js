@@ -13,8 +13,6 @@ import * as rect from './lib/rect.js';
 // TODO: Animated destroy (_beginDrop elsewhere)
 // TODO: Event properties
 // TODO: Fade helper when drop will cancel
-// TODO: Copy CSS styles inlines
-// TODO: Non-animated copy
 
 // TODO: Fix scaling behaviour
 // TODO: Scroll adjust scroll maxV based on number of items
@@ -29,19 +27,22 @@ export default class Drag {
 
     this.draggable = draggable;
     this.helper = new Helper(this);
+    this.source = null;
     this.target = null;
     this.fence = null;
-    this.cache = new Cache();
+    this.action = null;
+    this.copy = false;
 
-    this.dropAction = "move"; // "move", "copy"
-    this.cancelAction = "last"; // "remove", "last"
+    this.cache = new Cache();
+    this.revertPosition = "last"; // "remove", "last"
     this._knownTargets = new Map();
-    this._start();
+    this._start(xy);
   }
 
-  _start() {
-    this.pointerEl = dom.elementFromPoint(this.xy);
+  _start(xy) {
+    this.pointerEl = dom.elementFromPoint(xy);
     this._updateTarget();
+    this.source = this.target;
     this.fence = Fence.closestForDraggable(this, this.draggable);
     events.raiseEvent(this.draggable.el, 'dragstart', this)
   }
@@ -124,12 +125,15 @@ export default class Drag {
 
   _updateTarget() {
     const oldTarget = this.target;
-    let newTarget = this._findAcceptingTarget(this.pointerEl);
+    let newTarget = this.source && this.source.leaveAction === 'delete'
+                  ? null
+                  : this._findAcceptingTarget(this.pointerEl);
     if (newTarget === oldTarget) return;
 
-    if (newTarget || this.cancelAction !== 'last') {
+    if (newTarget || this.revertPosition !== 'last') {
       if (oldTarget) this._leaveTarget(oldTarget);
       if (newTarget) this._enterTarget(newTarget);
+      this._computeAction();
     }
   }
 
@@ -166,6 +170,43 @@ export default class Drag {
       }
       this.target = container;
     }
+  }
+
+
+  // SOURCE | TARGET | ACTION | DRAGGABLE
+  // NULL   | NULL   | revert | original
+  // NULL   | move   | move   | original
+  // NULL   | copy   | copy   | copy
+  // NULL   | delete | delete | original
+  // move   | NULL   | revert | original
+  // move   | move   | move   | original
+  // move   | copy   | copy   | copy
+  // move   | delete | delete | original
+  // copy   | NULL   | delete | copy
+  // copy   | move   | copy   | copy
+  // copy   | copy   | copy   | copy
+  // copy   | delete | delete | copy
+  // delete | *      | delete | original
+  _computeAction(source, target) {
+    if (source === target) return ['move', 'original'];
+
+    let [action, appliesTo] = ['move', 'original'];
+    const leave = this.source ? this.source.leaveAction : 'move';
+    const enter = this.target ? this.target.enterAction : 'revert';
+    if (leave === 'copy' || enter === 'copy') {
+      action = 'copy';
+      appliesTo = 'copy';
+    }
+    if (enter === 'revert') action = 'revert';
+    if (leave === 'delete' || enter === 'delete') action = 'delete';
+    return [action, appliesTo];
+  }
+
+
+  setAction(action, appliesTo) {
+    if (this.action === action) return;
+    this.helper.setAction(action);
+    this.action = action;
   }
 
 

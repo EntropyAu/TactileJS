@@ -67,6 +67,16 @@ export default class Helper {
   }
 
 
+  setAction(action) {
+    let opacity = 1;
+    switch (action) {
+      case "revert": opacity = 0.50; break;
+      case "delete": opacity = 0.25; break;
+    }
+    animation.set(this._el, { opacity }, { duration: 200 });
+  }
+
+
   setPosition(positionXY) {
     if (this._position[0] === positionXY[0]
      && this._position[1] === positionXY[1]) return;

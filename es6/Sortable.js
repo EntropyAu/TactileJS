@@ -82,7 +82,7 @@ export default class Sortable extends Container {
 
   leave() {
     super();
-    if (this.dragOutAction === 'copy' && this.placeholder.isDraggableEl) {
+    if (this.leaveAction === 'copy' && this.placeholder.isDraggableEl) {
       this.placeholder.setState("materialized");
     } else {
       this._index = null;
@@ -134,6 +134,7 @@ export default class Sortable extends Container {
 
 
   updatePosition(xy) {
+    super(xy);
     // if it's empty, answer is simple
     if (this._siblingEls.length === 0) {
       if (this._index !== 0) {

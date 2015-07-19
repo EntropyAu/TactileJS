@@ -95,6 +95,7 @@ export default class DragManager {
     this._bindPointerEventsForDragging(e.target)
   }
 
+
   _onPickUpTimeout(pointerId) {
     if (this._pendingDrags[pointerId]) {
       let pendingDrag = this._pendingDrags[pointerId];
@@ -140,6 +141,7 @@ export default class DragManager {
       clearTimeout(this._pendingDrags[pointerId].timerId);
     }
   }
+
 
   startDrag(draggable, pointerId, xy) {
     dom.clearSelection();

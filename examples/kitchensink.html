@@ -34,6 +34,38 @@
       <div class="column">
         <div class="ui-segment">
 
+          <h3>Drag actions</h3>
+          <h5>Sortable</h5>
+          <ol data-drag-sortable
+              data-drag-accepts="*"
+              class="vertical"><script type="text/javascript">items(2)</script></ol>
+
+          <h5>Sortable with <span class="ui label">data-drag-leave-action=<strong>copy</strong></span></h5>
+          <ol data-drag-sortable
+              data-drag-leave-action="copy"
+              data-drag-accepts="*"
+              class="vertical"><script type="text/javascript">items(2)</script></ol>
+
+          <h5>Sortable with <span class="ui label">data-drag-leave-action=<strong>delete</strong></span></h5>
+          <ol data-drag-sortable
+              data-drag-leave-action="delete"
+              data-drag-accepts="*"
+              class="vertical"><script type="text/javascript">items(2)</script></ol>
+
+          <h5>Sortable with <span class="ui label">data-drag-enter-action=<strong>copy</strong></span></h5>
+          <ol data-drag-sortable
+              data-drag-accepts="*"
+              data-drag-enter-action="copy"
+              class="vertical"><script type="text/javascript">items(2)</script></ol>
+
+          <h5>Droppable with <span class="ui label">data-drag-enter-action=<strong>delete</strong></span></h3>
+          <div data-drag-droppable
+               data-drag-accepts="*"
+               data-drag-enter-action="delete"
+               style="width:200px;height:200px;background:#EEF">
+          </div>
+
+
           <h3>Sortable</h3>
           <ol data-drag-sortable
               data-drag-scrollable
@@ -46,6 +78,7 @@
               data-drag-scrollable
               data-drag-accepts="*"
               class="horizontal"><script type="text/javascript">items(10)</script></ol>
+
 
 
           <h3>Droppable</h3>

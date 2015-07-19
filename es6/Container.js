@@ -19,7 +19,8 @@ export default class Container {
                  ? attr.getAttributeSet(el, 'data-drag-accepts')
                  : attr.getAttributeSet(el, 'data-drag-tag');
 
-    this.dragOutAction = attr.getAttributeWithDefaults(el, 'data-drag-out-action', 'move', 'move');
+    this.leaveAction = attr.getAttributeWithDefaults(el, 'data-drag-leave-action', 'move');
+    this.enterAction = attr.getAttributeWithDefaults(el, 'data-drag-enter-action', 'move');
   }
 
 
@@ -35,11 +36,17 @@ export default class Container {
     this.el.classList.add(this.options.containerHoverClass);
   }
 
+
   leave() {
     this.el.classList.remove(this.options.containerHoverClass);
   }
 
+
   dispose() {
     this.el.classList.remove(this.options.containerHoverClass);
+  }
+
+
+  updatePosition(xy) {
   }
 }
