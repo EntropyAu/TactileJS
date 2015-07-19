@@ -22,9 +22,10 @@ export default class Helper {
     const s = this._el.style;
     if (this.options.helperCloneStyles) {
       dom.copyComputedStyles(this._drag.draggable.el, this._el);
-      s.position = 'fixed';
-      s.display = 'block';
-      s.zIndex = '100000';
+      dom.stripClasses(this._el);
+      s.setProperty('position', 'fixed', 'important');
+      s.setProperty('display', 'block', 'important');
+      s.setProperty('zIndex', '100000', 'important');
       s.top = '';
       s.left = '';
       s.webkitTransform = '';
@@ -44,7 +45,7 @@ export default class Helper {
     s.mozTransition = "none";
     s.msTransition = "none";
     s.transition = "none";
-    s.margin = "0 !important";
+    s.margin = "0";
 
     const rect = this._drag.draggable.el.getBoundingClientRect();
     this.grip = [(this._drag.xy[0] - rect.left) / rect.width,

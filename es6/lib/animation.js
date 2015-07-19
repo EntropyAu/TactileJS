@@ -1,12 +1,75 @@
+function unwrapVelocityPropertyValue(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function applyStyleProperties(el, properties) {
+  const cssProperties = {
+    "top": "px",
+    "left": "px",
+    "opacity": "",
+    "width": "px",
+    "height": "px"
+  };
+
+  for (let property in properties) {
+    if (cssProperties[property]) {
+      let value = unwrapVelocityPropertyValue(properties[property]);
+      el.style[property] = value + cssProperties[property];
+    }
+  }
+}
+
+
+function applyTransformProperties(el, properties) {
+  const transformProperties = {
+    "translateX": "px",
+    "translateY": "px",
+    "scaleX": "",
+    "scaleY": "",
+    "rotateZ": "deg"
+  };
+
+  // follow the same transform order as Velocity.js to ensure consistent results
+  const transformOrder = ["translateX","translateY","scaleX","scaleY","rotateZ"];
+
+  // cache the transform values on the element. This avoids us having
+  // to parse the transform string when we do a partial update
+  let transformHash = el.__tactile_transform || {};
+  for (let property in properties) {
+    if (transformProperties[property]) {
+      let value = unwrapVelocityPropertyValue(properties[property]);
+      transformHash[property] = value + transformProperties[property];
+    }
+  }
+
+  // build the transform string
+  let transformValues = [];
+  transformOrder.forEach(function(property) {
+    if (transformHash[property]) {
+      transformValues.push(`${property}(${transformHash[property]})`)
+    }
+  });
+  const value = transformValues.join(' ');
+
+  el.__tactile_transform = transformHash;
+  if (el.style.webkitTransform !== undefined) el.style.webkitTransform = value;
+  if (el.style.mozTransform !== undefined) el.style.mozTransform = value;
+  if (el.style.msTransform !== undefined) el.style.msTransform = value;
+  if (el.style.transform !== undefined) el.style.transform = value;
+}
+
 
 export function set(el, target, options = { duration: 0 }, complete = null) {
   if (window["Velocity"]) {
     options.complete = complete;
     options.queue = false;
     Velocity(el, target, options);
+  } else {
+    applyStyleProperties(el, target);
+    applyTransformProperties(el, target);
+    if (complete) complete();
   }
 }
-
 
 export function stop(el) {
   if (window["Velocity"]) {

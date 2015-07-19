@@ -587,6 +587,7 @@
 	exports.closest = closest;
 	exports.parents = parents;
 	exports.copyComputedStyles = copyComputedStyles;
+	exports.stripClasses = stripClasses;
 	exports.getPaddingClientRect = getPaddingClientRect;
 	exports.childElementArray = childElementArray;
 	exports.ancestors = ancestors;
@@ -639,6 +640,13 @@
 	  targetEl.style.cssText = getComputedStyle(sourceEl).cssText;
 	  Array.from(sourceEl.children).forEach(function (el, i) {
 	    return copyComputedStyles(el, targetEl.children[i]);
+	  });
+	}
+
+	function stripClasses(el) {
+	  el.className = '';
+	  Array.from(el.children).forEach(function (el) {
+	    return stripClasses(el);
 	  });
 	}
 
@@ -1175,6 +1183,64 @@
 	exports.set = set;
 	exports.stop = stop;
 	exports.animateDomMutation = animateDomMutation;
+	function unwrapVelocityPropertyValue(value) {
+	  return Array.isArray(value) ? value[0] : value;
+	}
+
+	function applyStyleProperties(el, properties) {
+	  var cssProperties = {
+	    "top": "px",
+	    "left": "px",
+	    "opacity": "",
+	    "width": "px",
+	    "height": "px"
+	  };
+
+	  for (var property in properties) {
+	    if (cssProperties[property]) {
+	      var value = unwrapVelocityPropertyValue(properties[property]);
+	      el.style[property] = value + cssProperties[property];
+	    }
+	  }
+	}
+
+	function applyTransformProperties(el, properties) {
+	  var transformProperties = {
+	    "translateX": "px",
+	    "translateY": "px",
+	    "scaleX": "",
+	    "scaleY": "",
+	    "rotateZ": "deg"
+	  };
+
+	  // follow the same transform order as Velocity.js to ensure consistent results
+	  var transformOrder = ["translateX", "translateY", "scaleX", "scaleY", "rotateZ"];
+
+	  // cache the transform values on the element. This avoids us having
+	  // to parse the transform string when we do a partial update
+	  var transformHash = el.__tactile_transform || {};
+	  for (var property in properties) {
+	    if (transformProperties[property]) {
+	      var _value = unwrapVelocityPropertyValue(properties[property]);
+	      transformHash[property] = _value + transformProperties[property];
+	    }
+	  }
+
+	  // build the transform string
+	  var transformValues = [];
+	  transformOrder.forEach(function (property) {
+	    if (transformHash[property]) {
+	      transformValues.push(property + "(" + transformHash[property] + ")");
+	    }
+	  });
+	  var value = transformValues.join(" ");
+
+	  el.__tactile_transform = transformHash;
+	  if (el.style.webkitTransform !== undefined) el.style.webkitTransform = value;
+	  if (el.style.mozTransform !== undefined) el.style.mozTransform = value;
+	  if (el.style.msTransform !== undefined) el.style.msTransform = value;
+	  if (el.style.transform !== undefined) el.style.transform = value;
+	}
 
 	function set(el, target) {
 	  var options = arguments[2] === undefined ? { duration: 0 } : arguments[2];
@@ -1184,6 +1250,10 @@
 	    options.complete = complete;
 	    options.queue = false;
 	    Velocity(el, target, options);
+	  } else {
+	    applyStyleProperties(el, target);
+	    applyTransformProperties(el, target);
+	    if (complete) complete();
 	  }
 	}
 
@@ -1626,9 +1696,10 @@
 	    var s = this._el.style;
 	    if (this.options.helperCloneStyles) {
 	      dom.copyComputedStyles(this._drag.draggable.el, this._el);
-	      s.position = "fixed";
-	      s.display = "block";
-	      s.zIndex = "100000";
+	      dom.stripClasses(this._el);
+	      s.setProperty("position", "fixed", "important");
+	      s.setProperty("display", "block", "important");
+	      s.setProperty("zIndex", "100000", "important");
 	      s.top = "";
 	      s.left = "";
 	      s.webkitTransform = "";
@@ -1648,7 +1719,7 @@
 	    s.mozTransition = "none";
 	    s.msTransition = "none";
 	    s.transition = "none";
-	    s.margin = "0 !important";
+	    s.margin = "0";
 
 	    var rect = this._drag.draggable.el.getBoundingClientRect();
 	    this.grip = [(this._drag.xy[0] - rect.left) / rect.width, (this._drag.xy[1] - rect.top) / rect.height];

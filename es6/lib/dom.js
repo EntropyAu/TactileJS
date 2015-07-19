@@ -36,6 +36,12 @@ export function copyComputedStyles(sourceEl, targetEl) {
 }
 
 
+export function stripClasses(el) {
+  el.className = '';
+  Array.from(el.children).forEach((el) => stripClasses(el));
+}
+
+
 export function getPaddingClientRect(el) {
   const style = getComputedStyle(el);
   const rect = el.getBoundingClientRect();
