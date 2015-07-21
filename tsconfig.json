@@ -1,0 +1,36 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "out": "Tactile.js",
+        "sourceMap": true
+    },
+    "files": [
+        "ts/interfaces/Element.ts",
+        "ts/interfaces/Velocity.ts",
+
+        "ts/lib/Animation.ts",
+        "ts/lib/Attributes.ts",
+        "ts/lib/Dom.ts",
+        "ts/lib/Events.ts",
+        "ts/lib/Maths.ts",
+        "ts/lib/Vector.ts",
+
+        "ts/Container.ts",
+        "ts/Options.ts",
+        "ts/Cache.ts",
+        "ts/Canvas.ts",
+        "ts/Drag.ts",
+        "ts/DragAction.ts",
+        "ts/Draggable.ts",
+        "ts/DragManager.ts",
+        "ts/Droppable.ts",
+        "ts/Fence.ts",
+        "ts/Helper.ts",
+        "ts/Placeholder.ts",
+        "ts/Scrollable.ts",
+        "ts/Sortable.ts"
+    ]
+}

@@ -1,22 +1,29 @@
 var path = require('path');
 module.exports = {
-    entry: './es6/DragManager.js',
+    entry: './ts/DragManager.ts',
     output: {
         path: __dirname,
-        filename: 'DragDrop.js'
+        filename: 'DragDropTs.js'
     },
     watchOptions: {
         poll: 250
     },
+
+    // Currently we need to add '.ts' to resolve.extensions array.
+    resolve: {
+      extensions: ['', '.webpack.js', '.web.js', '.ts', '.js']
+    },
+
+    // Source maps support (or 'inline-source-map' also works)
+    devtool: 'source-map',
+
+    // Add loader for .ts files.
     module: {
-        loaders: [
-            {
-                test: path.join(__dirname, 'es6'),
-                loader: 'babel-loader',
-                query: {
-                    loose: ["all"]
-                }
-            }
-        ]
+      loaders: [
+        {
+          test: /\.ts$/,
+          loader: 'ts-loader'
+        }
+      ]
     }
 };
