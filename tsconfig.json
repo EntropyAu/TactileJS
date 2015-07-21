@@ -23,7 +23,6 @@
         "ts/Cache.ts",
         "ts/Canvas.ts",
         "ts/Drag.ts",
-        "ts/DragAction.ts",
         "ts/Draggable.ts",
         "ts/DragManager.ts",
         "ts/Droppable.ts",

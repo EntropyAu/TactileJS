@@ -64,7 +64,7 @@ module Tactile {
 
 
     enter(xy:[number,number]):void {
-      this.placeholder.setState(PlaceholderState.Ghost);
+      this.placeholder.setState("ghost");
       this.placeholderSize = this.placeholder.size;
       this.placeholderScale = this.placeholder.scale;
       this.move(xy);
@@ -113,13 +113,13 @@ module Tactile {
 
 
     leave():void {
-      if (this.leaveAction === DragAction.Copy && this.placeholder.isOriginalEl) {
-        this.placeholder.setState(PlaceholderState.Materialized);
+      if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+        this.placeholder.setState("materialized");
       } else {
         this._index = null;
         this._forceFeedRequired = true;
         this._childMeasures.clear();
-        this.placeholder.setState(PlaceholderState.Hidden);
+        this.placeholder.setState("hidden");
         this._offsetPlaceholderWithMargin();
         this._updateChildTranslations();
       }

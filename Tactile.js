@@ -206,7 +206,7 @@ var Tactile;
             if (!includeMargins)
                 return el.offsetHeight;
             var style = getComputedStyle(el);
-            return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+            return el.offsetHeight + parseInt(style.marginTop, 10) + parseInt(style.marginBottom, 10);
         }
         Dom.outerHeight = outerHeight;
         function outerWidth(el, includeMargins) {
@@ -214,7 +214,7 @@ var Tactile;
             if (!includeMargins)
                 return el.offsetWidth;
             var style = getComputedStyle(el);
-            return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+            return el.offsetWidth + parseInt(style.marginLeft, 10) + parseInt(style.marginRight, 10);
         }
         Dom.outerWidth = outerWidth;
         var vendorTransform = null;
@@ -443,17 +443,14 @@ var Tactile;
             this.accepts = el.hasAttribute('data-drag-accepts')
                 ? Tactile.Attributes.getTags(el, 'data-drag-accepts')
                 : Tactile.Attributes.getTags(el, 'data-drag-tag');
-            this.leaveAction = Tactile.DragAction[Tactile.Attributes.get(el, 'data-drag-leave-action', 'move')];
-            this.enterAction = Tactile.DragAction[Tactile.Attributes.get(el, 'data-drag-enter-action', 'move')];
+            this.leaveAction = Tactile.Attributes.get(el, 'data-drag-leave-action', 'move');
+            this.enterAction = Tactile.Attributes.get(el, 'data-drag-enter-action', 'move');
         }
         Container.closest = function (el) {
             el = Tactile.Dom.closest(el, containerSelector);
             while (el && Tactile.Dom.closest(el, placeholderSelector))
                 el = Tactile.Dom.closest(el.parentElement, containerSelector);
             return el;
-        };
-        Container.matches = function (el) {
-            return Tactile.Dom.matches(el, selector);
         };
         Container.closestAcceptingTarget = function (el, draggable) {
             var targetEl = this.closest(el);
@@ -501,7 +498,6 @@ var Tactile;
         Container.prototype.dispose = function () {
             this.el.classList.remove(this.drag.options.containerHoverClass);
         };
-        Container.selector = '';
         return Container;
     })();
     Tactile.Container = Container;
@@ -608,7 +604,7 @@ var Tactile;
             this._insertPlaceholder();
         }
         Canvas.prototype.enter = function (xy) {
-            this.placeholder.setState(Tactile.PlaceholderState.Ghost);
+            this.placeholder.setState("ghost");
             this.placeholderSize = this.placeholder.size;
             this.placeholderScale = this.placeholder.scale;
             this.move(xy);
@@ -629,11 +625,11 @@ var Tactile;
             Tactile.Dom.translate(this.placeholder.el, this._offset);
         };
         Canvas.prototype.leave = function () {
-            if (this.leaveAction === Tactile.DragAction.Copy && this.placeholder.isOriginalEl) {
-                this.placeholder.setState(Tactile.PlaceholderState.Materialized);
+            if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+                this.placeholder.setState("materialized");
             }
             else {
-                this.placeholder.setState(Tactile.PlaceholderState.Hidden);
+                this.placeholder.setState("hidden");
             }
         };
         Canvas.prototype.finalizeDrop = function (draggable) {
@@ -658,7 +654,7 @@ var Tactile;
             }
             this.placeholder.el.style.position = 'absolute';
             Tactile.Dom.topLeft(this.placeholder.el, [0, 0]);
-            this.placeholder.setState(Tactile.PlaceholderState.Hidden);
+            this.placeholder.setState("hidden");
         };
         return Canvas;
     })(Tactile.Container);
@@ -734,7 +730,7 @@ var Tactile;
             this._raise(this.draggable.el, 'dragend');
         };
         Drag.prototype._beginDrop = function () {
-            if (this.target.placeholder && (this.action === Tactile.DragAction.Copy || this.action === Tactile.DragAction.Move)) {
+            if (this.target.placeholder && (this.action === "copy" || this.action === "move")) {
                 this.helper.animateToElementAndPutDown(this.target.placeholder.el, function () {
                     requestAnimationFrame(function () {
                         this.target.finalizeDrop(this.draggable);
@@ -742,7 +738,7 @@ var Tactile;
                     }.bind(this));
                 }.bind(this));
             }
-            if (this.action === Tactile.DragAction.Delete) {
+            if (this.action === "delete") {
                 this.helper.animateDelete(function () {
                     this.dispose();
                 }.bind(this));
@@ -754,7 +750,7 @@ var Tactile;
         };
         Drag.prototype._updateTarget = function () {
             var oldTarget = this.target;
-            var newTarget = this.source && this.source.leaveAction === Tactile.DragAction.Delete
+            var newTarget = this.source && this.source.leaveAction === "delete"
                 ? null
                 : Tactile.Container.closestAcceptingTarget(this.pointerEl, this.draggable);
             if (newTarget === oldTarget)
@@ -792,18 +788,18 @@ var Tactile;
         };
         Drag.prototype._computeAction = function (source, target) {
             if (source === target)
-                return [Tactile.DragAction.Move, false];
-            var _a = [Tactile.DragAction.Move, false], action = _a[0], copy = _a[1];
-            var leave = this.source ? this.source.leaveAction : Tactile.DragAction.Move;
-            var enter = this.target ? this.target.enterAction : Tactile.DragAction.Revert;
-            if (leave === Tactile.DragAction.Copy || enter === Tactile.DragAction.Copy) {
-                action = Tactile.DragAction.Copy;
+                return ["move", false];
+            var _a = ["move", false], action = _a[0], copy = _a[1];
+            var leave = this.source ? this.source.leaveAction : "move";
+            var enter = this.target ? this.target.enterAction : "revert";
+            if (leave === "copy" || enter === "copy") {
+                action = "copy";
                 copy = true;
             }
-            if (enter === Tactile.DragAction.Revert)
-                action = Tactile.DragAction.Revert;
-            if (leave === Tactile.DragAction.Delete || enter === Tactile.DragAction.Delete)
-                action = Tactile.DragAction.Delete;
+            if (enter === "revert")
+                action = "revert";
+            if (leave === "delete" || enter === "delete")
+                action = "delete";
             return [action, copy];
         };
         Drag.prototype._setAction = function (actionCopy) {
@@ -843,17 +839,6 @@ var Tactile;
         return Drag;
     })();
     Tactile.Drag = Drag;
-})(Tactile || (Tactile = {}));
-var Tactile;
-(function (Tactile) {
-    (function (DragAction) {
-        DragAction[DragAction["Copy"] = 0] = "Copy";
-        DragAction[DragAction["Move"] = 1] = "Move";
-        DragAction[DragAction["Delete"] = 2] = "Delete";
-        DragAction[DragAction["Revert"] = 3] = "Revert";
-    })(Tactile.DragAction || (Tactile.DragAction = {}));
-    var DragAction = Tactile.DragAction;
-    ;
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
@@ -1119,10 +1104,10 @@ var Tactile;
         Helper.prototype.setAction = function (action) {
             var opacity = 1;
             switch (action) {
-                case Tactile.DragAction.Revert:
+                case "revert":
                     opacity = 0.50;
                     break;
-                case Tactile.DragAction.Delete:
+                case "delete":
                     opacity = 0.25;
                     break;
             }
@@ -1188,13 +1173,6 @@ var Tactile;
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
-    (function (PlaceholderState) {
-        PlaceholderState[PlaceholderState["Ghost"] = 0] = "Ghost";
-        PlaceholderState[PlaceholderState["Materialized"] = 1] = "Materialized";
-        PlaceholderState[PlaceholderState["Hidden"] = 2] = "Hidden";
-    })(Tactile.PlaceholderState || (Tactile.PlaceholderState = {}));
-    var PlaceholderState = Tactile.PlaceholderState;
-    ;
     var Placeholder = (function () {
         function Placeholder(el, drag, isOriginalEl) {
             if (isOriginalEl === void 0) { isOriginalEl = true; }
@@ -1204,7 +1182,7 @@ var Tactile;
             this._updateDimensions();
             this.el.classList.add(this.drag.options.placeholderClass);
             this.el.setAttribute('data-drag-placeholder', '');
-            this.setState(PlaceholderState.Ghost, false);
+            this.setState("ghost", false);
         }
         Placeholder.buildPlaceholder = function (containerEl, drag) {
             var el = drag.draggable.el.cloneNode(true);
@@ -1225,14 +1203,14 @@ var Tactile;
                 ? { duration: 200, queue: false }
                 : { duration: 0, queue: false };
             switch (state) {
-                case PlaceholderState.Hidden:
+                case "hidden":
                     this.el.style.visibility = 'hidden';
                     break;
-                case PlaceholderState.Ghost:
+                case "ghost":
                     this.el.style.visibility = '';
                     Tactile.Animation.set(this.el, { opacity: 0.1 }, velocityOptions);
                     break;
-                case PlaceholderState.Materialized:
+                case "materialized":
                     this.el.style.visibility = '';
                     Tactile.Animation.set(this.el, { opacity: 1.0 }, velocityOptions);
                     break;
@@ -1241,12 +1219,12 @@ var Tactile;
         };
         Placeholder.prototype.dispose = function () {
             switch (this.state) {
-                case PlaceholderState.Hidden:
+                case "hidden":
                     this.el.remove();
                     this.el = null;
                     break;
-                case PlaceholderState.Ghost:
-                case PlaceholderState.Materialized:
+                case "ghost":
+                case "materialized":
                     if (this.el) {
                         this.el.removeAttribute('data-drag-placeholder');
                         this.el.classList.remove('dd-drag-placeholder');
@@ -1398,7 +1376,7 @@ var Tactile;
             }
         };
         Sortable.prototype.enter = function (xy) {
-            this.placeholder.setState(Tactile.PlaceholderState.Ghost);
+            this.placeholder.setState("ghost");
             this.placeholderSize = this.placeholder.size;
             this.placeholderScale = this.placeholder.scale;
             this.move(xy);
@@ -1438,14 +1416,14 @@ var Tactile;
             }
         };
         Sortable.prototype.leave = function () {
-            if (this.leaveAction === Tactile.DragAction.Copy && this.placeholder.isOriginalEl) {
-                this.placeholder.setState(Tactile.PlaceholderState.Materialized);
+            if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+                this.placeholder.setState("materialized");
             }
             else {
                 this._index = null;
                 this._forceFeedRequired = true;
                 this._childMeasures.clear();
-                this.placeholder.setState(Tactile.PlaceholderState.Hidden);
+                this.placeholder.setState("hidden");
                 this._offsetPlaceholderWithMargin();
                 this._updateChildTranslations();
             }

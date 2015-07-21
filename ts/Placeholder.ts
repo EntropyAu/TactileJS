@@ -1,7 +1,5 @@
 module Tactile {
 
-  export enum PlaceholderState { Ghost, Materialized, Hidden };
-
   export class Placeholder {
 
     el:HTMLElement;
@@ -10,7 +8,7 @@ module Tactile {
     scale:[number,number];
     outerSize:[number,number];
     isOriginalEl:boolean;
-    state:PlaceholderState;
+    state:string;
 
 
     static buildPlaceholder(containerEl:HTMLElement, drag:Drag):Placeholder {
@@ -28,7 +26,7 @@ module Tactile {
       this._updateDimensions();
       this.el.classList.add(this.drag.options.placeholderClass);
       this.el.setAttribute('data-drag-placeholder', '');
-      this.setState(PlaceholderState.Ghost, false);
+      this.setState("ghost", false);
     }
 
 
@@ -38,20 +36,20 @@ module Tactile {
       this.scale = Dom.clientScale(this.el);
     }
 
-    setState(state:PlaceholderState, animate:boolean = true):void {
+    setState(state:string, animate:boolean = true):void {
         if (this.state === state) return;
         let velocityOptions = animate
                             ? { duration: 200, queue: false }
                             : { duration:   0, queue: false };
         switch (state) {
-          case PlaceholderState.Hidden:
+          case "hidden":
             this.el.style.visibility = 'hidden';
             break;
-          case PlaceholderState.Ghost:
+          case "ghost":
             this.el.style.visibility = '';
             Animation.set(this.el, { opacity: 0.1 }, velocityOptions);
             break;
-          case PlaceholderState.Materialized:
+          case "materialized":
             this.el.style.visibility = '';
             Animation.set(this.el, { opacity: 1.0 }, velocityOptions);
             break;
@@ -62,12 +60,12 @@ module Tactile {
 
     dispose():void {
       switch (this.state) {
-        case PlaceholderState.Hidden:
+        case "hidden":
           this.el.remove();
           this.el = null;
           break;
-        case PlaceholderState.Ghost:
-        case PlaceholderState.Materialized:
+        case "ghost":
+        case "materialized":
           if (this.el) {
             // restore the original draggable element settings
             this.el.removeAttribute('data-drag-placeholder');

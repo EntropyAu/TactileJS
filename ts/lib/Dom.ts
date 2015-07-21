@@ -93,13 +93,13 @@ module Tactile.Dom {
   export function outerHeight(el:HTMLElement, includeMargins:boolean = false):number {
     if (!includeMargins) return el.offsetHeight;
     const style = getComputedStyle(el);
-    return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+    return el.offsetHeight + parseInt(style.marginTop, 10) + parseInt(style.marginBottom, 10);
   }
 
   export function outerWidth(el:HTMLElement, includeMargins:boolean = false):number {
     if (!includeMargins) return el.offsetWidth;
     const style = getComputedStyle(el);
-    return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+    return el.offsetWidth + parseInt(style.marginLeft, 10) + parseInt(style.marginRight, 10);
   }
 
 

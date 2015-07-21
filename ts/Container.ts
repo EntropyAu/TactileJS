@@ -5,17 +5,11 @@ module Tactile {
 
   export class Container {
 
-    static selector = '';
-
     static closest(el:HTMLElement):HTMLElement {
       el = Dom.closest(el, containerSelector);
       while (el && Dom.closest(el, placeholderSelector))
         el = Dom.closest(el.parentElement, containerSelector)
       return el;
-    }
-
-    static matches(el:HTMLElement) {
-      return Dom.matches(el, selector);
     }
 
     static closestAcceptingTarget(el:HTMLElement, draggable:Draggable):Container {
@@ -51,8 +45,8 @@ module Tactile {
     placeholderSize:[number,number];
     placeholderScale:[number,number];
     accepts:string[];
-    leaveAction:DragAction;
-    enterAction:DragAction;
+    leaveAction:string;
+    enterAction:string;
     isSource:boolean;
 
 
@@ -65,8 +59,8 @@ module Tactile {
                    ? Attributes.getTags(el, 'data-drag-accepts')
                    : Attributes.getTags(el, 'data-drag-tag');
 
-      this.leaveAction = DragAction[Attributes.get(el, 'data-drag-leave-action', 'move')];
-      this.enterAction = DragAction[Attributes.get(el, 'data-drag-enter-action', 'move')];
+      this.leaveAction = Attributes.get(el, 'data-drag-leave-action', 'move');
+      this.enterAction = Attributes.get(el, 'data-drag-enter-action', 'move');
     }
 
 

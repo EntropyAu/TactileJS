@@ -19,7 +19,7 @@ module Tactile {
 
 
     enter(xy:[number,number]):void {
-      this.placeholder.setState(PlaceholderState.Ghost);
+      this.placeholder.setState("ghost");
       this.placeholderSize = this.placeholder.size;
       this.placeholderScale = this.placeholder.scale;
       this.move(xy);
@@ -44,10 +44,10 @@ module Tactile {
 
 
     leave() {
-      if (this.leaveAction === DragAction.Copy && this.placeholder.isOriginalEl) {
-        this.placeholder.setState(PlaceholderState.Materialized);
+      if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+        this.placeholder.setState("materialized");
       } else {
-        this.placeholder.setState(PlaceholderState.Hidden);
+        this.placeholder.setState("hidden");
       }
     }
 
@@ -77,7 +77,7 @@ module Tactile {
       }
       this.placeholder.el.style.position = 'absolute';
       Dom.topLeft(this.placeholder.el, [0,0]);
-      this.placeholder.setState(PlaceholderState.Hidden);
+      this.placeholder.setState("hidden");
     }
 
   }

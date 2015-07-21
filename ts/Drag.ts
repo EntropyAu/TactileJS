@@ -10,7 +10,7 @@ module Tactile {
     source:Container = null;
     target:Container = null;
     fence:Fence;
-    action:DragAction;
+    action:string;
     copy:boolean;
     options:Options;
     cache:Cache;
@@ -104,7 +104,7 @@ module Tactile {
 
 
     private _beginDrop():void {
-      if (this.target.placeholder && (this.action === DragAction.Copy || this.action === DragAction.Move)) {
+      if (this.target.placeholder && (this.action === "copy" || this.action === "move")) {
         this.helper.animateToElementAndPutDown(this.target.placeholder.el, function() {
           requestAnimationFrame(function() {
             this.target.finalizeDrop(this.draggable);
@@ -112,7 +112,7 @@ module Tactile {
           }.bind(this));
         }.bind(this));
       }
-      if (this.action === DragAction.Delete) {
+      if (this.action === "delete") {
         this.helper.animateDelete(function() {
           this.dispose();
         }.bind(this));
@@ -129,7 +129,7 @@ module Tactile {
 
     private _updateTarget():void {
       const oldTarget = this.target;
-      let newTarget = this.source && this.source.leaveAction === DragAction.Delete
+      let newTarget = this.source && this.source.leaveAction === "delete"
                     ? null
                     : Container.closestAcceptingTarget(this.pointerEl, this.draggable);
       if (newTarget === oldTarget) return;
@@ -188,22 +188,22 @@ module Tactile {
     // copy   | copy   | copy   | copy
     // copy   | delete | delete | copy
     // delete | *      | delete | original
-    _computeAction(source:Container, target:Container):[DragAction, boolean] {
-      if (source === target) return [DragAction.Move, false];
-      let [action, copy] = [DragAction.Move, false];
-      const leave = this.source ? this.source.leaveAction : DragAction.Move;
-      const enter = this.target ? this.target.enterAction : DragAction.Revert;
-      if (leave === DragAction.Copy || enter === DragAction.Copy) {
-        action = DragAction.Copy;
+    _computeAction(source:Container, target:Container):[string, boolean] {
+      if (source === target) return ["move", false];
+      let [action, copy] = ["move", false];
+      const leave = this.source ? this.source.leaveAction : "move";
+      const enter = this.target ? this.target.enterAction : "revert";
+      if (leave === "copy" || enter === "copy") {
+        action = "copy";
         copy = true;
       }
-      if (enter === DragAction.Revert) action = DragAction.Revert;
-      if (leave === DragAction.Delete || enter === DragAction.Delete) action = DragAction.Delete;
+      if (enter === "revert") action = "revert";
+      if (leave === "delete" || enter === "delete") action = "delete";
       return [action, copy];
     }
 
 
-    _setAction(actionCopy:[DragAction, boolean]) {
+    _setAction(actionCopy:[string, boolean]) {
       if (this.action === actionCopy[0]) return;
       this.helper.setAction(actionCopy[0]);
       this.action = actionCopy[0];

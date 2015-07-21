@@ -70,11 +70,11 @@ module Tactile {
     }
 
 
-    setAction(action:DragAction):void {
+    setAction(action:string):void {
       let opacity = 1;
       switch (action) {
-        case DragAction.Revert: opacity = 0.50; break;
-        case DragAction.Delete: opacity = 0.25; break;
+        case "revert": opacity = 0.50; break;
+        case "delete": opacity = 0.25; break;
       }
       Animation.set(this.el, { opacity }, { duration: 200 });
     }
