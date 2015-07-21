@@ -2,18 +2,22 @@ module Tactile {
 
   export class Cache {
 
+    _id:string;
+    _els:HTMLElement[];
     _cache:any;
-    _version:number;
+    _useMap:boolean = window['Map'] !== undefined;
 
     constructor() {
-      this._version = 0;
-      if (window['WeakMap']) {
-        this._cache = new window['WeakMap']();
+      if (this._useMap) {
+        this._cache = new window['Map']();
+      } else {
+        this._id = "__tactile" + Math.random().toString().replace('.', '')
+        this._els = [];
       }
     }
 
 
-    get(el:HTMLElement, key:string, fn:Function = null):any {
+    get(el:HTMLElement, key:string, fn:Function = function(){}):any {
       let elCache = this._getElementCache(el);
       if (elCache[key] !== undefined) {
         return elCache[key];
@@ -23,23 +27,39 @@ module Tactile {
     }
 
 
-    set(el:HTMLElement, key:string, value:any):void {
-      let elCache = this._getElementCache(el);
-      elCache[key] = value;
-    }
-
-
     clear():void {
-      if (window['WeakMap']) {
-        this._cache = new window['WeakMap']();
+      if (this._useMap) {
+        this._cache = new window['Map']();
       } else {
-        this._version += 1;
+        this._els.forEach(el => delete el[this._id]);
+        this._els = [];
       }
     }
 
 
     dispose():void {
-      this._cache = null;
+      if (this._useMap) {
+        this._cache = null;
+      } else {
+        this._els.forEach(el => delete el[this._id]);
+        this._els = [];
+      }
+    }
+
+
+    getElements():HTMLElement[] {
+      if (this._useMap) {
+        let els:HTMLElement[] = [];
+        let iterator = this._cache.keys();
+        let result = iterator.next();
+        while (!result.done) {
+          els.push(result.value);
+          result = iterator.next();
+        }
+        return els;
+      } else {
+        return this._els;
+      }
     }
 
 
@@ -52,11 +72,10 @@ module Tactile {
           this._cache.set(el, elCache);
         }
       } else {
-        elCache = el['__tactile'];
-        let version = el['__tactileVersion'];
-        if (!elCache || version < this._version) {
-          el['__tactile'] = elCache = {};
-          el['__tactileVersion'] = version;
+        elCache = el[this._id];
+        if (!elCache) {
+          this._els.push(el);
+          el[this._id] = elCache = {};
         }
       }
       return elCache;

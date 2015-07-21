@@ -13,10 +13,12 @@ module Tactile {
     action:string;
     copy:boolean;
     options:Options;
-    cache:Cache;
+    scrollCache:Cache;
+    containerCache:Cache;
 
     private _scroller:Scrollable;
     private _requestId:number = null;
+    private _onScrollOrWheelListener:EventListener;
 
 
     constructor(draggableEl:HTMLElement,
@@ -32,21 +34,21 @@ module Tactile {
       this.fence = Fence.closestForDraggable(this, this.draggable);
       this.copy = false;
 
-      this.cache = new Cache();
+      this.scrollCache = new Cache();
+      this.containerCache = new Cache();
 
       this._updateTarget();
       this.source = this.target;
 
-      document.addEventListener('scroll', this._onScrollOrWheel, false);
-      document.addEventListener('mousewheel', this._onScrollOrWheel, false);
-      document.addEventListener('wheel', this._onScrollOrWheel, false);
+      this._onScrollOrWheelListener = this._onScrollOrWheel.bind(this);
+
+      document.addEventListener('scroll', this._onScrollOrWheelListener, false);
+      document.addEventListener('mousewheel', this._onScrollOrWheelListener, false);
+      document.addEventListener('wheel', this._onScrollOrWheelListener, false);
 
       this._raise(this.draggable.el, 'dragstart')
     }
 
-    private _onScrollOrWheel():void {
-      this.cache.clear();
-    }
 
     move(xy:[number,number]):void {
       // cancel any upcoming hover calls
@@ -64,13 +66,44 @@ module Tactile {
     }
 
 
+    cancel():void {
+
+    }
+
+
+    drop():void {
+      if (this._requestId) cancelAnimationFrame(this._requestId);
+      this._scroller = null;
+      this._hover();
+      if (this.target) this._beginDrop(); else this._beginMiss();
+      this._raise(this.draggable.el, 'dragend');
+    }
+
+
+    dispose() {
+      document.removeEventListener('scroll', this._onScrollOrWheelListener, false);
+      document.removeEventListener('mousewheel', this._onScrollOrWheelListener, false);
+      document.removeEventListener('wheel', this._onScrollOrWheelListener, false);
+
+      this.containerCache.getElements().forEach((t:HTMLElement) => this.containerCache.get(t, 'container').dispose());
+      this.helper.dispose();
+      this.scrollCache.dispose();
+      this.containerCache.dispose();
+    }
+
+
+    private _onScrollOrWheel():void {
+      this.scrollCache.clear();
+    }
+
+
     private _hover():void {
       this._requestId = null;
       if (this._scroller) {
         if (this._scroller.step(this.xy)) {
-          // clear the cache of client measurements as they may have
+          // clear the scrollCache of client measurements as they may have
           // changed due to scrolling
-          this.cache.clear();
+          this.scrollCache.clear();
         } else {
           this._scroller = null;
         };
@@ -83,23 +116,6 @@ module Tactile {
           this.target.move(this.xy);
         this._raise(this.draggable.el, 'drag');
       }
-    }
-
-    /**
-     * Cancel drag and revert item to it's original position
-     */
-    cancel():void {
-
-    }
-
-
-    /**
-     * Drop the dragged item
-     */
-    drop():void {
-      if (this._requestId) cancelAnimationFrame(this._requestId);
-      if (this.target) this._beginDrop(); else this._beginMiss();
-      this._raise(this.draggable.el, 'dragend');
     }
 
 
@@ -170,10 +186,6 @@ module Tactile {
     }
 
 
-
-
-
-
     // SOURCE | TARGET | ACTION | DRAGGABLE
     // NULL   | NULL   | revert | original
     // NULL   | move   | move   | original
@@ -188,7 +200,7 @@ module Tactile {
     // copy   | copy   | copy   | copy
     // copy   | delete | delete | copy
     // delete | *      | delete | original
-    _computeAction(source:Container, target:Container):[string, boolean] {
+    private _computeAction(source:Container, target:Container):[string, boolean] {
       if (source === target) return ["move", false];
       let [action, copy] = ["move", false];
       const leave = this.source ? this.source.leaveAction : "move";
@@ -203,14 +215,15 @@ module Tactile {
     }
 
 
-    _setAction(actionCopy:[string, boolean]) {
+    private _setAction(actionCopy:[string, boolean]) {
       if (this.action === actionCopy[0]) return;
       this.helper.setAction(actionCopy[0]);
       this.action = actionCopy[0];
       this.copy = actionCopy[1];
     }
 
-    _raise(el:Element, eventName:string) {
+
+    private _raise(el:Element, eventName:string) {
       let eventData = {
         item: this.draggable.el,
         data: this.draggable.data,
@@ -229,17 +242,6 @@ module Tactile {
         targetPosition: this.target ? this.target['position'] : null
       };
       return Events.raise(el, eventName, eventData);
-    }
-
-
-    dispose() {
-      document.removeEventListener('scroll', this._onScrollOrWheel, false);
-      document.removeEventListener('mousewheel', this._onScrollOrWheel, false);
-      document.removeEventListener('wheel', this._onScrollOrWheel, false);
-
-      //this._knownTargets.forEach((t:Container) => t.dispose());
-      this.helper.dispose();
-      this.cache.dispose();
     }
   }
 }

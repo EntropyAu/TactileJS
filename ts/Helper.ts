@@ -31,6 +31,11 @@ module Tactile {
         s.setProperty('position', 'fixed', 'important');
         s.setProperty('display', 'block', 'important');
         s.setProperty('zIndex', '100000', 'important');
+        s.opacity = '1';
+        s.cursor = '';
+        s.transform = '';
+        s.transformOrigin = '';
+        s.boxShadow = '';
       };
 
       // any existing transitions may screw up velocity's work
@@ -61,8 +66,8 @@ module Tactile {
       Animation.set(this.el, {
         left: this.gripOffset[0],
         top: this.gripOffset[1],
-        transformOriginX: 0,
-        transformOriginY: 0
+        transformOriginX: this.gripXY[0],
+        transformOriginY: this.gripXY[1]
       });
 
       this.el.focus()
@@ -84,7 +89,8 @@ module Tactile {
       if (Vector.equals(this.xy, xy)) return;
       Animation.set(this.el, {
         translateX: xy[0],
-        translateY: xy[1]
+        translateY: xy[1],
+        translateZ: 1
       });
       this.xy = xy;
     }
@@ -108,6 +114,8 @@ module Tactile {
         height: size[1],
         left: this.gripOffset[0],
         top: this.gripOffset[1],
+        transformOriginX: this.gripXY[0],
+        transformOriginY: this.gripXY[1],
         scaleX: scale[0],
         scaleY: scale[1]
       }, animate ? this.drag.options.resizeAnimation : undefined);
@@ -127,8 +135,10 @@ module Tactile {
         boxShadowBlur: 0,
         top: [0, 0 + minimalDelta],
         left: [0, 0 + minimalDelta],
-        translateX: [rect.left, this.xy[0] - this.gripRelative[0] * el.offsetWidth + minimalDelta],
-        translateY: [rect.top, this.xy[1] - this.gripRelative[1] * el.offsetHeight + minimalDelta],
+        translateX: [rect.left, this.xy[0] - this.gripRelative[0] * rect.width + minimalDelta],
+        translateY: [rect.top, this.xy[1] - this.gripRelative[1] * rect.height + minimalDelta],
+        transformOriginX: [0, minimalDelta],
+        transformOriginY: [0, minimalDelta],
         width: el.offsetWidth,
         height: el.offsetHeight
       }, this.drag.options.dropAnimation, complete);

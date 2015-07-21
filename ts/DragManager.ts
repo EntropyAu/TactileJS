@@ -54,7 +54,6 @@ module Tactile {
       let el = Draggable.closestEnabled(<HTMLElement>e.target);
       if (!el) return false;
 
-
       if (this.options.pickUpDelay === null || this.options.pickUpDelay === 0) {
         Events.cancel(e);
         this.startDrag(el, dragId, xy);
@@ -75,7 +74,7 @@ module Tactile {
     private _onPickUpTimeout(dragId:number) {
       if (this._pendingDrags[dragId]) {
         let pendingDrag = this._pendingDrags[dragId];
-        this.startDrag(pendingDrag.draggable, dragId, pendingDrag.xy);
+        this.startDrag(pendingDrag.el, dragId, pendingDrag.xy);
         delete this._pendingDrags[dragId];
       }
     }
@@ -95,7 +94,7 @@ module Tactile {
         // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
         if (this.options.pickUpDistance && Vector.length(Vector.subtract(pendingDrag.xy, xy)) > this.options.pickUpDistance)
         clearTimeout(pendingDrag.timerId);
-        this.startDrag(pendingDrag.draggable, dragId, pendingDrag.xy);
+        this.startDrag(pendingDrag.el, dragId, pendingDrag.xy);
         delete this._pendingDrags[dragId];
       }
     }
@@ -124,11 +123,11 @@ module Tactile {
     endDrag(dragId:number) {
       let drag = this._drags[dragId];
       drag.drop();
+      delete this._drags[dragId];
       if (Object.keys(this._drags).length == 0) {
         document.body.removeAttribute('data-drag-in-progress');
         this._unbindPointerEventsForDragging(drag.draggable.el);
       }
-      delete this._drags[dragId];
     }
   };
 

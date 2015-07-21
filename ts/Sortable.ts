@@ -16,8 +16,6 @@ module Tactile {
       super(el, drag);
       this._childMeasures = new Cache();
       this._initializeDirection();
-      this._initializePlaceholder();
-      this._initializeChildAndSiblingEls();
     }
 
 
@@ -64,17 +62,20 @@ module Tactile {
 
 
     enter(xy:[number,number]):void {
+      if (!this.placeholder) {
+        this._initializePlaceholder();
+        this._initializeChildAndSiblingEls();
+      }
       this.placeholder.setState("ghost");
+      this._undoOffsetPlaceholder();
       this.placeholderSize = this.placeholder.size;
       this.placeholderScale = this.placeholder.scale;
       this.move(xy);
-      this._undoOffsetPlaceholder();
       this._childMeasures.clear();
     }
 
 
     move(xy:[number,number]):void {
-      // if it's empty, answer is simple
       if (this._siblingEls.length === 0) {
         if (this._index !== 0) {
           this._index = 0;
@@ -83,9 +84,9 @@ module Tactile {
         return;
       }
 
-      const bounds = this.drag.cache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
-      const sl = this.drag.cache.get(this.el, 'sl', () => this.el.scrollLeft);
-      const st = this.drag.cache.get(this.el, 'st', () => this.el.scrollTop);
+      const bounds = this.drag.scrollCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
+      const sl = this.drag.scrollCache.get(this.el, 'sl', () => this.el.scrollLeft);
+      const st = this.drag.scrollCache.get(this.el, 'st', () => this.el.scrollTop);
       // calculate the position of the item relative to this container
       const innerXY = [xy[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
                        xy[1] - bounds.top  + st - parseInt(this._style.paddingTop, 10)];
@@ -200,16 +201,19 @@ module Tactile {
     private _clearChildTranslations():void {
       // synchronously clear the transform styles (rather than calling
       // velocity.js) to avoid flickering when the dom elements are reordered
-      this._siblingEls.forEach(function(el) {
-        Animation.stop(el);
-        el.setAttribute('style', '');
-      });
+      if (this._siblingEls) {
+        this._siblingEls.forEach(function(el) {
+          Animation.stop(el);
+          el.setAttribute('style', '');
+        });
+      }
       this._forceFeedRequired = true;
     }
 
 
     dispose():void {
       this._clearChildTranslations();
+      this._childMeasures.dispose();
       if (this.placeholder) this.placeholder.dispose()
     }
   }

@@ -128,8 +128,8 @@ module Tactile.Dom {
 
 
   export function topLeft(el:HTMLElement, xy:[number,number]):void {
-    el.style.top = `${xy[0]}px`;
-    el.style.left = `${xy[1]}px`;
+    el.style.left = `${xy[0]}px`;
+    el.style.top = `${xy[1]}px`;
   }
 
 

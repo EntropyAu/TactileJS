@@ -10,6 +10,7 @@ module Tactile {
     isOriginalEl:boolean;
     state:string;
 
+    _originalStyle: string;
 
     static buildPlaceholder(containerEl:HTMLElement, drag:Drag):Placeholder {
       let el:HTMLElement = <HTMLElement>drag.draggable.el.cloneNode(true);
@@ -23,6 +24,7 @@ module Tactile {
       this.el = el;
       this.drag = drag;
       this.isOriginalEl = isOriginalEl;
+      this._originalStyle = el.getAttribute('style');
       this._updateDimensions();
       this.el.classList.add(this.drag.options.placeholderClass);
       this.el.setAttribute('data-drag-placeholder', '');
@@ -72,6 +74,7 @@ module Tactile {
             this.el.classList.remove('dd-drag-placeholder');
             this.el.style.visibility = '';
             this.el.style.opacity = '';
+            this.el.style.transform = '';
           }
           break;
       }

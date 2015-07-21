@@ -1,21 +1,18 @@
 module Tactile {
 
-  const containerSelector:string = '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]';
-  const placeholderSelector:string = '[data-drag-placeholder]';
-
   export class Container {
 
     static closest(el:HTMLElement):HTMLElement {
-      el = Dom.closest(el, containerSelector);
-      while (el && Dom.closest(el, placeholderSelector))
-        el = Dom.closest(el.parentElement, containerSelector)
+      el = Dom.closest(el, '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]');
+      while (el && Dom.closest(el, '[data-drag-placeholder]'))
+        el = Dom.closest(el.parentElement, '[data-drag-canvas],[data-drag-droppable],[data-drag-sortable]')
       return el;
     }
 
     static closestAcceptingTarget(el:HTMLElement, draggable:Draggable):Container {
       let targetEl = this.closest(el);
       while (targetEl) {
-        let target = this._getContainer(targetEl, draggable.drag);
+        let target = draggable.drag.containerCache.get(targetEl, 'container', () => this.buildContainer(targetEl, draggable.drag));
         if (target.willAccept(draggable)) return target;
         targetEl = this.closest(targetEl.parentElement);
       }
@@ -27,15 +24,6 @@ module Tactile {
       if (Dom.matches(el, '[data-drag-droppable]')) return new Droppable(el, drag);
       if (Dom.matches(el, '[data-drag-sortable]')) return new Sortable(el, drag);
       return null;
-    }
-
-
-    private static _getContainer(el:HTMLElement, drag:Drag):Container {
-      let container = el['__tactileContainer'];
-      if (!container) {
-        container = el['__tactileContainer'] = this.buildContainer(el, drag);
-      }
-      return container;
     }
 
 

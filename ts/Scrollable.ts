@@ -2,16 +2,12 @@ module Tactile {
 
   export class Scrollable {
 
-    private static _selector:string = '[data-drag-scrollable]';
-
-    static closest(el:HTMLElement):HTMLElement { return Dom.closest(el, this._selector); }
-
     static closestReadyScrollable(el:HTMLElement, drag:Drag, xy:[number,number]):Scrollable {
-      var scrollEls = Dom.ancestors(el || document.body, this._selector);
-      scrollEls.every(function(scrollEl:HTMLElement) {
+      var scrollEls = Dom.ancestors(el || document.body, '[data-drag-scrollable]');
+      for (let scrollEl of scrollEls) {
         let scrollable = new Scrollable(scrollEl, drag);
         if (scrollable.canScroll(xy)) return scrollable;
-      }.bind(this));
+      }
       return null;
     }
 
@@ -58,7 +54,7 @@ module Tactile {
 
     canScroll(xy:[number,number]):boolean {
       this._updateVelocity(xy);
-      return (this._velocity[0] !== 0 || this._velocity[1] !== 0);
+      return Vector.lengthSquared(this._velocity) > 0;
     }
 
 

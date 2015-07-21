@@ -28,8 +28,8 @@ module Tactile {
   export var defaultOptions:Options = {
     cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
     helperResize: true,
-    helperCloneStyles: false,
-    animation: false,
+    helperCloneStyles: true,
+    animation: true,
     revertBehaviour:   'last', // original, last
     pickUpAnimation:   { duration: 300, easing: 'ease-in-out' },
     pickDownAnimation: { duration: 300, easing: 'ease-in-out' },

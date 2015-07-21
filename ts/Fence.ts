@@ -42,7 +42,7 @@ module Tactile {
       let tl = [xy[0] + gripOffset[0], xy[1] + gripOffset[1]];
 
       // coerce the top-left coordinates to fit within the fence element bounds
-      let rect = this.drag.cache.get(this.el, 'pr', () => Dom.getPaddingClientRect(this.el));
+      let rect = this.drag.scrollCache.get(this.el, 'pr', () => Dom.getPaddingClientRect(this.el));
       tl[0] = Maths.coerce(tl[0], rect.left, rect.right - size[0]);
       tl[1] = Maths.coerce(tl[1], rect.top, rect.bottom - size[1]);
 

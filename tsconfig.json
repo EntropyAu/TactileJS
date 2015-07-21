@@ -8,9 +8,6 @@
         "sourceMap": true
     },
     "files": [
-        "ts/interfaces/Element.ts",
-        "ts/interfaces/Velocity.ts",
-
         "ts/lib/Animation.ts",
         "ts/lib/Attributes.ts",
         "ts/lib/Dom.ts",

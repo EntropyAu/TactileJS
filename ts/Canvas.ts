@@ -12,13 +12,14 @@ module Tactile {
 
     constructor(el:HTMLElement, drag:Drag) {
       super(el, drag);
-
       this._initializeGrid();
-      this._insertPlaceholder();
     }
 
 
     enter(xy:[number,number]):void {
+      if (!this.placeholder) {
+        this._insertPlaceholder();
+      }
       this.placeholder.setState("ghost");
       this.placeholderSize = this.placeholder.size;
       this.placeholderScale = this.placeholder.scale;
@@ -27,9 +28,9 @@ module Tactile {
 
 
     move(xy:[number,number]):void {
-      const rect = this.drag.cache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
-      const sl = this.drag.cache.get(this.el, 'sl', () => this.el.scrollLeft);
-      const st = this.drag.cache.get(this.el, 'st', () => this.el.scrollTop);
+      const rect = this.drag.scrollCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
+      const sl = this.drag.scrollCache.get(this.el, 'sl', () => this.el.scrollLeft);
+      const st = this.drag.scrollCache.get(this.el, 'st', () => this.el.scrollTop);
       let l = xy[0] - rect.left + sl + this.drag.helper.gripOffset[0],
           t = xy[1] - rect.top  + st + this.drag.helper.gripOffset[1];
       l = l / this.placeholderScale[0];
