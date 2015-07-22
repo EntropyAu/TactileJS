@@ -1,7 +1,7 @@
 module Tactile.Animation {
 
   export function set(
-    el:HTMLElement,
+    els:HTMLElement|HTMLElement[],
     target:any,
     options:AnimationOptions = { duration: 0 },
     complete:Function = null) {
@@ -13,21 +13,21 @@ module Tactile.Animation {
         complete: complete,
         queue: false
       }
-      window['Velocity'](el, target, velocityOptions);
+      window['Velocity'](els, target, velocityOptions);
     } else {
-      applyStyleProperties(el, target);
-      applyTransformProperties(el, target);
+      for (let el of [].concat(els)) {
+        applyStyleProperties(el, target);
+        applyTransformProperties(el, target);
+      }
       if (complete) complete();
     }
   }
 
-  export function stop(el:HTMLElement):void {
+  export function stop(els:HTMLElement|HTMLElement[]):void {
     if (window["Velocity"]) {
-      window['Velocity'](el, 'stop');
+      window['Velocity'](els, 'stop');
     }
   }
-
-  /*
 
   export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any):void {
     const startIndex = options.startIndex || 0;
@@ -40,7 +40,8 @@ module Tactile.Animation {
         oldSize:[number,number] = null,
         newSize:[number,number] = null;
 
-    const oldOffsets = childOffsetMap(el, startIndex, endIndex);
+    const cache = new Cache();
+    const oldOffsets = childOffsetMap(cache, 'old', el, startIndex, endIndex);
     if (options.animateParentSize) {
       originalStyleHeight = '';
       originalStyleWidth = '';
@@ -49,15 +50,14 @@ module Tactile.Animation {
       oldSize = [el.offsetWidth, el.offsetHeight];
     }
     mutationFunction();
-    const newOffsets = childOffsetMap(el, startIndex, endIndex);
+    const newOffsets = childOffsetMap(cache, 'new', el, startIndex, endIndex);
     if (options.animateParentSize) {
       newSize = [el.offsetWidth, el.offsetHeight];
     }
 
     animateBetweenOffsets(
+      cache,
       el,
-      oldOffsets,
-      newOffsets,
       startIndex,
       endIndex,
       duration,
@@ -100,21 +100,20 @@ module Tactile.Animation {
 
 
   function animateBetweenOffsets(
+    cache:Cache,
     el:HTMLElement,
-    oldOffsets:Map,
-    newOffsets:Map,
     startIndex:number,
     endIndex:number,
     duration:number,
     easing:string) {
     for (let i = startIndex; i < endIndex + 1; i++) {
-      let childEl = el.children[i];
+      let childEl = <HTMLElement>el.children[i];
       if (!childEl) continue;
 
       //if (childEl.matches('[data-drag-placeholder]')) continue;
 
-      let oldOffset = oldOffsets.get(childEl);
-      let newOffset = newOffsets.get(childEl);
+      let oldOffset = cache.get(childEl, 'old');
+      let newOffset = cache.get(childEl, 'new');
       if (!oldOffset || !newOffset || (oldOffset[0] === newOffset[0] && oldOffset[1] === newOffset[1]))
         continue;
 
@@ -139,16 +138,13 @@ module Tactile.Animation {
   }
 
 
-  function childOffsetMap(el:HTMLElement, startIndex:number, endIndex:number):any {
-    const map = new WeakMap();
+  function childOffsetMap(cache:Cache, key:string, el:HTMLElement, startIndex:number, endIndex:number):void {
     for (let i = startIndex; i < endIndex; i++) {
       let childEl = <HTMLElement>el.children[i];
-      if (childEl) map.set(childEl, [childEl.offsetLeft, childEl.offsetTop]);
+      if (childEl) cache.set(childEl, key, [childEl.offsetLeft, childEl.offsetTop]);
     }
-    return map;
   }
 
-  */
 
   function unwrapVelocityPropertyValue(value:any):any {
     return Array.isArray(value) ? value[0] : value;

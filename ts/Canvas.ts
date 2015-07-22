@@ -22,7 +22,6 @@ module Tactile {
 
 
     move(xy:[number,number]):void {
-      console.log(xy);
       const rect = this.drag.scrollCache.get(this.el, 'clientRect', () => this.el.getBoundingClientRect());
       const scrollOffset = this.drag.scrollCache.get(this.el, 'scrollOffset', () => [this.el.scrollLeft, this.el.scrollTop]);
 

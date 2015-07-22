@@ -80,14 +80,14 @@ module Tactile {
 
 
     dispose() {
-      document.removeEventListener('scroll', this._onScrollOrWheelListener, false);
-      document.removeEventListener('mousewheel', this._onScrollOrWheelListener, false);
-      document.removeEventListener('wheel', this._onScrollOrWheelListener, false);
-
       this.containerCache.getElements().forEach((t:HTMLElement) => this.containerCache.get(t, 'container').dispose());
       this.helper.dispose();
       this.scrollCache.dispose();
       this.containerCache.dispose();
+
+      document.removeEventListener('scroll', this._onScrollOrWheelListener, false);
+      document.removeEventListener('mousewheel', this._onScrollOrWheelListener, false);
+      document.removeEventListener('wheel', this._onScrollOrWheelListener, false);
     }
 
 
@@ -103,7 +103,7 @@ module Tactile {
         if (this.fence) this.xy = this.fence.getConstrainedXY(this.xy);
         if (!this.xyEl) this.xyEl = Dom.elementFromPoint(this.xy);
         if (this.xyEl != this._lastXyEl) {
-          //this._scroller = Scrollable.closestReadyScrollable(this.xyEl, this, this.xy);
+          this._scroller = Scrollable.closestReadyScrollable(this.xyEl, this, this.xy);
         }
         this._raise(this.draggable.el, 'drag');
         this.helper.setPosition(this.xy);

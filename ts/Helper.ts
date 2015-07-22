@@ -165,7 +165,7 @@ module Tactile {
     private _pickUp():void {
       Animation.set(this.el, {
         rotateZ: [this.drag.options.helperRotation, 0],
-        boxShadowBlur: this.drag.options.helperShadowSize
+        boxShadowBlur: [this.drag.options.helperShadowSize, 'easeOutBack']
       }, this.drag.options.pickUpAnimation);
     }
   }

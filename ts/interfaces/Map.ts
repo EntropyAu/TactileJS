@@ -1,4 +1,24 @@
-interface Map<K, V> {
+interface IteratorResult<T> {
+    done: boolean;
+    value?: T;
+}
+
+interface Iterator<T> {
+    next(value?: any): IteratorResult<T>;
+    return?(value?: any): IteratorResult<T>;
+    throw?(e?: any): IteratorResult<T>;
+}
+
+interface Iterable<T> {
+    [Symbol.iterator](): Iterator<T>;
+}
+
+interface IterableIterator<T> extends Iterator<T> {
+    [Symbol.iterator](): IterableIterator<T>;
+}
+
+
+export interface Map<K, V> {
     clear(): void;
     delete(key: K): boolean;
     entries(): IterableIterator<[K, V]>;
@@ -13,9 +33,10 @@ interface Map<K, V> {
     [Symbol.toStringTag]: string;
 }
 
-interface MapConstructor {
+export interface MapConstructor {
     new <K, V>(): Map<K, V>;
     new <K, V>(iterable: Iterable<[K, V]>): Map<K, V>;
     prototype: Map<any, any>;
 }
-declare var Map: MapConstructor;
+
+export declare var Map: MapConstructor;

@@ -47,13 +47,19 @@ module Tactile {
         switch (state) {
           case "hidden":
             this.el.style.visibility = 'hidden';
+            this.el.style.marginBottom = (-this.size[1]) + 'px';
+            this._updateDimensions();
             break;
           case "ghost":
             this.el.style.visibility = '';
+            this.el.style.marginBottom = '';
+            this._updateDimensions();
             Animation.set(this.el, { opacity: 0.1 }, velocityOptions);
             break;
           case "materialized":
             this.el.style.visibility = '';
+            this.el.style.marginBottom = '';
+            this._updateDimensions();
             Animation.set(this.el, { opacity: 1.0 }, velocityOptions);
             break;
         }
@@ -62,6 +68,7 @@ module Tactile {
 
 
     dispose():void {
+      Animation.stop(this.el);
       switch (this.state) {
         case "hidden":
           Polyfill.remove(this.el);
@@ -69,14 +76,12 @@ module Tactile {
           break;
         case "ghost":
         case "materialized":
-          if (this.el) {
-            // restore the original draggable element settings
-            this.el.removeAttribute('data-drag-placeholder');
-            Polyfill.removeClass(this.el, this.drag.options.placeholderClass);
-            this.el.style.visibility = '';
-            this.el.style.opacity = '';
-            this.el.style.transform = '';
-          }
+          // restore the original draggable element settings
+          this.el.removeAttribute('data-drag-placeholder');
+          Polyfill.removeClass(this.el, this.drag.options.placeholderClass);
+          this.el.style.visibility = '';
+          this.el.style.opacity = '';
+          this.el.style.transform = '';
           break;
       }
     }

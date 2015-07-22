@@ -12,7 +12,7 @@ module Tactile {
 
     _id:string;
     _els:HTMLElement[];
-    _cache:Map<HTMLElement,any>;
+    _cache:Map;
 
     constructor() {
       if (_useMap) {
@@ -31,6 +31,11 @@ module Tactile {
       } else {
         return elCache[key] = fn();
       }
+    }
+
+    set(el:HTMLElement, key:string, value:any):void {
+      let elCache = this._getElementCache(el);
+      return elCache[key] = value;
     }
 
 

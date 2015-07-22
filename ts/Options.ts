@@ -1,7 +1,7 @@
 module Tactile {
   export interface AnimationOptions {
     duration?:number;
-    easing?:string;
+    easing?:string|number[];
   }
   export interface Options {
     cancel:string;

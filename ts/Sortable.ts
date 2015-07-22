@@ -47,7 +47,6 @@ module Tactile {
       } else {
         this.placeholder = Placeholder.buildPlaceholder(this.el, this.drag);
       }
-      this.placeholder.setState('ghosted');
     }
 
 
@@ -95,6 +94,7 @@ module Tactile {
 
       adjustedXY = [adjustedXY[0] / this.placeholderScale[0],
                     adjustedXY[1] / this.placeholderScale[1]];
+
 
       let naturalOffset = 0;
       let newIndex = 0;
@@ -154,6 +154,8 @@ module Tactile {
       let offset:number = 0;
       let placeholderOffset:number = null;
 
+      let els = [];
+      let values = [];
       this._siblingEls.forEach(function (el:HTMLElement, index:number) {
         if (index === this.index) {
           placeholderOffset = offset;
@@ -163,13 +165,17 @@ module Tactile {
         let newTranslation = offset - measure.offset
         if (measure.translation !== newTranslation || this._forceFeedRequired) {
           measure.translation = newTranslation;
-          let props = this._forceFeedRequired
-                    ? { [this._directionProperties.translate]: [measure.translation, Math.random() / 100], translateZ: [0,0] }
-                    : { [this._directionProperties.translate]: measure.translation + Math.random() / 100, translateZ: [0,0] };
-          Animation.set(el, props, this.drag.options.reorderAnimation);
+          els.push(el);
+          values.push(measure.translation);
         }
         offset += measure.measure;
       }.bind(this));
+
+      if (this._forceFeedRequired)
+        Animation.set(els, { translateY: [function(i) { return values[i]; }, function(i) { return values[i] + Math.random() / 100; }]}, this.drag.options.reorderAnimation);
+      else
+        Animation.set(els, { translateY: function(i) { return values[i]; }}, this.drag.options.reorderAnimation);
+
 
       if (placeholderOffset === null)  placeholderOffset = offset;
       let placeholderMeasure = this._getChildMeasure(this.placeholder.el);
@@ -186,14 +192,9 @@ module Tactile {
     private _clearChildTranslations():void {
       // synchronously clear the transform styles (rather than calling
       // velocity.js) to avoid flickering when the dom elements are reordered
-      if (this._siblingEls) {
-        this._siblingEls.forEach(function(el) {
-          Animation.stop(el);
-        });
-      }
+      Animation.stop(this._siblingEls || []);
       if (this._childEls) {
       this._childEls.forEach(function(el) {
-        Animation.stop(el);
         el.style.transform = '';
         el.style.webkitTransform = '';
       });
@@ -203,9 +204,9 @@ module Tactile {
 
 
     dispose():void {
+      if (this.placeholder) this.placeholder.dispose()
       this._clearChildTranslations();
       this._childMeasures.dispose();
-      if (this.placeholder) this.placeholder.dispose()
     }
   }
 }

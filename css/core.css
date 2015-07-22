@@ -28,8 +28,8 @@ ul[data-drag-canvas] > li {
   z-index: 1;
 }
 
-// encourage hardware acceleration for all draggable items
-// don't apply to the body element as this can cause side-effects (disappearing helpers)
+/* encourage hardware acceleration for all draggable items */
+/* don't apply to the body element as this can cause side-effects (disappearing helpers) */
 *[data-drag-scrollable]:not(body),
 *[data-drag-draggable],
 ol[data-drag-sortable] > li,
@@ -201,7 +201,7 @@ body[data-drag-in-progress] ul[data-drag-canvas] {
      -moz-pointer-events: none !important;
       -ms-pointer-events: none !important;
           pointer-events: none !important;
-  box-shadow: 0 0 0 rgba(0,0,0,0.2);
+  box-shadow: 0 0 0 rgba(0,0,0,0.4);
   will-change: transform;
 }
 
