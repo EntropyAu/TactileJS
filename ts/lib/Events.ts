@@ -19,29 +19,49 @@ module Tactile.Events {
 
 
   export function raise(source:Element, eventName:string, eventData:any):boolean {
-    var event = new CustomEvent(eventName, eventData);
+    let event = null;
+    if (typeof CustomEvent === 'function') {
+      event = new CustomEvent(eventName, eventData);
+    } else {
+      // internet explorer 9/10/11
+      event = document.createEvent('CustomEvent');
+      event.initCustomEvent(event, true, true, eventData);
+    }
     source.dispatchEvent(event);
     return !event.defaultPrevented;
   }
 
 
-  export function pointerEventXY(e:MouseEvent|TouchEvent):[number, number] {
-    if (e instanceof TouchEvent) {
-      return [e.touches[0].clientX, e.touches[0].clientY];
-    }
-    if (e instanceof MouseEvent) {
-      return [e.clientX, e.clientY];
-    }
+  interface NormalizedPointerEvent {
+    id: number;
+    target: HTMLElement;
+    xy: [number,number];
+    xyEl: HTMLElement;
   }
 
 
-  export function pointerEventId(e:MouseEvent|TouchEvent):number {
-    // TODO: Fix up
-    if (e instanceof TouchEvent) {
-      return 0;
+  export function normalizePointerEvent(e:MouseEvent|TouchEvent):NormalizedPointerEvent[] {
+    if (e['changedTouches']) return _normalizeTouchEvent(<TouchEvent>e);
+    if (e['clientX']) return _normalizeMouseEvent(<MouseEvent>e);
+  }
+
+
+  function _normalizeTouchEvent(e:TouchEvent):NormalizedPointerEvent[] {
+    let pointers:NormalizedPointerEvent[] = [];
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      let touch = e.changedTouches[i];
+      pointers.push({
+        id: touch.identifier,
+        target: <HTMLElement>touch.target,
+        xy: [touch.clientX, touch.clientY],
+        xyEl: e.type === 'touchstart' ? <HTMLElement>touch.target : null
+      });
     }
-    if (e instanceof MouseEvent) {
-      return 0;
-    }
+    return pointers;
+  }
+
+
+  function _normalizeMouseEvent(e:MouseEvent):NormalizedPointerEvent[] {
+    return [{ id: 0, target: <HTMLElement>e.target, xy: [e.clientX, e.clientY], xyEl: <HTMLElement>e.target }];
   }
 }

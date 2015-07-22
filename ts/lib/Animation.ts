@@ -176,13 +176,14 @@ module Tactile.Animation {
     const transformProperties = {
       "translateX": "px",
       "translateY": "px",
+      "translateZ": "px",
       "scaleX": "",
       "scaleY": "",
       "rotateZ": "deg"
     };
 
     // follow the same transform order as Velocity.js to ensure consistent results
-    const transformOrder = ["translateX","translateY","scaleX","scaleY","rotateZ"];
+    const transformOrder = ["translateX","translateY","translateZ","scaleX","scaleY","rotateZ"];
 
     // cache the transform values on the element. This avoids us having
     // to parse the transform string when we do a partial update

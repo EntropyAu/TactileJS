@@ -17,6 +17,13 @@ module Tactile.Dom {
   }
 
 
+  export function isDescendant(el:HTMLElement, descendantEl:Element):boolean {
+    do {
+      descendantEl = descendantEl.parentElement;
+    } while (descendantEl && descendantEl !== el);
+    return descendantEl === el;
+  }
+
   export function closest(el:HTMLElement, selector:string):HTMLElement {
     if (el === null) return;
     do {
@@ -104,10 +111,8 @@ module Tactile.Dom {
 
 
   let vendorTransform:string = null;
-  setTimeout(function() {
-    if (document.body.style.webkitTransform !== undefined) vendorTransform = 'webkitTransform';
-    if (document.body.style.transform !== undefined) vendorTransform = 'transform';
-  });
+  if (document.documentElement.style.webkitTransform !== undefined) vendorTransform = 'webkitTransform';
+  if (document.documentElement.style.transform !== undefined) vendorTransform = 'transform';
 
 
   export function translate(el:HTMLElement, xy:[number,number]):void {

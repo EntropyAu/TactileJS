@@ -2,7 +2,7 @@ module Tactile {
 
   export class Sortable extends Container {
 
-    private _index:number;
+    private index:number;
     private _direction:string;
     private _directionProperties:any;
     private _childEls:HTMLElement[];
@@ -47,7 +47,7 @@ module Tactile {
       } else {
         this.placeholder = Placeholder.buildPlaceholder(this.el, this.drag);
       }
-      this._offsetPlaceholderWithMargin();
+      this.placeholder.setState('ghosted');
     }
 
 
@@ -67,7 +67,6 @@ module Tactile {
         this._initializeChildAndSiblingEls();
       }
       this.placeholder.setState("ghost");
-      this._undoOffsetPlaceholder();
       this.placeholderSize = this.placeholder.size;
       this.placeholderScale = this.placeholder.scale;
       this.move(xy);
@@ -77,8 +76,8 @@ module Tactile {
 
     move(xy:[number,number]):void {
       if (this._siblingEls.length === 0) {
-        if (this._index !== 0) {
-          this._index = 0;
+        if (this.index !== 0) {
+          this.index = 0;
           this._updateChildTranslations();
         }
         return;
@@ -87,6 +86,7 @@ module Tactile {
       const bounds = this.drag.scrollCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
       const sl = this.drag.scrollCache.get(this.el, 'sl', () => this.el.scrollLeft);
       const st = this.drag.scrollCache.get(this.el, 'st', () => this.el.scrollTop);
+
       // calculate the position of the item relative to this container
       const innerXY = [xy[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
                        xy[1] - bounds.top  + st - parseInt(this._style.paddingTop, 10)];
@@ -105,9 +105,12 @@ module Tactile {
         newIndex++;
       }
       while (newIndex < this._siblingEls.length);
+      this._setPlaceholderIndex(newIndex);
+    }
 
-      if (this._index !== newIndex) {
-        this._index = newIndex;
+    _setPlaceholderIndex(newIndex:number):void {
+      if (newIndex !== this.index) {
+        this.index = newIndex;
         this._updateChildTranslations();
       }
     }
@@ -117,37 +120,17 @@ module Tactile {
       if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
         this.placeholder.setState("materialized");
       } else {
-        this._index = null;
-        this._forceFeedRequired = true;
+        this.index = null;
         this._childMeasures.clear();
         this.placeholder.setState("hidden");
-        this._offsetPlaceholderWithMargin();
         this._updateChildTranslations();
-      }
-    }
-
-
-    private _offsetPlaceholderWithMargin():void {
-      if (this.el.children.length > 0) {
-        let lastChildEl = <HTMLElement>this.el.children[this.el.children.length - 1];
-        let lastChildStyle = getComputedStyle(lastChildEl);
-        let newMargin = parseInt(lastChildStyle[this._directionProperties.endMargin], 10) - this.placeholder.outerSize[this._directionProperties.index];
-        lastChildEl.style[this._directionProperties.endMargin] = newMargin + 'px';
-      }
-    }
-
-
-    private _undoOffsetPlaceholder():void {
-      if (this.el.children.length > 0) {
-        let lastChildEl = <HTMLElement>this.el.children[this.el.children.length - 1];
-        lastChildEl.style[this._directionProperties.endMargin] = '';
       }
     }
 
 
     finalizeDrop(draggable:Draggable):void {
       this._clearChildTranslations();
-      this.el.insertBefore(this.placeholder.el, this._siblingEls[this._index]);
+      this.el.insertBefore(this.placeholder.el, this._siblingEls[this.index]);
       this.placeholder.dispose();
       this.placeholder = null;
     }
@@ -166,12 +149,13 @@ module Tactile {
     }
 
 
+
     private _updateChildTranslations():void {
       let offset:number = 0;
       let placeholderOffset:number = null;
 
       this._siblingEls.forEach(function (el:HTMLElement, index:number) {
-        if (index === this._index) {
+        if (index === this.index) {
           placeholderOffset = offset;
           offset += this.placeholder.outerSize[this._directionProperties.index];
         }
@@ -180,8 +164,8 @@ module Tactile {
         if (measure.translation !== newTranslation || this._forceFeedRequired) {
           measure.translation = newTranslation;
           let props = this._forceFeedRequired
-                    ? { [this._directionProperties.translate]: [measure.translation, Math.random() / 100] }
-                    : { [this._directionProperties.translate]: measure.translation + Math.random() / 100 };
+                    ? { [this._directionProperties.translate]: [measure.translation, Math.random() / 100], translateZ: [0,0] }
+                    : { [this._directionProperties.translate]: measure.translation + Math.random() / 100, translateZ: [0,0] };
           Animation.set(el, props, this.drag.options.reorderAnimation);
         }
         offset += measure.measure;
@@ -191,7 +175,8 @@ module Tactile {
       let placeholderMeasure = this._getChildMeasure(this.placeholder.el);
       let newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
       if (placeholderMeasure.translation !== newPlaceholderTranslation || this._forceFeedRequired) {
-        Animation.set(this.placeholder.el, { [this._directionProperties.translate]: newPlaceholderTranslation });
+        // teleport the placeholder into it's new position (no animation)
+        Dom.transform(this.placeholder.el, { [this._directionProperties.translate]: newPlaceholderTranslation });
         placeholderMeasure.translation = newPlaceholderTranslation;
       }
       this._forceFeedRequired = false;
@@ -204,8 +189,14 @@ module Tactile {
       if (this._siblingEls) {
         this._siblingEls.forEach(function(el) {
           Animation.stop(el);
-          el.setAttribute('style', '');
         });
+      }
+      if (this._childEls) {
+      this._childEls.forEach(function(el) {
+        Animation.stop(el);
+        el.style.transform = '';
+        el.style.webkitTransform = '';
+      });
       }
       this._forceFeedRequired = true;
     }

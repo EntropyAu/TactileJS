@@ -5,6 +5,7 @@ module Tactile {
     static closestReadyScrollable(el:HTMLElement, drag:Drag, xy:[number,number]):Scrollable {
       var scrollEls = Dom.ancestors(el || document.body, '[data-drag-scrollable]');
       for (let scrollEl of scrollEls) {
+        // TODO cache scrollable elements
         let scrollable = new Scrollable(scrollEl, drag);
         if (scrollable.canScroll(xy)) return scrollable;
       }
@@ -39,7 +40,7 @@ module Tactile {
         const h = document.documentElement.clientHeight;
         this._bounds = { left: 0, top: 0, width: w, height: h, right: w, bottom: h };
       } else {
-        this._bounds = this.el.getBoundingClientRect();
+        this._bounds = this.drag.scrollCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
       }
 
       // initialize sensitivity

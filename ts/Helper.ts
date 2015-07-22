@@ -3,18 +3,17 @@ module Tactile {
 
     el:HTMLElement;
     drag:Drag;
+    xy:[number,number];
     gripXY:[number,number];
     gripRelative:[number,number];
     gripOffset:[number,number];
     size:[number,number];
-    scale:[number,number];
-    xy:[number,number];
+    scale:[number,number] = [1,1];
 
 
     constructor(drag:Drag, draggable:Draggable) {
       this.drag = drag;
       this.xy = [0,0];
-
       this._initialize(draggable);
     }
 
@@ -56,6 +55,11 @@ module Tactile {
       Dom.topLeft(this.el, this.gripOffset);
       Dom.translate(this.el, this.drag.xy);
 
+      // set the initial helper element size before appending to the dom,
+      // to avoid flickering before Velocity animation kicks in
+      this.el.style.width = rect.width + 'px';
+      this.el.style.height = rect.height + 'px';
+
       document.body.appendChild(this.el);
 
       this.setPosition(this.drag.xy);
@@ -88,9 +92,9 @@ module Tactile {
     setPosition(xy:[number,number]):void {
       if (Vector.equals(this.xy, xy)) return;
       Animation.set(this.el, {
-        translateX: xy[0],
-        translateY: xy[1],
-        translateZ: 1
+        translateX: [xy[0], xy[0]],
+        translateY: [xy[1], xy[1]],
+        translateZ: [1, 1]
       });
       this.xy = xy;
     }
@@ -109,6 +113,7 @@ module Tactile {
       this.gripXY = Vector.multiply(this.gripRelative, size);
       this.gripOffset = Vector.multiplyScalar(this.gripXY, -1);
 
+      const minimalDelta = 0.0001;
       Animation.set(this.el, {
         width: size[0],
         height: size[1],
@@ -116,9 +121,10 @@ module Tactile {
         top: this.gripOffset[1],
         transformOriginX: this.gripXY[0],
         transformOriginY: this.gripXY[1],
-        scaleX: scale[0],
-        scaleY: scale[1]
-      }, animate ? this.drag.options.resizeAnimation : undefined);
+        scaleX: [scale[0], this.scale[0] + minimalDelta],
+        scaleY: [scale[1], this.scale[1] + minimalDelta]
+      },
+      animate ? this.drag.options.resizeAnimation : undefined);
     }
 
 
@@ -137,8 +143,8 @@ module Tactile {
         left: [0, 0 + minimalDelta],
         translateX: [rect.left, this.xy[0] - this.gripRelative[0] * rect.width + minimalDelta],
         translateY: [rect.top, this.xy[1] - this.gripRelative[1] * rect.height + minimalDelta],
-        transformOriginX: [0, minimalDelta],
-        transformOriginY: [0, minimalDelta],
+        transformOriginX: [this.gripXY[0], this.gripXY[0] + minimalDelta],
+        transformOriginY: [this.gripXY[1], this.gripXY[1] + minimalDelta],
         width: el.offsetWidth,
         height: el.offsetHeight
       }, this.drag.options.dropAnimation, complete);
@@ -152,7 +158,7 @@ module Tactile {
 
 
     dispose():void {
-      this.el.remove();
+      Polyfill.remove(this.el);
     }
 
 

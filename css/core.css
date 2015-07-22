@@ -11,7 +11,6 @@ ol[data-drag-sortable],
 ul[data-drag-canvas] {
   position: relative;
   z-index: 0;
-  box-sizing: border-box;
   -webkit-user-select: none !important;
      -moz-user-select: none !important;
       -ms-user-select: none !important;
@@ -20,7 +19,7 @@ ul[data-drag-canvas] {
 
 *[data-drag-draggable],
 ol[data-drag-sortable] > li,
-ul[data-drag-canvas] > * {
+ul[data-drag-canvas] > li {
   cursor:      default;
   cursor: -webkit-grab;
   cursor:    -moz-grab;
@@ -29,12 +28,12 @@ ul[data-drag-canvas] > * {
   z-index: 1;
 }
 
-ol[data-drag-sortable] > li {
-  transition: none !important;
-  will-change: transform;
-}
-
-.not-ios ol[data-drag-sortable] > li {
+// encourage hardware acceleration for all draggable items
+// don't apply to the body element as this can cause side-effects (disappearing helpers)
+*[data-drag-scrollable]:not(body),
+*[data-drag-draggable],
+ol[data-drag-sortable] > li,
+ul[data-drag-canvas] > li {
   -webkit-backface-visibility: hidden;
      -moz-backface-visibility: hidden;
       -ms-backface-visibility: hidden;
@@ -43,8 +42,12 @@ ol[data-drag-sortable] > li {
      -moz-transform: translateX(0) translateY(0) translateZ(0);
       -ms-transform: translateX(0) translateY(0) translateZ(0);
           transform: translateX(0) translateY(0) translateZ(0);
+  -webkit-perspective: 1000;
   will-change: transform;
+  transition: none !important;
 }
+
+
 
 ol[data-drag-sortable='horizontal'] {
   overflow-y: hidden;
@@ -132,6 +135,7 @@ ul[data-drag-canvas] > * {
   cursor:         grab;
 }
 
+/*
 body[data-drag-in-progress] {
   cursor: move;
   cursor: -webkit-grabbing;
@@ -170,7 +174,7 @@ body[data-drag-in-progress] ul[data-drag-canvas] {
       -ms-pointer-events: all !important;
           pointer-events: all !important;
 }
-
+*/
 [data-drag-placeholder] {
   z-index: -1;
 }
@@ -193,6 +197,10 @@ body[data-drag-in-progress] ul[data-drag-canvas] {
      -moz-backface-visibility: hidden;
       -ms-backface-visibility: hidden;
           backface-visibility: hidden;
+  -webkit-pointer-events: none !important;
+     -moz-pointer-events: none !important;
+      -ms-pointer-events: none !important;
+          pointer-events: none !important;
   box-shadow: 0 0 0 rgba(0,0,0,0.2);
   will-change: transform;
 }
@@ -205,6 +213,7 @@ body[data-drag-in-progress] ul[data-drag-canvas] {
           transition:         transform 10ms linear;
 }
 
+/*
 *[data-drag-helper],
 *[data-drag-helper] *,
 body[data-drag-in-progress] [data-drag-helper],
@@ -214,3 +223,4 @@ body[data-drag-in-progress] [data-drag-helper] * {
       -ms-pointer-events: none !important;
           pointer-events: none !important;
 }
+*/

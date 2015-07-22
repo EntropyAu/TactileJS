@@ -26,9 +26,10 @@ module Tactile {
       this.isOriginalEl = isOriginalEl;
       this._originalStyle = el.getAttribute('style');
       this._updateDimensions();
-      this.el.classList.add(this.drag.options.placeholderClass);
+      Polyfill.addClass(this.el, this.drag.options.placeholderClass);
       this.el.setAttribute('data-drag-placeholder', '');
-      this.setState("ghost", false);
+      this.el.style.opacity = "0";
+      this.setState("hidden", false);
     }
 
 
@@ -63,7 +64,7 @@ module Tactile {
     dispose():void {
       switch (this.state) {
         case "hidden":
-          this.el.remove();
+          Polyfill.remove(this.el);
           this.el = null;
           break;
         case "ghost":
@@ -71,7 +72,7 @@ module Tactile {
           if (this.el) {
             // restore the original draggable element settings
             this.el.removeAttribute('data-drag-placeholder');
-            this.el.classList.remove('dd-drag-placeholder');
+            Polyfill.removeClass(this.el, this.drag.options.placeholderClass);
             this.el.style.visibility = '';
             this.el.style.opacity = '';
             this.el.style.transform = '';

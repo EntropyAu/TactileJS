@@ -3,7 +3,7 @@ module Tactile {
   export class Drag {
 
     xy:[number,number];
-    pointerEl:HTMLElement;
+    xyEl:HTMLElement;
 
     draggable:Draggable;
     helper:Helper;
@@ -16,18 +16,21 @@ module Tactile {
     scrollCache:Cache;
     containerCache:Cache;
 
+    private _xyChanged:boolean;
     private _scroller:Scrollable;
+    private _lastXyEl:HTMLElement;
     private _requestId:number = null;
     private _onScrollOrWheelListener:EventListener;
 
 
     constructor(draggableEl:HTMLElement,
                 xy:[number,number],
+                xyEl:HTMLElement,
                 options:Options) {
-      window['drag'] = this;
       this.options = options;
       this.xy = xy;
-      this.pointerEl = Dom.elementFromPoint(xy);
+      this.xyEl = xyEl || Dom.elementFromPoint(this.xy);
+      this._xyChanged = false;
 
       this.draggable = new Draggable(draggableEl, this);
       this.helper = new Helper(this, this.draggable);
@@ -50,32 +53,28 @@ module Tactile {
     }
 
 
-    move(xy:[number,number]):void {
-      // cancel any upcoming hover calls
-      if (this._requestId) {
-        cancelAnimationFrame(this._requestId);
-        this._requestId = null;
+    move(xy:[number,number], xyEl:HTMLElement):void {
+      if (!this._requestId) {
+        this._requestId = Polyfill.requestAnimationFrame(this._tick.bind(this));
       }
-
-      this.xy = this.fence ? this.fence.getConstrainedXY(xy) : xy;
-      this.pointerEl = Dom.elementFromPoint(this.xy);
-      this._scroller = Scrollable.closestReadyScrollable(this.pointerEl, this, this.xy);
-      this._hover();
-      this._raise(this.draggable.el, 'drag');
-      this.helper.setPosition(this.xy);
+      this.xy = xy;
+      this.xyEl = xyEl;
+      this._xyChanged = true;
     }
 
 
     cancel():void {
-
+      if (this._requestId) Polyfill.cancelAnimationFrame(this._requestId);
+      this.draggable.revertOriginal();
     }
 
 
     drop():void {
-      if (this._requestId) cancelAnimationFrame(this._requestId);
+      if (this._requestId) Polyfill.cancelAnimationFrame(this._requestId);
       this._scroller = null;
-      this._hover();
+      this._tick();
       if (this.target) this._beginDrop(); else this._beginMiss();
+      this._raise(this.draggable.el, 'drop');
       this._raise(this.draggable.el, 'dragend');
     }
 
@@ -97,23 +96,41 @@ module Tactile {
     }
 
 
-    private _hover():void {
+    private _tick():void {
       this._requestId = null;
+
+      if (this._xyChanged) {
+        if (this.fence) this.xy = this.fence.getConstrainedXY(this.xy);
+        if (!this.xyEl) this.xyEl = Dom.elementFromPoint(this.xy);
+        if (this.xyEl != this._lastXyEl) {
+          //this._scroller = Scrollable.closestReadyScrollable(this.xyEl, this, this.xy);
+        }
+        this._raise(this.draggable.el, 'drag');
+        this.helper.setPosition(this.xy);
+        this._xyChanged = false;
+      }
+
       if (this._scroller) {
         if (this._scroller.step(this.xy)) {
-          // clear the scrollCache of client measurements as they may have
+          // clear the client measurements scrollCache as offsets may have
           // changed due to scrolling
           this.scrollCache.clear();
         } else {
           this._scroller = null;
         };
-        // keep calling the _hover method until we are no longer scrolling
-        this._requestId = requestAnimationFrame(this._hover.bind(this));
+        // keep calling the _tick method until we are no longer scrolling
+        this._requestId = Polyfill.requestAnimationFrame(this._tick.bind(this));
       } else {
-        this.pointerEl = Dom.elementFromPoint(this.xy);
-        this._updateTarget();
-        if (this.target && Maths.contains(this.target.el.getBoundingClientRect(), this.xy))
-          this.target.move(this.xy);
+        //this.xyEl = Dom.elementFromPoint(this.xy);
+        if (this.xyEl !== this._lastXyEl) {
+          this._updateTarget();
+          this._lastXyEl = this.xyEl;
+        };
+        if (this.target) {
+          const targetBounds = this.scrollCache.get(this.target.el, 'cr', () => this.target.el.getBoundingClientRect());
+          if (Maths.contains(targetBounds, this.xy))
+            this.target.move(this.xy);
+        }
         this._raise(this.draggable.el, 'drag');
       }
     }
@@ -122,7 +139,7 @@ module Tactile {
     private _beginDrop():void {
       if (this.target.placeholder && (this.action === "copy" || this.action === "move")) {
         this.helper.animateToElementAndPutDown(this.target.placeholder.el, function() {
-          requestAnimationFrame(function() {
+          Polyfill.requestAnimationFrame(function() {
             this.target.finalizeDrop(this.draggable);
             this.dispose();
           }.bind(this));
@@ -145,9 +162,18 @@ module Tactile {
 
     private _updateTarget():void {
       const oldTarget = this.target;
+      // if the source.leaveAction is delete, the drop target cannot
+      // be another container
       let newTarget = this.source && this.source.leaveAction === "delete"
                     ? null
-                    : Container.closestAcceptingTarget(this.pointerEl, this.draggable);
+                    : Container.closestAcceptingTarget(this.xyEl, this.draggable);
+
+      // if the current drag operation is fenced, then the target container
+      // must be a descendant of the fence element
+      if (newTarget && this.fence
+                    && !Dom.isDescendant(this.fence.el, newTarget.el)
+                    && this.fence.el !== newTarget.el) return;
+
       if (newTarget === oldTarget) return;
 
       if (newTarget || this.options.revertBehaviour !== 'last') {
@@ -232,14 +258,12 @@ module Tactile {
         helperEl: this.helper.el,
         helperXY: this.helper.xy,
         fenceEl: this.fence ? this.fence.el : null,
-        sourceEl: this.source ? this.source.el : null,
-        sourceIndex: this.source ? this.source['index'] : null,
-        sourceOffset: this.source ? this.source['offset'] : null,
-        sourcePosition: this.source ? this.source['position'] : null,
+        sourceEl: this.draggable.originalParentEl,
+        sourceIndex: this.draggable.originalIndex,
+        sourceOffset: this.draggable.originalOffset,
         targetEl: this.target ? this.target.el : null,
         targetIndex: this.target ? this.target['index'] : null,
-        targetOffset: this.target ? this.target['offset'] : null,
-        targetPosition: this.target ? this.target['position'] : null
+        targetOffset: this.target ? this.target['offset'] : null
       };
       return Events.raise(el, eventName, eventData);
     }

@@ -61,7 +61,7 @@ module Tactile {
 
 
     enter(xy:[number,number]):void {
-      this.el.classList.add(this.drag.options.containerHoverClass);
+      Polyfill.addClass(this.el, this.drag.options.containerHoverClass);
     }
 
 
@@ -72,12 +72,12 @@ module Tactile {
 
 
     leave():void {
-      this.el.classList.remove(this.drag.options.containerHoverClass);
+      Polyfill.removeClass(this.el, this.drag.options.containerHoverClass);
     }
 
 
     dispose():void {
-      this.el.classList.remove(this.drag.options.containerHoverClass);
+      Polyfill.removeClass(this.el, this.drag.options.containerHoverClass);
     }
   }
 }

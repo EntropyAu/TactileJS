@@ -2,13 +2,8 @@ module Tactile {
 
   export class Canvas extends Tactile.Container {
 
-    placeholderSize:[number,number] = null;
-    placeholderScale:[number,number] = null;
-
-
-    private _offset:[number,number] = [0,0];
+    private offset:[number,number] = [0,0];
     private _grid:[number,number] = null;
-
 
     constructor(el:HTMLElement, drag:Drag) {
       super(el, drag);
@@ -19,44 +14,43 @@ module Tactile {
     enter(xy:[number,number]):void {
       if (!this.placeholder) {
         this._insertPlaceholder();
+        this.placeholderSize = this.placeholder.size;
+        this.placeholderScale = this.placeholder.scale;
       }
-      this.placeholder.setState("ghost");
-      this.placeholderSize = this.placeholder.size;
-      this.placeholderScale = this.placeholder.scale;
-      this.move(xy);
+      this.move(xy); // calculate the initial position of items
     }
 
 
     move(xy:[number,number]):void {
-      const rect = this.drag.scrollCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
-      const sl = this.drag.scrollCache.get(this.el, 'sl', () => this.el.scrollLeft);
-      const st = this.drag.scrollCache.get(this.el, 'st', () => this.el.scrollTop);
-      let l = xy[0] - rect.left + sl + this.drag.helper.gripOffset[0],
-          t = xy[1] - rect.top  + st + this.drag.helper.gripOffset[1];
-      l = l / this.placeholderScale[0];
-      t = t / this.placeholderScale[1];
+      console.log(xy);
+      const rect = this.drag.scrollCache.get(this.el, 'clientRect', () => this.el.getBoundingClientRect());
+      const scrollOffset = this.drag.scrollCache.get(this.el, 'scrollOffset', () => [this.el.scrollLeft, this.el.scrollTop]);
+
+      let localOffset:[number,number] =
+        [xy[0] - rect.left + scrollOffset[0] + this.drag.helper.gripOffset[0],
+         xy[1] - rect.top  + scrollOffset[1] + this.drag.helper.gripOffset[1]];
+
+      localOffset = Vector.divide(localOffset, this.placeholderScale);
       if (this._grid) {
-        t = Math.round((t - rect.top ) / this._grid[1]) * this._grid[1] + rect.top;
-        l = Math.round((l - rect.left) / this._grid[0]) * this._grid[0] + rect.left;
+        localOffset = [Math.round(localOffset[0] / this._grid[0]) * this._grid[0],
+                       Math.round(localOffset[1] / this._grid[1]) * this._grid[1]];
       }
-      this._offset = [l,t];
-      Dom.translate(this.placeholder.el, this._offset);
+      this.offset = localOffset;
+      Dom.translate(this.placeholder.el, this.offset);
     }
 
 
     leave() {
       if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+        // TODO animate placeholder back to it's original position
         this.placeholder.setState("materialized");
-      } else {
-        this.placeholder.setState("hidden");
       }
     }
 
 
     finalizeDrop(draggable:Draggable) {
       let el = this.placeholder.el;
-      this.placeholder.dispose();
-      Dom.topLeft(el, this._offset);
+      Dom.topLeft(el, this.offset);
     }
 
 
@@ -76,10 +70,13 @@ module Tactile {
       } else {
         this.placeholder = Placeholder.buildPlaceholder(this.el, this.drag);
       }
-      this.placeholder.el.style.position = 'absolute';
       Dom.topLeft(this.placeholder.el, [0,0]);
       this.placeholder.setState("hidden");
     }
 
+    dispose():void {
+      this.placeholder.setState("materialized", false);
+      if (this.placeholder) this.placeholder.dispose()
+    }
   }
 }

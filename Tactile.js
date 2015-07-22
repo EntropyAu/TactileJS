@@ -50,11 +50,12 @@ var Tactile;
             var transformProperties = {
                 "translateX": "px",
                 "translateY": "px",
+                "translateZ": "px",
                 "scaleX": "",
                 "scaleY": "",
                 "rotateZ": "deg"
             };
-            var transformOrder = ["translateX", "translateY", "scaleX", "scaleY", "rotateZ"];
+            var transformOrder = ["translateX", "translateY", "translateZ", "scaleX", "scaleY", "rotateZ"];
             var transformHash = el['__tactile_transform'] || {};
             for (var property in properties) {
                 if (transformProperties[property]) {
@@ -134,6 +135,13 @@ var Tactile;
             return Array.prototype.indexOf.call(el.children, childEl) !== -1;
         }
         Dom.isChild = isChild;
+        function isDescendant(el, descendantEl) {
+            do {
+                descendantEl = descendantEl.parentElement;
+            } while (descendantEl && descendantEl !== el);
+            return descendantEl === el;
+        }
+        Dom.isDescendant = isDescendant;
         function closest(el, selector) {
             if (el === null)
                 return;
@@ -218,12 +226,10 @@ var Tactile;
         }
         Dom.outerWidth = outerWidth;
         var vendorTransform = null;
-        setTimeout(function () {
-            if (document.body.style.webkitTransform !== undefined)
-                vendorTransform = 'webkitTransform';
-            if (document.body.style.transform !== undefined)
-                vendorTransform = 'transform';
-        });
+        if (document.documentElement.style.webkitTransform !== undefined)
+            vendorTransform = 'webkitTransform';
+        if (document.documentElement.style.transform !== undefined)
+            vendorTransform = 'transform';
         function translate(el, xy) {
             el.style[vendorTransform] = "translateX(" + xy[0] + "px) translateY(" + xy[1] + "px) translateZ(0)";
         }
@@ -345,29 +351,41 @@ var Tactile;
         }
         Events.cancel = cancel;
         function raise(source, eventName, eventData) {
-            var event = new CustomEvent(eventName, eventData);
+            var event = null;
+            if (typeof CustomEvent === 'function') {
+                event = new CustomEvent(eventName, eventData);
+            }
+            else {
+                event = document.createEvent('CustomEvent');
+                event.initCustomEvent(event, true, true, eventData);
+            }
             source.dispatchEvent(event);
             return !event.defaultPrevented;
         }
         Events.raise = raise;
-        function pointerEventXY(e) {
-            if (e instanceof TouchEvent) {
-                return [e.touches[0].clientX, e.touches[0].clientY];
-            }
-            if (e instanceof MouseEvent) {
-                return [e.clientX, e.clientY];
-            }
+        function normalizePointerEvent(e) {
+            if (e['changedTouches'])
+                return _normalizeTouchEvent(e);
+            if (e['clientX'])
+                return _normalizeMouseEvent(e);
         }
-        Events.pointerEventXY = pointerEventXY;
-        function pointerEventId(e) {
-            if (e instanceof TouchEvent) {
-                return 0;
+        Events.normalizePointerEvent = normalizePointerEvent;
+        function _normalizeTouchEvent(e) {
+            var pointers = [];
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                var touch = e.changedTouches[i];
+                pointers.push({
+                    id: touch.identifier,
+                    target: touch.target,
+                    xy: [touch.clientX, touch.clientY],
+                    xyEl: e.type === 'touchstart' ? touch.target : null
+                });
             }
-            if (e instanceof MouseEvent) {
-                return 0;
-            }
+            return pointers;
         }
-        Events.pointerEventId = pointerEventId;
+        function _normalizeMouseEvent(e) {
+            return [{ id: 0, target: e.target, xy: [e.clientX, e.clientY], xyEl: e.target }];
+        }
     })(Events = Tactile.Events || (Tactile.Events = {}));
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -388,6 +406,74 @@ var Tactile;
         }
         Maths.contains = contains;
     })(Maths = Tactile.Maths || (Tactile.Maths = {}));
+})(Tactile || (Tactile = {}));
+var Tactile;
+(function (Tactile) {
+    var Polyfill;
+    (function (Polyfill) {
+        var timeLast = 0;
+        function requestAnimationFrame(callback) {
+            if (window['requestAnimationFrame'])
+                return window.requestAnimationFrame(callback);
+            if (window['mozRequestAnimationFrame'])
+                return window['mozRequestAnimationFrame'](callback);
+            if (window['webkitRequestAnimationFrame'])
+                return window['webkitRequestAnimationFrame'](callback);
+            var timeCurrent = (new Date()).getTime(), timeDelta;
+            timeDelta = Math.max(0, 16 - (timeCurrent - timeLast));
+            timeLast = timeCurrent + timeDelta;
+            return setTimeout(function () { callback(timeCurrent + timeDelta); }, timeDelta);
+        }
+        Polyfill.requestAnimationFrame = requestAnimationFrame;
+        ;
+        function cancelAnimationFrame(handle) {
+            if (window['cancelAnimationFrame'])
+                return window.cancelAnimationFrame(handle);
+            if (window['mozCancelAnimationFrame'])
+                return window['mozCancelAnimationFrame'](handle);
+            if (window['webkitCancelAnimationFrame'])
+                return window['webkitCancelAnimationFrame'](handle);
+            clearTimeout(handle);
+        }
+        Polyfill.cancelAnimationFrame = cancelAnimationFrame;
+        ;
+        function addClass(el, className) {
+            if (el.classList !== undefined) {
+                el.classList.add(className);
+            }
+            else {
+                var classes = (el.getAttribute('class') || '').split(/\s+/);
+                if (classes.indexOf(className) === -1) {
+                    classes.push(className);
+                    el.setAttribute('class', classes.join(' '));
+                }
+            }
+        }
+        Polyfill.addClass = addClass;
+        function removeClass(el, className) {
+            if (el.classList !== undefined) {
+                el.classList.remove(className);
+            }
+            else {
+                var classes = (el.getAttribute('class') || '').split(/\s+/);
+                var index = classes.indexOf(className);
+                if (index !== -1) {
+                    classes.splice(index, 1);
+                    el.setAttribute('class', classes.join(' '));
+                }
+            }
+        }
+        Polyfill.removeClass = removeClass;
+        function remove(el) {
+            if (typeof el.remove === 'function') {
+                el.remove();
+            }
+            else {
+                el.parentNode.removeChild(el);
+            }
+        }
+        Polyfill.remove = remove;
+    })(Polyfill = Tactile.Polyfill || (Tactile.Polyfill = {}));
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
@@ -480,15 +566,15 @@ var Tactile;
                 || draggable.tags.some(function (t) { return _this.accepts.indexOf(t) !== -1; });
         };
         Container.prototype.enter = function (xy) {
-            this.el.classList.add(this.drag.options.containerHoverClass);
+            Tactile.Polyfill.addClass(this.el, this.drag.options.containerHoverClass);
         };
         Container.prototype.move = function (xy) {
         };
         Container.prototype.leave = function () {
-            this.el.classList.remove(this.drag.options.containerHoverClass);
+            Tactile.Polyfill.removeClass(this.el, this.drag.options.containerHoverClass);
         };
         Container.prototype.dispose = function () {
-            this.el.classList.remove(this.drag.options.containerHoverClass);
+            Tactile.Polyfill.removeClass(this.el, this.drag.options.containerHoverClass);
         };
         return Container;
     })();
@@ -500,19 +586,20 @@ var Tactile;
     Tactile.defaultOptions = {
         cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
         helperResize: true,
-        helperCloneStyles: true,
+        helperCloneStyles: false,
         animation: true,
         revertBehaviour: 'last',
         pickUpAnimation: { duration: 300, easing: 'ease-in-out' },
         pickDownAnimation: { duration: 300, easing: 'ease-in-out' },
         resizeAnimation: { duration: 300, easing: 'ease-in-out' },
         dropAnimation: { duration: 300, easing: 'ease-in-out' },
-        reorderAnimation: { duration: 150, easing: 'ease-in-out' },
+        reorderAnimation: { duration: 300, easing: 'ease-in-out' },
         deleteAnimation: { duration: 300, easing: 'ease-out' },
         pickUpDelay: 0,
         pickUpDistance: 0,
         helperRotation: -1,
         helperShadowSize: 15,
+        placeholderStyle: 'clone',
         placeholderClass: 'dd-drag-placeholder',
         containerHoverClass: 'dd-drag-hover',
         scrollSensitivity: '20%',
@@ -521,11 +608,13 @@ var Tactile;
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
+    var _useMap = window['Map'] !== undefined
+        && (new Map().values !== undefined
+            && new Map().values().next !== undefined);
     var Cache = (function () {
         function Cache() {
-            this._useMap = window['Map'] !== undefined;
-            if (this._useMap) {
-                this._cache = new window['Map']();
+            if (_useMap) {
+                this._cache = new Map();
             }
             else {
                 this._id = "__tactile" + Math.random().toString().replace('.', '');
@@ -544,8 +633,8 @@ var Tactile;
         };
         Cache.prototype.clear = function () {
             var _this = this;
-            if (this._useMap) {
-                this._cache = new window['Map']();
+            if (_useMap) {
+                this._cache = new Map();
             }
             else {
                 this._els.forEach(function (el) { return delete el[_this._id]; });
@@ -554,7 +643,7 @@ var Tactile;
         };
         Cache.prototype.dispose = function () {
             var _this = this;
-            if (this._useMap) {
+            if (_useMap) {
                 this._cache = null;
             }
             else {
@@ -563,7 +652,7 @@ var Tactile;
             }
         };
         Cache.prototype.getElements = function () {
-            if (this._useMap) {
+            if (_useMap) {
                 var els = [];
                 var iterator = this._cache.keys();
                 var result = iterator.next();
@@ -611,48 +700,41 @@ var Tactile;
         __extends(Canvas, _super);
         function Canvas(el, drag) {
             _super.call(this, el, drag);
-            this.placeholderSize = null;
-            this.placeholderScale = null;
-            this._offset = [0, 0];
+            this.offset = [0, 0];
             this._grid = null;
             this._initializeGrid();
         }
         Canvas.prototype.enter = function (xy) {
             if (!this.placeholder) {
                 this._insertPlaceholder();
+                this.placeholderSize = this.placeholder.size;
+                this.placeholderScale = this.placeholder.scale;
             }
-            this.placeholder.setState("ghost");
-            this.placeholderSize = this.placeholder.size;
-            this.placeholderScale = this.placeholder.scale;
             this.move(xy);
         };
         Canvas.prototype.move = function (xy) {
             var _this = this;
-            var rect = this.drag.scrollCache.get(this.el, 'cr', function () { return _this.el.getBoundingClientRect(); });
-            var sl = this.drag.scrollCache.get(this.el, 'sl', function () { return _this.el.scrollLeft; });
-            var st = this.drag.scrollCache.get(this.el, 'st', function () { return _this.el.scrollTop; });
-            var l = xy[0] - rect.left + sl + this.drag.helper.gripOffset[0], t = xy[1] - rect.top + st + this.drag.helper.gripOffset[1];
-            l = l / this.placeholderScale[0];
-            t = t / this.placeholderScale[1];
+            console.log(xy);
+            var rect = this.drag.scrollCache.get(this.el, 'clientRect', function () { return _this.el.getBoundingClientRect(); });
+            var scrollOffset = this.drag.scrollCache.get(this.el, 'scrollOffset', function () { return [_this.el.scrollLeft, _this.el.scrollTop]; });
+            var localOffset = [xy[0] - rect.left + scrollOffset[0] + this.drag.helper.gripOffset[0],
+                xy[1] - rect.top + scrollOffset[1] + this.drag.helper.gripOffset[1]];
+            localOffset = Tactile.Vector.divide(localOffset, this.placeholderScale);
             if (this._grid) {
-                t = Math.round((t - rect.top) / this._grid[1]) * this._grid[1] + rect.top;
-                l = Math.round((l - rect.left) / this._grid[0]) * this._grid[0] + rect.left;
+                localOffset = [Math.round(localOffset[0] / this._grid[0]) * this._grid[0],
+                    Math.round(localOffset[1] / this._grid[1]) * this._grid[1]];
             }
-            this._offset = [l, t];
-            Tactile.Dom.translate(this.placeholder.el, this._offset);
+            this.offset = localOffset;
+            Tactile.Dom.translate(this.placeholder.el, this.offset);
         };
         Canvas.prototype.leave = function () {
             if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
                 this.placeholder.setState("materialized");
             }
-            else {
-                this.placeholder.setState("hidden");
-            }
         };
         Canvas.prototype.finalizeDrop = function (draggable) {
             var el = this.placeholder.el;
-            this.placeholder.dispose();
-            Tactile.Dom.topLeft(el, this._offset);
+            Tactile.Dom.topLeft(el, this.offset);
         };
         Canvas.prototype._initializeGrid = function () {
             var gridAttribute = Tactile.Attributes.get(this.el, 'data-drag-grid', '10,10');
@@ -669,9 +751,13 @@ var Tactile;
             else {
                 this.placeholder = Tactile.Placeholder.buildPlaceholder(this.el, this.drag);
             }
-            this.placeholder.el.style.position = 'absolute';
             Tactile.Dom.topLeft(this.placeholder.el, [0, 0]);
             this.placeholder.setState("hidden");
+        };
+        Canvas.prototype.dispose = function () {
+            this.placeholder.setState("materialized", false);
+            if (this.placeholder)
+                this.placeholder.dispose();
         };
         return Canvas;
     })(Tactile.Container);
@@ -680,14 +766,14 @@ var Tactile;
 var Tactile;
 (function (Tactile) {
     var Drag = (function () {
-        function Drag(draggableEl, xy, options) {
+        function Drag(draggableEl, xy, xyEl, options) {
             this.source = null;
             this.target = null;
             this._requestId = null;
-            window['drag'] = this;
             this.options = options;
             this.xy = xy;
-            this.pointerEl = Tactile.Dom.elementFromPoint(xy);
+            this.xyEl = xyEl || Tactile.Dom.elementFromPoint(this.xy);
+            this._xyChanged = false;
             this.draggable = new Tactile.Draggable(draggableEl, this);
             this.helper = new Tactile.Helper(this, this.draggable);
             this.fence = Tactile.Fence.closestForDraggable(this, this.draggable);
@@ -702,29 +788,29 @@ var Tactile;
             document.addEventListener('wheel', this._onScrollOrWheelListener, false);
             this._raise(this.draggable.el, 'dragstart');
         }
-        Drag.prototype.move = function (xy) {
-            if (this._requestId) {
-                cancelAnimationFrame(this._requestId);
-                this._requestId = null;
+        Drag.prototype.move = function (xy, xyEl) {
+            if (!this._requestId) {
+                this._requestId = Tactile.Polyfill.requestAnimationFrame(this._tick.bind(this));
             }
-            this.xy = this.fence ? this.fence.getConstrainedXY(xy) : xy;
-            this.pointerEl = Tactile.Dom.elementFromPoint(this.xy);
-            this._scroller = Tactile.Scrollable.closestReadyScrollable(this.pointerEl, this, this.xy);
-            this._hover();
-            this._raise(this.draggable.el, 'drag');
-            this.helper.setPosition(this.xy);
+            this.xy = xy;
+            this.xyEl = xyEl;
+            this._xyChanged = true;
         };
         Drag.prototype.cancel = function () {
+            if (this._requestId)
+                Tactile.Polyfill.cancelAnimationFrame(this._requestId);
+            this.draggable.revertOriginal();
         };
         Drag.prototype.drop = function () {
             if (this._requestId)
-                cancelAnimationFrame(this._requestId);
+                Tactile.Polyfill.cancelAnimationFrame(this._requestId);
             this._scroller = null;
-            this._hover();
+            this._tick();
             if (this.target)
                 this._beginDrop();
             else
                 this._beginMiss();
+            this._raise(this.draggable.el, 'drop');
             this._raise(this.draggable.el, 'dragend');
         };
         Drag.prototype.dispose = function () {
@@ -740,8 +826,20 @@ var Tactile;
         Drag.prototype._onScrollOrWheel = function () {
             this.scrollCache.clear();
         };
-        Drag.prototype._hover = function () {
+        Drag.prototype._tick = function () {
+            var _this = this;
             this._requestId = null;
+            if (this._xyChanged) {
+                if (this.fence)
+                    this.xy = this.fence.getConstrainedXY(this.xy);
+                if (!this.xyEl)
+                    this.xyEl = Tactile.Dom.elementFromPoint(this.xy);
+                if (this.xyEl != this._lastXyEl) {
+                }
+                this._raise(this.draggable.el, 'drag');
+                this.helper.setPosition(this.xy);
+                this._xyChanged = false;
+            }
             if (this._scroller) {
                 if (this._scroller.step(this.xy)) {
                     this.scrollCache.clear();
@@ -750,20 +848,26 @@ var Tactile;
                     this._scroller = null;
                 }
                 ;
-                this._requestId = requestAnimationFrame(this._hover.bind(this));
+                this._requestId = Tactile.Polyfill.requestAnimationFrame(this._tick.bind(this));
             }
             else {
-                this.pointerEl = Tactile.Dom.elementFromPoint(this.xy);
-                this._updateTarget();
-                if (this.target && Tactile.Maths.contains(this.target.el.getBoundingClientRect(), this.xy))
-                    this.target.move(this.xy);
+                if (this.xyEl !== this._lastXyEl) {
+                    this._updateTarget();
+                    this._lastXyEl = this.xyEl;
+                }
+                ;
+                if (this.target) {
+                    var targetBounds = this.scrollCache.get(this.target.el, 'cr', function () { return _this.target.el.getBoundingClientRect(); });
+                    if (Tactile.Maths.contains(targetBounds, this.xy))
+                        this.target.move(this.xy);
+                }
                 this._raise(this.draggable.el, 'drag');
             }
         };
         Drag.prototype._beginDrop = function () {
             if (this.target.placeholder && (this.action === "copy" || this.action === "move")) {
                 this.helper.animateToElementAndPutDown(this.target.placeholder.el, function () {
-                    requestAnimationFrame(function () {
+                    Tactile.Polyfill.requestAnimationFrame(function () {
                         this.target.finalizeDrop(this.draggable);
                         this.dispose();
                     }.bind(this));
@@ -783,7 +887,11 @@ var Tactile;
             var oldTarget = this.target;
             var newTarget = this.source && this.source.leaveAction === "delete"
                 ? null
-                : Tactile.Container.closestAcceptingTarget(this.pointerEl, this.draggable);
+                : Tactile.Container.closestAcceptingTarget(this.xyEl, this.draggable);
+            if (newTarget && this.fence
+                && !Tactile.Dom.isDescendant(this.fence.el, newTarget.el)
+                && this.fence.el !== newTarget.el)
+                return;
             if (newTarget === oldTarget)
                 return;
             if (newTarget || this.options.revertBehaviour !== 'last') {
@@ -849,14 +957,12 @@ var Tactile;
                 helperEl: this.helper.el,
                 helperXY: this.helper.xy,
                 fenceEl: this.fence ? this.fence.el : null,
-                sourceEl: this.source ? this.source.el : null,
-                sourceIndex: this.source ? this.source['index'] : null,
-                sourceOffset: this.source ? this.source['offset'] : null,
-                sourcePosition: this.source ? this.source['position'] : null,
+                sourceEl: this.draggable.originalParentEl,
+                sourceIndex: this.draggable.originalIndex,
+                sourceOffset: this.draggable.originalOffset,
                 targetEl: this.target ? this.target.el : null,
                 targetIndex: this.target ? this.target['index'] : null,
-                targetOffset: this.target ? this.target['offset'] : null,
-                targetPosition: this.target ? this.target['position'] : null
+                targetOffset: this.target ? this.target['offset'] : null
             };
             return Tactile.Events.raise(el, eventName, eventData);
         };
@@ -870,29 +976,31 @@ var Tactile;
         function Draggable(el, drag) {
             this.el = el;
             this.drag = drag;
+            this.originalStyle = el.getAttribute('style');
             this.originalParentEl = el.parentElement;
             this.originalIndex = Tactile.Dom.indexOf(el);
             this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
-            this.originalOffset = [this.el.offsetLeft, this.el.offsetTop];
             this.originalScale = Tactile.Dom.clientScale(el);
+            var style = getComputedStyle(this.el);
+            this.originalOffset = [parseInt(style.left, 10), parseInt(style.top, 10)];
             this.data = Tactile.Attributes.get(el, 'data-drag-data');
             this.tags = el.hasAttribute('data-drag-tag')
                 ? Tactile.Attributes.getTags(el, 'data-drag-tag')
                 : Tactile.Attributes.getTags(el.parentElement, 'data-drag-tag');
         }
         Draggable.closest = function (el) {
-            el = Tactile.Dom.closest(el, this.handleOrDraggableSelector);
+            el = Tactile.Dom.closest(el, '[data-drag-handle],[data-drag-draggable],ol[data-drag-sortable] > li,ul[data-drag-canvas] > li');
             if (!el)
                 return null;
             if (el.hasAttribute('data-drag-handle')) {
-                el = Tactile.Dom.closest(el, this.draggableSelector);
+                el = Tactile.Dom.closest(el, '[data-drag-draggable],ol[data-drag-sortable] > li,ul[data-drag-canvas] > li');
                 return el;
             }
-            var handleEls = el.querySelectorAll(this.handleSelector);
+            var handleEls = el.querySelectorAll('[data-drag-handle]');
             var numHandleEls = handleEls.length;
             for (var i = 0; i < numHandleEls; i++) {
                 var handleEl = handleEls[i];
-                if (Tactile.Dom.closest(handleEl, this.draggableSelector) === el) {
+                if (Tactile.Dom.closest(handleEl, '[data-drag-draggable],ol[data-drag-sortable] > li,ul[data-drag-canvas] > li') === el) {
                     return null;
                 }
             }
@@ -900,17 +1008,17 @@ var Tactile;
         };
         Draggable.closestEnabled = function (el) {
             el = this.closest(el);
-            return el && !(el.hasAttribute('data-drag-disabled')
-                || el.parentElement && el.parentElement.hasAttribute('data-drag-disabled'))
+            return el && !(el.hasAttribute('data-drag-disabled') || el.parentElement && el.parentElement.hasAttribute('data-drag-disabled'))
                 ? el
                 : null;
         };
         Draggable.prototype.finalizeRevert = function () {
             this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
         };
-        Draggable.handleSelector = '[data-drag-handle]';
-        Draggable.draggableSelector = '[data-drag-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
-        Draggable.handleOrDraggableSelector = '[data-drag-handle],[data-drag-draggable],[data-drag-sortable] > *,[data-drag-canvas] > *';
+        Draggable.prototype.revertOriginal = function () {
+            this.el.setAttribute('style', this.originalStyle);
+            this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
+        };
         return Draggable;
     })();
     Tactile.Draggable = Draggable;
@@ -925,98 +1033,125 @@ var Tactile;
             this._onPointerDownListener = this._onPointerDown.bind(this);
             this._onPointerMoveListener = this._onPointerMove.bind(this);
             this._onPointerUpListener = this._onPointerUp.bind(this);
-            this._bindPointerEvents();
+            this._onKeyPressListener = this._onKeyPress.bind(this);
+            this._bindEvents();
         }
-        DragManager.prototype._bindPointerEvents = function () {
+        DragManager.prototype._bindEvents = function () {
             window.addEventListener(Tactile.Events.pointerDownEvent, this._onPointerDownListener, true);
         };
-        DragManager.prototype._unbindPointerEvents = function () {
+        DragManager.prototype._unbindEvents = function () {
             window.removeEventListener(Tactile.Events.pointerDownEvent, this._onPointerDownListener, true);
         };
-        DragManager.prototype._bindPointerEventsForDragging = function (el) {
+        DragManager.prototype._bindDraggingEvents = function () {
+            window.addEventListener('keypress', this._onKeyPressListener, false);
             window.addEventListener(Tactile.Events.pointerMoveEvent, this._onPointerMoveListener, true);
             window.addEventListener(Tactile.Events.pointerUpEvent, this._onPointerUpListener, false);
+        };
+        DragManager.prototype._unbindDraggingEvents = function () {
+            window.removeEventListener('keypress', this._onKeyPressListener, false);
+            window.removeEventListener(Tactile.Events.pointerMoveEvent, this._onPointerMoveListener, true);
+            window.removeEventListener(Tactile.Events.pointerUpEvent, this._onPointerUpListener, false);
+        };
+        DragManager.prototype._bindDraggingEventsForTarget = function (el) {
             el.addEventListener(Tactile.Events.pointerMoveEvent, this._onPointerMoveListener, true);
             el.addEventListener(Tactile.Events.pointerUpEvent, this._onPointerUpListener, false);
         };
-        DragManager.prototype._unbindPointerEventsForDragging = function (el) {
-            window.removeEventListener(Tactile.Events.pointerMoveEvent, this._onPointerMoveListener, true);
-            window.removeEventListener(Tactile.Events.pointerUpEvent, this._onPointerUpListener, false);
+        DragManager.prototype._unbindDraggingEventsForTarget = function (el) {
             el.removeEventListener(Tactile.Events.pointerMoveEvent, this._onPointerMoveListener, true);
             el.removeEventListener(Tactile.Events.pointerUpEvent, this._onPointerUpListener, false);
         };
         DragManager.prototype._onPointerDown = function (e) {
             if (e instanceof MouseEvent && e.which !== 0 && e.which !== 1)
                 return;
-            if (Tactile.Dom.ancestors(e.target, this.options.cancel).length > 0)
-                return;
-            var xy = Tactile.Events.pointerEventXY(e);
-            var dragId = Tactile.Events.pointerEventId(e);
-            var el = Tactile.Draggable.closestEnabled(e.target);
-            if (!el)
-                return false;
-            if (this.options.pickUpDelay === null || this.options.pickUpDelay === 0) {
+            for (var _i = 0, _a = Tactile.Events.normalizePointerEvent(e); _i < _a.length; _i++) {
+                var pointer = _a[_i];
+                if (Tactile.Dom.ancestors(pointer.target, this.options.cancel).length > 0)
+                    continue;
+                var draggableEl = Tactile.Draggable.closestEnabled(pointer.target);
+                if (!draggableEl)
+                    continue;
+                if (!this.options.pickUpDelay) {
+                    this.startDrag(draggableEl, pointer.id, pointer.xy, pointer.xyEl);
+                }
+                else {
+                    this.scheduleDrag(draggableEl, pointer.id, pointer.xy);
+                }
+                ;
                 Tactile.Events.cancel(e);
-                this.startDrag(el, dragId, xy);
-            }
-            else {
-                var onpickUpTimeoutHandler = function () {
-                    this._onPickUpTimeout(dragId);
-                };
-                this._pendingDrags[dragId] = {
-                    el: el,
-                    xy: xy,
-                    timerId: setTimeout(onpickUpTimeoutHandler.bind(this), this.options.pickUpDelay)
-                };
-            }
-            this._bindPointerEventsForDragging(e.target);
-        };
-        DragManager.prototype._onPickUpTimeout = function (dragId) {
-            if (this._pendingDrags[dragId]) {
-                var pendingDrag = this._pendingDrags[dragId];
-                this.startDrag(pendingDrag.el, dragId, pendingDrag.xy);
-                delete this._pendingDrags[dragId];
             }
         };
         DragManager.prototype._onPointerMove = function (e) {
-            var xy = Tactile.Events.pointerEventXY(e);
-            var dragId = Tactile.Events.pointerEventId(e);
-            if (this._drags[dragId]) {
-                var drag = this._drags[dragId];
-                Tactile.Events.cancel(e);
-                drag.move(xy);
-            }
-            if (this._pendingDrags[dragId]) {
-                var pendingDrag = this._pendingDrags[dragId];
-                if (this.options.pickUpDistance && Tactile.Vector.length(Tactile.Vector.subtract(pendingDrag.xy, xy)) > this.options.pickUpDistance)
-                    clearTimeout(pendingDrag.timerId);
-                this.startDrag(pendingDrag.el, dragId, pendingDrag.xy);
-                delete this._pendingDrags[dragId];
+            for (var _i = 0, _a = Tactile.Events.normalizePointerEvent(e); _i < _a.length; _i++) {
+                var pointer = _a[_i];
+                if (this._drags[pointer.id]) {
+                    this._drags[pointer.id].move(pointer.xy, pointer.xyEl);
+                    Tactile.Events.cancel(e);
+                }
+                if (this._pendingDrags[pointer.id]) {
+                    var pendingDrag = this._pendingDrags[pointer.id];
+                    if (this.options.pickUpDistance > 0 && Tactile.Vector.length(Tactile.Vector.subtract(pendingDrag.xy, pointer.xy)) > this.options.pickUpDistance)
+                        this.startScheduledDrag(pointer.id);
+                }
             }
         };
         DragManager.prototype._onPointerUp = function (e) {
-            var dragId = Tactile.Events.pointerEventId(e);
-            if (this._drags[dragId]) {
-                Tactile.Events.cancel(e);
-                this.endDrag(dragId);
-            }
-            if (this._pendingDrags[dragId]) {
-                clearTimeout(this._pendingDrags[dragId].timerId);
+            for (var _i = 0, _a = Tactile.Events.normalizePointerEvent(e); _i < _a.length; _i++) {
+                var pointer = _a[_i];
+                if (this._drags[pointer.id]) {
+                    this.endDrag(pointer.id);
+                    Tactile.Events.cancel(e);
+                }
+                if (this._pendingDrags[pointer.id]) {
+                    this.cancelScheduledDrag(pointer.id);
+                }
             }
         };
-        DragManager.prototype.startDrag = function (el, dragId, xy) {
+        DragManager.prototype._onKeyPress = function (e) {
+            var _this = this;
+            if (e.which === 27) {
+                Object.keys(this._drags).forEach(function (dragId) { return _this.endDrag(parseInt(dragId, 10), true); });
+            }
+        };
+        DragManager.prototype.startDrag = function (draggableEl, dragId, xy, xyEl) {
             Tactile.Dom.clearSelection();
             document.body.setAttribute('data-drag-in-progress', '');
-            return this._drags[dragId] = new Tactile.Drag(el, xy, this.options);
+            this._bindDraggingEvents();
+            if (xyEl)
+                this._bindDraggingEventsForTarget(xyEl);
+            return this._drags[dragId] = new Tactile.Drag(draggableEl, xy, xyEl, this.options);
         };
-        DragManager.prototype.endDrag = function (dragId) {
+        DragManager.prototype.scheduleDrag = function (draggableEl, dragId, xy) {
+            var onPickUpTimeout = function () { this.startScheduledDrag(dragId); }.bind(this);
+            this._pendingDrags[dragId] = {
+                el: draggableEl,
+                xy: xy,
+                timerId: setTimeout(onPickUpTimeout, this.options.pickUpDelay)
+            };
+        };
+        DragManager.prototype.endDrag = function (dragId, cancel) {
+            if (cancel === void 0) { cancel = false; }
             var drag = this._drags[dragId];
-            drag.drop();
+            if (!cancel)
+                drag.drop();
+            else
+                drag.cancel();
             delete this._drags[dragId];
             if (Object.keys(this._drags).length == 0) {
                 document.body.removeAttribute('data-drag-in-progress');
-                this._unbindPointerEventsForDragging(drag.draggable.el);
+                this._unbindDraggingEvents();
+                this._unbindDraggingEventsForTarget(drag.draggable.el);
             }
+        };
+        DragManager.prototype.startScheduledDrag = function (dragId) {
+            var pendingDrag = this._pendingDrags[dragId];
+            clearTimeout(pendingDrag.timerId);
+            this.startDrag(pendingDrag.el, pendingDrag.id, pendingDrag.xy, pendingDrag.xyEl);
+            delete this._pendingDrags[pendingDrag.id];
+        };
+        DragManager.prototype.cancelScheduledDrag = function (dragId) {
+            var pendingDrag = this._pendingDrags[dragId];
+            clearTimeout(pendingDrag.timerId);
+            delete this._pendingDrags[pendingDrag.id];
         };
         return DragManager;
     })();
@@ -1085,6 +1220,7 @@ var Tactile;
 (function (Tactile) {
     var Helper = (function () {
         function Helper(drag, draggable) {
+            this.scale = [1, 1];
             this.drag = drag;
             this.xy = [0, 0];
             this._initialize(draggable);
@@ -1118,6 +1254,8 @@ var Tactile;
             this.gripOffset = Tactile.Vector.multiplyScalar(this.gripXY, -1);
             Tactile.Dom.topLeft(this.el, this.gripOffset);
             Tactile.Dom.translate(this.el, this.drag.xy);
+            this.el.style.width = rect.width + 'px';
+            this.el.style.height = rect.height + 'px';
             document.body.appendChild(this.el);
             this.setPosition(this.drag.xy);
             this.setSizeAndScale(draggable.originalSize, draggable.originalScale, false);
@@ -1146,9 +1284,9 @@ var Tactile;
             if (Tactile.Vector.equals(this.xy, xy))
                 return;
             Tactile.Animation.set(this.el, {
-                translateX: xy[0],
-                translateY: xy[1],
-                translateZ: 1
+                translateX: [xy[0], xy[0]],
+                translateY: [xy[1], xy[1]],
+                translateZ: [1, 1]
             });
             this.xy = xy;
         };
@@ -1160,6 +1298,7 @@ var Tactile;
             this.scale = scale;
             this.gripXY = Tactile.Vector.multiply(this.gripRelative, size);
             this.gripOffset = Tactile.Vector.multiplyScalar(this.gripXY, -1);
+            var minimalDelta = 0.0001;
             Tactile.Animation.set(this.el, {
                 width: size[0],
                 height: size[1],
@@ -1167,8 +1306,8 @@ var Tactile;
                 top: this.gripOffset[1],
                 transformOriginX: this.gripXY[0],
                 transformOriginY: this.gripXY[1],
-                scaleX: scale[0],
-                scaleY: scale[1]
+                scaleX: [scale[0], this.scale[0] + minimalDelta],
+                scaleY: [scale[1], this.scale[1] + minimalDelta]
             }, animate ? this.drag.options.resizeAnimation : undefined);
         };
         Helper.prototype.animateToElementAndPutDown = function (el, complete) {
@@ -1182,8 +1321,8 @@ var Tactile;
                 left: [0, 0 + minimalDelta],
                 translateX: [rect.left, this.xy[0] - this.gripRelative[0] * rect.width + minimalDelta],
                 translateY: [rect.top, this.xy[1] - this.gripRelative[1] * rect.height + minimalDelta],
-                transformOriginX: [0, minimalDelta],
-                transformOriginY: [0, minimalDelta],
+                transformOriginX: [this.gripXY[0], this.gripXY[0] + minimalDelta],
+                transformOriginY: [this.gripXY[1], this.gripXY[1] + minimalDelta],
                 width: el.offsetWidth,
                 height: el.offsetHeight
             }, this.drag.options.dropAnimation, complete);
@@ -1193,7 +1332,7 @@ var Tactile;
             Tactile.Animation.set(this.el, { opacity: 0 }, this.drag.options.deleteAnimation, complete);
         };
         Helper.prototype.dispose = function () {
-            this.el.remove();
+            Tactile.Polyfill.remove(this.el);
         };
         Helper.prototype._pickUp = function () {
             Tactile.Animation.set(this.el, {
@@ -1215,9 +1354,10 @@ var Tactile;
             this.isOriginalEl = isOriginalEl;
             this._originalStyle = el.getAttribute('style');
             this._updateDimensions();
-            this.el.classList.add(this.drag.options.placeholderClass);
+            Tactile.Polyfill.addClass(this.el, this.drag.options.placeholderClass);
             this.el.setAttribute('data-drag-placeholder', '');
-            this.setState("ghost", false);
+            this.el.style.opacity = "0";
+            this.setState("hidden", false);
         }
         Placeholder.buildPlaceholder = function (containerEl, drag) {
             var el = drag.draggable.el.cloneNode(true);
@@ -1255,14 +1395,14 @@ var Tactile;
         Placeholder.prototype.dispose = function () {
             switch (this.state) {
                 case "hidden":
-                    this.el.remove();
+                    Tactile.Polyfill.remove(this.el);
                     this.el = null;
                     break;
                 case "ghost":
                 case "materialized":
                     if (this.el) {
                         this.el.removeAttribute('data-drag-placeholder');
-                        this.el.classList.remove('dd-drag-placeholder');
+                        Tactile.Polyfill.removeClass(this.el, this.drag.options.placeholderClass);
                         this.el.style.visibility = '';
                         this.el.style.opacity = '';
                         this.el.style.transform = '';
@@ -1278,6 +1418,7 @@ var Tactile;
 (function (Tactile) {
     var Scrollable = (function () {
         function Scrollable(el, drag) {
+            var _this = this;
             this._bounds = null;
             this._offset = null;
             this._velocity = [0, 0];
@@ -1297,7 +1438,7 @@ var Tactile;
                 this._bounds = { left: 0, top: 0, width: w, height: h, right: w, bottom: h };
             }
             else {
-                this._bounds = this.el.getBoundingClientRect();
+                this._bounds = this.drag.scrollCache.get(this.el, 'cr', function () { return _this.el.getBoundingClientRect(); });
             }
             var sensitivity = this.drag.options.scrollSensitivity;
             var percent = sensitivity.toString().indexOf('%') !== -1
@@ -1398,7 +1539,7 @@ var Tactile;
             else {
                 this.placeholder = Tactile.Placeholder.buildPlaceholder(this.el, this.drag);
             }
-            this._offsetPlaceholderWithMargin();
+            this.placeholder.setState('ghosted');
         };
         Sortable.prototype._initializeChildAndSiblingEls = function () {
             this._childEls = Tactile.Dom.children(this.el);
@@ -1414,7 +1555,6 @@ var Tactile;
                 this._initializeChildAndSiblingEls();
             }
             this.placeholder.setState("ghost");
-            this._undoOffsetPlaceholder();
             this.placeholderSize = this.placeholder.size;
             this.placeholderScale = this.placeholder.scale;
             this.move(xy);
@@ -1423,8 +1563,8 @@ var Tactile;
         Sortable.prototype.move = function (xy) {
             var _this = this;
             if (this._siblingEls.length === 0) {
-                if (this._index !== 0) {
-                    this._index = 0;
+                if (this.index !== 0) {
+                    this.index = 0;
                     this._updateChildTranslations();
                 }
                 return;
@@ -1447,8 +1587,11 @@ var Tactile;
                 naturalOffset += measure.measure;
                 newIndex++;
             } while (newIndex < this._siblingEls.length);
-            if (this._index !== newIndex) {
-                this._index = newIndex;
+            this._setPlaceholderIndex(newIndex);
+        };
+        Sortable.prototype._setPlaceholderIndex = function (newIndex) {
+            if (newIndex !== this.index) {
+                this.index = newIndex;
                 this._updateChildTranslations();
             }
         };
@@ -1457,31 +1600,15 @@ var Tactile;
                 this.placeholder.setState("materialized");
             }
             else {
-                this._index = null;
-                this._forceFeedRequired = true;
+                this.index = null;
                 this._childMeasures.clear();
                 this.placeholder.setState("hidden");
-                this._offsetPlaceholderWithMargin();
                 this._updateChildTranslations();
-            }
-        };
-        Sortable.prototype._offsetPlaceholderWithMargin = function () {
-            if (this.el.children.length > 0) {
-                var lastChildEl = this.el.children[this.el.children.length - 1];
-                var lastChildStyle = getComputedStyle(lastChildEl);
-                var newMargin = parseInt(lastChildStyle[this._directionProperties.endMargin], 10) - this.placeholder.outerSize[this._directionProperties.index];
-                lastChildEl.style[this._directionProperties.endMargin] = newMargin + 'px';
-            }
-        };
-        Sortable.prototype._undoOffsetPlaceholder = function () {
-            if (this.el.children.length > 0) {
-                var lastChildEl = this.el.children[this.el.children.length - 1];
-                lastChildEl.style[this._directionProperties.endMargin] = '';
             }
         };
         Sortable.prototype.finalizeDrop = function (draggable) {
             this._clearChildTranslations();
-            this.el.insertBefore(this.placeholder.el, this._siblingEls[this._index]);
+            this.el.insertBefore(this.placeholder.el, this._siblingEls[this.index]);
             this.placeholder.dispose();
             this.placeholder = null;
         };
@@ -1500,7 +1627,7 @@ var Tactile;
             var offset = 0;
             var placeholderOffset = null;
             this._siblingEls.forEach(function (el, index) {
-                if (index === this._index) {
+                if (index === this.index) {
                     placeholderOffset = offset;
                     offset += this.placeholder.outerSize[this._directionProperties.index];
                 }
@@ -1509,8 +1636,8 @@ var Tactile;
                 if (measure.translation !== newTranslation || this._forceFeedRequired) {
                     measure.translation = newTranslation;
                     var props = this._forceFeedRequired
-                        ? (_a = {}, _a[this._directionProperties.translate] = [measure.translation, Math.random() / 100], _a)
-                        : (_b = {}, _b[this._directionProperties.translate] = measure.translation + Math.random() / 100, _b);
+                        ? (_a = {}, _a[this._directionProperties.translate] = [measure.translation, Math.random() / 100], _a.translateZ = [0, 0], _a)
+                        : (_b = {}, _b[this._directionProperties.translate] = measure.translation + Math.random() / 100, _b.translateZ = [0, 0], _b);
                     Tactile.Animation.set(el, props, this.drag.options.reorderAnimation);
                 }
                 offset += measure.measure;
@@ -1521,7 +1648,7 @@ var Tactile;
             var placeholderMeasure = this._getChildMeasure(this.placeholder.el);
             var newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
             if (placeholderMeasure.translation !== newPlaceholderTranslation || this._forceFeedRequired) {
-                Tactile.Animation.set(this.placeholder.el, (_a = {}, _a[this._directionProperties.translate] = newPlaceholderTranslation, _a));
+                Tactile.Dom.transform(this.placeholder.el, (_a = {}, _a[this._directionProperties.translate] = newPlaceholderTranslation, _a));
                 placeholderMeasure.translation = newPlaceholderTranslation;
             }
             this._forceFeedRequired = false;
@@ -1531,7 +1658,13 @@ var Tactile;
             if (this._siblingEls) {
                 this._siblingEls.forEach(function (el) {
                     Tactile.Animation.stop(el);
-                    el.setAttribute('style', '');
+                });
+            }
+            if (this._childEls) {
+                this._childEls.forEach(function (el) {
+                    Tactile.Animation.stop(el);
+                    el.style.transform = '';
+                    el.style.webkitTransform = '';
                 });
             }
             this._forceFeedRequired = true;

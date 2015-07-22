@@ -7,33 +7,50 @@ module Tactile {
     private _onPointerDownListener:EventListener;
     private _onPointerMoveListener:EventListener;
     private _onPointerUpListener:EventListener;
+    private _onKeyPressListener:EventListener;
+
 
     constructor() {
       this.options = defaultOptions;
       this._onPointerDownListener = this._onPointerDown.bind(this);
       this._onPointerMoveListener = this._onPointerMove.bind(this);
       this._onPointerUpListener = this._onPointerUp.bind(this);
-      this._bindPointerEvents();
+      this._onKeyPressListener = this._onKeyPress.bind(this);
+      this._bindEvents();
     }
 
-    private _bindPointerEvents() {
+
+    private _bindEvents() {
       window.addEventListener(Events.pointerDownEvent, this._onPointerDownListener, true);
     }
 
-    private _unbindPointerEvents() {
+
+    private _unbindEvents() {
       window.removeEventListener(Events.pointerDownEvent, this._onPointerDownListener, true);
     }
 
-    private _bindPointerEventsForDragging(el:HTMLElement) {
+
+    private _bindDraggingEvents() {
+      window.addEventListener('keypress', this._onKeyPressListener, false);
       window.addEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
       window.addEventListener(Events.pointerUpEvent, this._onPointerUpListener, false);
+    }
+
+
+    private _unbindDraggingEvents() {
+      window.removeEventListener('keypress', this._onKeyPressListener, false);
+      window.removeEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
+      window.removeEventListener(Events.pointerUpEvent, this._onPointerUpListener, false);
+    }
+
+
+    private _bindDraggingEventsForTarget(el:HTMLElement) {
       el.addEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
       el.addEventListener(Events.pointerUpEvent, this._onPointerUpListener, false);
     }
 
-    private _unbindPointerEventsForDragging(el:HTMLElement) {
-      window.removeEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
-      window.removeEventListener(Events.pointerUpEvent, this._onPointerUpListener, false);
+
+    private _unbindDraggingEventsForTarget(el:HTMLElement) {
       el.removeEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
       el.removeEventListener(Events.pointerUpEvent, this._onPointerUpListener, false);
     }
@@ -46,88 +63,101 @@ module Tactile {
     private _onPointerDown(e:MouseEvent|TouchEvent) {
       if (e instanceof MouseEvent && e.which !== 0 && e.which !== 1) return;
 
-      if (Dom.ancestors(<HTMLElement>e.target, this.options.cancel).length > 0) return;
+      for (let pointer of Events.normalizePointerEvent(e)) {
+        if (Dom.ancestors(pointer.target, this.options.cancel).length > 0) continue;
+        let draggableEl = Draggable.closestEnabled(pointer.target);
+        if (!draggableEl) continue;
 
-      const xy = Events.pointerEventXY(e);
-      const dragId = Events.pointerEventId(e);
-
-      let el = Draggable.closestEnabled(<HTMLElement>e.target);
-      if (!el) return false;
-
-      if (this.options.pickUpDelay === null || this.options.pickUpDelay === 0) {
-        Events.cancel(e);
-        this.startDrag(el, dragId, xy);
-      } else {
-        let onpickUpTimeoutHandler = function() {
-          this._onPickUpTimeout(dragId);
-        }
-        this._pendingDrags[dragId] = {
-          el: el,
-          xy: xy,
-          timerId: setTimeout(onpickUpTimeoutHandler.bind(this), this.options.pickUpDelay)
+        if (!this.options.pickUpDelay) {
+          this.startDrag(draggableEl, pointer.id, pointer.xy, pointer.xyEl);
+        } else  {
+          this.scheduleDrag(draggableEl, pointer.id, pointer.xy);
         };
-      }
-      this._bindPointerEventsForDragging(<HTMLElement>e.target)
-    }
 
-
-    private _onPickUpTimeout(dragId:number) {
-      if (this._pendingDrags[dragId]) {
-        let pendingDrag = this._pendingDrags[dragId];
-        this.startDrag(pendingDrag.el, dragId, pendingDrag.xy);
-        delete this._pendingDrags[dragId];
+        Events.cancel(e);
       }
     }
 
 
     private _onPointerMove(e:MouseEvent|TouchEvent) {
-      const xy = Events.pointerEventXY(e);
-      const dragId = Events.pointerEventId(e);
-
-      if (this._drags[dragId]) {
-        let drag = this._drags[dragId];
-        Events.cancel(e);
-        drag.move(xy);
-      }
-      if (this._pendingDrags[dragId]) {
-        let pendingDrag = this._pendingDrags[dragId];
-        // TODO: check relative motion against the item - so flick scrolling does not trigger pick up
-        if (this.options.pickUpDistance && Vector.length(Vector.subtract(pendingDrag.xy, xy)) > this.options.pickUpDistance)
-        clearTimeout(pendingDrag.timerId);
-        this.startDrag(pendingDrag.el, dragId, pendingDrag.xy);
-        delete this._pendingDrags[dragId];
+      for (let pointer of Events.normalizePointerEvent(e)) {
+        if (this._drags[pointer.id]) {
+          this._drags[pointer.id].move(pointer.xy, pointer.xyEl);
+          Events.cancel(e);
+        }
+        if (this._pendingDrags[pointer.id]) {
+          let pendingDrag = this._pendingDrags[pointer.id];
+          if (this.options.pickUpDistance > 0 && Vector.length(Vector.subtract(pendingDrag.xy, pointer.xy)) > this.options.pickUpDistance)
+            this.startScheduledDrag(pointer.id);
+        }
       }
     }
 
 
     private _onPointerUp(e:MouseEvent|TouchEvent) {
-      const dragId = Events.pointerEventId(e);
-
-      if (this._drags[dragId]) {
-        Events.cancel(e);
-        this.endDrag(dragId);
-      }
-      if (this._pendingDrags[dragId]) {
-        clearTimeout(this._pendingDrags[dragId].timerId);
+      for (let pointer of Events.normalizePointerEvent(e)) {
+        if (this._drags[pointer.id]) {
+          this.endDrag(pointer.id);
+          Events.cancel(e);
+        }
+        if (this._pendingDrags[pointer.id]) {
+          this.cancelScheduledDrag(pointer.id);
+        }
       }
     }
 
 
-    startDrag(el:HTMLElement, dragId:number, xy:[number,number]):Drag {
+    private _onKeyPress(e:KeyboardEvent):void {
+      if (e.which === 27 /* ESC */) {
+        Object.keys(this._drags).forEach(dragId => this.endDrag(parseInt(dragId, 10), true));
+      }
+    }
+
+
+    startDrag(draggableEl:HTMLElement, dragId:number, xy:[number,number], xyEl:HTMLElement):Drag {
       Dom.clearSelection();
       document.body.setAttribute('data-drag-in-progress', '');
-      return this._drags[dragId] = new Drag(el, xy, this.options);
+      this._bindDraggingEvents();
+      if (xyEl) this._bindDraggingEventsForTarget(xyEl);
+      return this._drags[dragId] = new Drag(draggableEl, xy, xyEl, this.options);
     }
 
 
-    endDrag(dragId:number) {
+    scheduleDrag(draggableEl:HTMLElement, dragId:number, xy:[number,number]):void {
+      let onPickUpTimeout = function() { this.startScheduledDrag(dragId); }.bind(this);
+      this._pendingDrags[dragId] = {
+        el: draggableEl,
+        xy: xy,
+        timerId: setTimeout(onPickUpTimeout, this.options.pickUpDelay)
+      };
+    }
+
+
+    endDrag(dragId:number, cancel:boolean = false) {
       let drag = this._drags[dragId];
-      drag.drop();
+      if (!cancel) drag.drop(); else drag.cancel();
       delete this._drags[dragId];
       if (Object.keys(this._drags).length == 0) {
         document.body.removeAttribute('data-drag-in-progress');
-        this._unbindPointerEventsForDragging(drag.draggable.el);
+        this._unbindDraggingEvents();
+        this._unbindDraggingEventsForTarget(drag.draggable.el);
       }
+    }
+
+
+
+    startScheduledDrag(dragId:number) {
+      let pendingDrag = this._pendingDrags[dragId];
+      clearTimeout(pendingDrag.timerId);
+      this.startDrag(pendingDrag.el, pendingDrag.id, pendingDrag.xy, pendingDrag.xyEl);
+      delete this._pendingDrags[pendingDrag.id];
+    }
+
+
+    cancelScheduledDrag(dragId:number) {
+      let pendingDrag = this._pendingDrags[dragId];
+      clearTimeout(pendingDrag.timerId);
+      delete this._pendingDrags[pendingDrag.id];
     }
   };
 

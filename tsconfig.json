@@ -1,18 +1,23 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
         "out": "Tactile.js",
         "sourceMap": true
     },
     "files": [
+        "ts/interfaces/Symbol.ts",
+        "ts/interfaces/Map.ts",
+        "ts/interfaces/Velocity.ts",
+
         "ts/lib/Animation.ts",
         "ts/lib/Attributes.ts",
         "ts/lib/Dom.ts",
         "ts/lib/Events.ts",
         "ts/lib/Maths.ts",
+        "ts/lib/Polyfill.ts",
         "ts/lib/Vector.ts",
 
         "ts/Container.ts",
