@@ -32,10 +32,11 @@ var Tactile;
         }
         Animation.stop = stop;
         function animateDomMutation(el, mutationFunction, options) {
+            if (options === void 0) { options = {}; }
             var startIndex = options.startIndex || 0;
             var endIndex = Math.min(options.endIndex || el.children.length + 1, startIndex + options.elementLimit);
-            var easing = options.easing || 'ease-in-out';
-            var duration = options.duration || 400;
+            var easing = options.easing;
+            var duration = options.duration;
             var originalStyleHeight = null, originalStyleWidth = null, oldSize = null, newSize = null;
             var cache = new Tactile.Cache();
             var oldOffsets = childOffsetMap(cache, 'old', el, startIndex, endIndex);
@@ -1634,6 +1635,7 @@ var Tactile;
             _super.call(this, el, drag);
             this._style = getComputedStyle(this.el);
             this._forceFeedRequired = true;
+            this._avoidDomMutations = true;
             this._childMeasures = new Tactile.Cache();
             this._initializeDirection();
         }
@@ -1644,7 +1646,6 @@ var Tactile;
                     index: 1,
                     translate: 'translateY',
                     paddingStart: 'paddingTop',
-                    endMargin: 'marginBottom',
                     layoutOffset: 'offsetTop',
                     outerDimension: 'outerHeight'
                 }
@@ -1652,10 +1653,11 @@ var Tactile;
                     index: 0,
                     translate: 'translateX',
                     paddingStart: 'paddingLeft',
-                    endMargin: 'marginRight',
                     layoutOffset: 'offsetLeft',
                     outerDimension: 'outerWidth'
                 };
+            if (this._direction == 'wrap')
+                this._avoidDomMutations = false;
         };
         Sortable.prototype._initializePlaceholder = function () {
             if (this.drag.draggable.originalParentEl === this.el) {
@@ -1687,11 +1689,7 @@ var Tactile;
         Sortable.prototype.move = function (xy) {
             var _this = this;
             if (this._siblingEls.length === 0) {
-                if (this.index !== 0) {
-                    this.index = 0;
-                    this._updateChildTranslations();
-                }
-                return;
+                return this._setPlaceholderIndex(0);
             }
             var bounds = this.drag.geometryCache.get(this.el, 'cr', function () { return _this.el.getBoundingClientRect(); });
             var sl = this.drag.geometryCache.get(this.el, 'sl', function () { return _this.el.scrollLeft; });
@@ -1716,7 +1714,15 @@ var Tactile;
         Sortable.prototype._setPlaceholderIndex = function (newIndex) {
             if (newIndex !== this.index) {
                 this.index = newIndex;
+                this._updatePlaceholderIndex();
+            }
+        };
+        Sortable.prototype._updatePlaceholderPosition = function () {
+            if (this._avoidDomMutations) {
                 this._updateChildTranslations();
+            }
+            else {
+                this._updatePlaceholderIndex();
             }
         };
         Sortable.prototype.leave = function () {
@@ -1727,7 +1733,7 @@ var Tactile;
                 this.index = null;
                 this._childMeasures.clear();
                 this.placeholder.setState("hidden");
-                this._updateChildTranslations();
+                this._updatePlaceholderPosition();
             }
         };
         Sortable.prototype.finalizePosition = function (el) {
@@ -1743,6 +1749,11 @@ var Tactile;
             }
             var measure = this._childMeasures.get(el, 'measures', getMeasure.bind(this));
             return measure;
+        };
+        Sortable.prototype._updatePlaceholderIndex = function () {
+            var _this = this;
+            var domMutation = function () { return _this.el.insertBefore(_this.placeholder.el, _this.el.children[_this.index]); };
+            Tactile.Animation.animateDomMutation(this.el, domMutation, this.drag.options.reorderAnimation);
         };
         Sortable.prototype._updateChildTranslations = function () {
             var offset = 0;

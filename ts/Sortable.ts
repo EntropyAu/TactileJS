@@ -10,6 +10,7 @@ module Tactile {
     private _childMeasures:Cache;
     private _style:CSSStyleDeclaration = getComputedStyle(this.el);
     private _forceFeedRequired:boolean = true;
+    private _avoidDomMutations:boolean = true;
 
 
     constructor(el:HTMLElement, drag:Drag) {
@@ -26,7 +27,6 @@ module Tactile {
                                     index: 1,
                                     translate: 'translateY',
                                     paddingStart: 'paddingTop',
-                                    endMargin: 'marginBottom',
                                     layoutOffset: 'offsetTop',
                                     outerDimension: 'outerHeight'
                                   }
@@ -34,10 +34,14 @@ module Tactile {
                                     index: 0,
                                     translate: 'translateX',
                                     paddingStart: 'paddingLeft',
-                                    endMargin: 'marginRight',
                                     layoutOffset: 'offsetLeft',
                                     outerDimension: 'outerWidth'
                                   };
+
+      // the simple layout algorithm that uses transform:translate() rather than
+      // repositioning the placeholders in the DOM does not support wrapping
+      // sortable layouts. In this case revert to DOM-based positioning
+      if (this._direction == 'wrap') this._avoidDomMutations = false;
     }
 
 
@@ -75,11 +79,7 @@ module Tactile {
 
     move(xy:[number,number]):void {
       if (this._siblingEls.length === 0) {
-        if (this.index !== 0) {
-          this.index = 0;
-          this._updateChildTranslations();
-        }
-        return;
+        return this._setPlaceholderIndex(0);
       }
 
       const bounds = this.drag.geometryCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
@@ -111,7 +111,16 @@ module Tactile {
     private _setPlaceholderIndex(newIndex:number):void {
       if (newIndex !== this.index) {
         this.index = newIndex;
+        this._updatePlaceholderIndex();
+      }
+    }
+
+
+    private _updatePlaceholderPosition():void {
+      if (this._avoidDomMutations) {
         this._updateChildTranslations();
+      } else {
+        this._updatePlaceholderIndex();
       }
     }
 
@@ -123,7 +132,7 @@ module Tactile {
         this.index = null;
         this._childMeasures.clear();
         this.placeholder.setState("hidden");
-        this._updateChildTranslations();
+        this._updatePlaceholderPosition();
       }
     }
 
@@ -146,6 +155,14 @@ module Tactile {
       return measure;
     }
 
+
+    // reposition the placeholder at the new index position
+    // this method is slower than using translations as it mutates the dom
+    // and triggers a layout pass, however it supports all sortable directions
+    private _updatePlaceholderIndex():void {
+      let domMutation = () => this.el.insertBefore(this.placeholder.el, this.el.children[this.index]);
+      Animation.animateDomMutation(this.el, domMutation, this.drag.options.reorderAnimation);
+    }
 
 
     private _updateChildTranslations():void {

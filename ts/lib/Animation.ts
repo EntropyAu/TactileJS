@@ -29,12 +29,12 @@ module Tactile.Animation {
     }
   }
 
-  export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any):void {
+  export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any = {}):void {
     const startIndex = options.startIndex || 0;
     const endIndex   = Math.min(options.endIndex || el.children.length + 1,
                                 startIndex + options.elementLimit);
-    const easing     = options.easing     || 'ease-in-out';
-    const duration   = options.duration   || 400;
+    const easing     = options.easing;
+    const duration   = options.duration;
     let originalStyleHeight:string = null,
         originalStyleWidth:string = null,
         oldSize:[number,number] = null,
