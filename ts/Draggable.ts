@@ -65,13 +65,16 @@ module Tactile {
     }
 
     finalizeMove(target:Container) {
+      this.el.setAttribute('style', this.originalStyle);
       target.finalizePosition(this.el);
     }
 
 
     finalizeCopy(target:Container) {
       let el:HTMLElement = <HTMLElement>this.el.cloneNode(true);
+      el.setAttribute('style', this.originalStyle);
       el.removeAttribute('id');
+      el.removeAttribute('data-drag-placeholder');
       target.finalizePosition(el);
     }
 
@@ -82,13 +85,6 @@ module Tactile {
 
 
     finalizeRevert():void {
-      this.originalParentEl.insertBefore(
-        this.el,
-        this.originalParentEl.children[this.originalIndex]);
-    }
-
-
-    revertOriginal():void {
       this.el.setAttribute('style', this.originalStyle);
       this.originalParentEl.insertBefore(
         this.el,

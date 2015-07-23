@@ -32,70 +32,43 @@ var Tactile;
         }
         Animation.stop = stop;
         function animateDomMutation(el, mutationFunction, options) {
-            if (options === void 0) { options = {}; }
             var startIndex = options.startIndex || 0;
-            var endIndex = Math.min(options.endIndex || el.children.length + 1, startIndex + options.elementLimit);
-            var easing = options.easing;
-            var duration = options.duration;
-            var originalStyleHeight = null, originalStyleWidth = null, oldSize = null, newSize = null;
+            var endIndex = Math.min(options.endIndex || el.children.length + 1, startIndex + options.elementLimit || Number.MAX_VALUE);
             var cache = new Tactile.Cache();
             var oldOffsets = childOffsetMap(cache, 'old', el, startIndex, endIndex);
-            if (options.animateParentSize) {
-                originalStyleHeight = '';
-                originalStyleWidth = '';
-                el.style.width = '';
-                el.style.height = '';
-                oldSize = [el.offsetWidth, el.offsetHeight];
-            }
             mutationFunction();
             var newOffsets = childOffsetMap(cache, 'new', el, startIndex, endIndex);
-            if (options.animateParentSize) {
-                newSize = [el.offsetWidth, el.offsetHeight];
-            }
-            animateBetweenOffsets(cache, el, startIndex, endIndex, duration, easing);
-            if (options.animateParentSize) {
-                animateSize(el, oldSize, newSize, originalStyleWidth, originalStyleHeight, duration, easing);
-            }
+            animateBetweenOffsets(cache, el, startIndex, endIndex, options.animationOptions);
         }
         Animation.animateDomMutation = animateDomMutation;
-        function animateSize(el, oldSize, newSize, originalStyleWidth, originalStyleHeight, duration, easing) {
-            function complete() {
-                el.style.width = originalStyleWidth;
-                el.style.height = originalStyleHeight;
-            }
-            window['Velocity'](el, {
-                width: [newSize[0], oldSize[0]],
-                height: [newSize[1], oldSize[1]]
-            }, {
-                duration: duration,
-                easing: easing,
-                queue: false,
-                complete: complete
-            });
-        }
-        function animateBetweenOffsets(cache, el, startIndex, endIndex, duration, easing) {
-            for (var i = startIndex; i < endIndex + 1; i++) {
-                var childEl = el.children[i];
-                if (!childEl)
+        function animateBetweenOffsets(cache, el, startIndex, endIndex, animationOptions) {
+            var translatedEls = [];
+            var startXValues = [];
+            var endXValues = [];
+            var startYValues = [];
+            var endYValues = [];
+            for (var _i = 0, _a = cache.getElements(); _i < _a.length; _i++) {
+                var childEl = _a[_i];
+                if (Tactile.Dom.matches(childEl, '[data-drag-placeholder]'))
                     continue;
                 var oldOffset = cache.get(childEl, 'old');
                 var newOffset = cache.get(childEl, 'new');
                 if (!oldOffset || !newOffset || (oldOffset[0] === newOffset[0] && oldOffset[1] === newOffset[1]))
                     continue;
-                window['Velocity'](childEl, {
-                    translateX: '+=' + (oldOffset[0] - newOffset[0]) + 'px',
-                    translateY: '+=' + (oldOffset[1] - newOffset[1]) + 'px',
-                    translateZ: 0
-                }, { duration: 0 });
-                window['Velocity'](childEl, {
-                    translateX: 0,
-                    translateY: 0
-                }, {
-                    duration: duration,
-                    easing: easing,
-                    queue: false
-                });
+                translatedEls.push(childEl);
+                startXValues.push((oldOffset[0] - newOffset[0]) + 'px');
+                startYValues.push((oldOffset[1] - newOffset[1]) + 'px');
+                endXValues.push(0);
+                endYValues.push(0);
             }
+            window['Velocity'](translatedEls, {
+                translateX: [function (i) { return endXValues[i]; }, function (i) { return startXValues[i]; }],
+                translateY: [function (i) { return endYValues[i]; }, function (i) { return startYValues[i]; }]
+            }, {
+                duration: animationOptions.duration,
+                easing: animationOptions.easing,
+                queue: false
+            });
         }
         function childOffsetMap(cache, key, el, startIndex, endIndex) {
             for (var i = startIndex; i < endIndex; i++) {
@@ -644,6 +617,7 @@ var Tactile;
         Container.prototype.enter = function (xy) { };
         Container.prototype.move = function (xy) { };
         Container.prototype.leave = function () { };
+        Container.prototype.finalizePosition = function (el) { };
         Container.prototype.dispose = function () { };
         return Container;
     })();
@@ -672,6 +646,7 @@ var Tactile;
         placeholderStyle: 'clone',
         placeholderClass: 'dd-drag-placeholder',
         containerHoverClass: 'dd-drag-hover',
+        avoidDomMutations: true,
         scrollSensitivity: '20%',
         scrollSpeed: 1
     };
@@ -805,9 +780,9 @@ var Tactile;
                 this.placeholder.setState("materialized");
             }
         };
-        Canvas.prototype.finalizeDrop = function (draggable) {
-            var el = this.placeholder.el;
+        Canvas.prototype.finalizePosition = function (el) {
             Tactile.Dom.topLeft(el, this.offset);
+            this.el.appendChild(el);
         };
         Canvas.prototype._initializeGrid = function () {
             var gridAttribute = Tactile.Attributes.get(this.el, 'data-drag-grid', '10,10');
@@ -828,9 +803,9 @@ var Tactile;
             this.placeholder.setState("hidden");
         };
         Canvas.prototype.dispose = function () {
-            this.placeholder.setState("materialized", false);
-            if (this.placeholder)
+            if (this.placeholder) {
                 this.placeholder.dispose();
+            }
         };
         return Canvas;
     })(Tactile.Container);
@@ -878,7 +853,7 @@ var Tactile;
                 this._dragEnded = true;
                 if (this._afRequestId)
                     Tactile.Polyfill.cancelAnimationFrame(this._afRequestId);
-                this.draggable.revertOriginal();
+                this.draggable.finalizeRevert();
             }
             else {
             }
@@ -1123,20 +1098,20 @@ var Tactile;
                 : null;
         };
         Draggable.prototype.finalizeMove = function (target) {
+            this.el.setAttribute('style', this.originalStyle);
             target.finalizePosition(this.el);
         };
         Draggable.prototype.finalizeCopy = function (target) {
             var el = this.el.cloneNode(true);
+            el.setAttribute('style', this.originalStyle);
             el.removeAttribute('id');
+            el.removeAttribute('data-drag-placeholder');
             target.finalizePosition(el);
         };
         Draggable.prototype.finalizeDelete = function () {
             Tactile.Polyfill.remove(this.el);
         };
         Draggable.prototype.finalizeRevert = function () {
-            this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
-        };
-        Draggable.prototype.revertOriginal = function () {
             this.el.setAttribute('style', this.originalStyle);
             this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
         };
@@ -1475,13 +1450,11 @@ var Tactile;
             this.el = el;
             this.drag = drag;
             this.isOriginalEl = isOriginalEl;
-            this._originalStyle = el.getAttribute('style');
             this._originalStyles = getComputedStyle(el);
             this._updateDimensions();
             Tactile.Polyfill.addClass(this.el, this.drag.options.placeholderClass);
             this.el.setAttribute('data-drag-placeholder', '');
             this.el.style.opacity = "0";
-            this.setState("hidden", false);
         }
         Placeholder.buildPlaceholder = function (containerEl, drag) {
             var el = drag.draggable.el.cloneNode(true);
@@ -1505,8 +1478,8 @@ var Tactile;
                 case "hidden":
                     this.el.style.visibility = 'hidden';
                     Tactile.Animation.set(this.el, {
-                        marginBottom: -this.size[1],
-                        marginRight: -this.size[0]
+                        marginBottom: -this.size[1] - parseInt(this._originalStyles.marginBottom, 10),
+                        marginRight: -this.size[0] - parseInt(this._originalStyles.marginRight, 10)
                     }, animate ? this.drag.options.containerResizeAnimation : undefined);
                     break;
                 case "ghost":
@@ -1656,8 +1629,12 @@ var Tactile;
                     layoutOffset: 'offsetLeft',
                     outerDimension: 'outerWidth'
                 };
-            if (this._direction == 'wrap')
+            if (this._direction === 'wrap') {
                 this._avoidDomMutations = false;
+            }
+            else {
+                this._avoidDomMutations = this.drag.options.avoidDomMutations;
+            }
         };
         Sortable.prototype._initializePlaceholder = function () {
             if (this.drag.draggable.originalParentEl === this.el) {
@@ -1711,20 +1688,6 @@ var Tactile;
             } while (newIndex < this._siblingEls.length);
             this._setPlaceholderIndex(newIndex);
         };
-        Sortable.prototype._setPlaceholderIndex = function (newIndex) {
-            if (newIndex !== this.index) {
-                this.index = newIndex;
-                this._updatePlaceholderIndex();
-            }
-        };
-        Sortable.prototype._updatePlaceholderPosition = function () {
-            if (this._avoidDomMutations) {
-                this._updateChildTranslations();
-            }
-            else {
-                this._updatePlaceholderIndex();
-            }
-        };
         Sortable.prototype.leave = function () {
             if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
                 this.placeholder.setState("materialized");
@@ -1737,7 +1700,21 @@ var Tactile;
             }
         };
         Sortable.prototype.finalizePosition = function (el) {
-            this.el.insertBefore(el, this.el.children[this.index]);
+            this.el.insertBefore(el, this._siblingEls[this.index]);
+        };
+        Sortable.prototype._setPlaceholderIndex = function (newIndex) {
+            if (newIndex !== this.index) {
+                this.index = newIndex;
+                this._updatePlaceholderPosition();
+            }
+        };
+        Sortable.prototype._updatePlaceholderPosition = function () {
+            if (this._avoidDomMutations) {
+                this._updateChildTranslations();
+            }
+            else {
+                this._updatePlaceholderIndex();
+            }
         };
         Sortable.prototype._getChildMeasure = function (el) {
             function getMeasure() {
@@ -1752,8 +1729,8 @@ var Tactile;
         };
         Sortable.prototype._updatePlaceholderIndex = function () {
             var _this = this;
-            var domMutation = function () { return _this.el.insertBefore(_this.placeholder.el, _this.el.children[_this.index]); };
-            Tactile.Animation.animateDomMutation(this.el, domMutation, this.drag.options.reorderAnimation);
+            var domMutation = function () { return _this.el.insertBefore(_this.placeholder.el, _this._siblingEls[_this.index]); };
+            Tactile.Animation.animateDomMutation(this.el, domMutation, { animationOptions: this.drag.options.reorderAnimation });
         };
         Sortable.prototype._updateChildTranslations = function () {
             var offset = 0;

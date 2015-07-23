@@ -10,7 +10,6 @@ module Tactile {
     isOriginalEl:boolean;
     state:string;
 
-    _originalStyle: string;
     _originalStyles: CSSStyleDeclaration;
 
     static buildPlaceholder(containerEl:HTMLElement, drag:Drag):Placeholder {
@@ -25,13 +24,11 @@ module Tactile {
       this.el = el;
       this.drag = drag;
       this.isOriginalEl = isOriginalEl;
-      this._originalStyle = el.getAttribute('style');
       this._originalStyles = getComputedStyle(el);
       this._updateDimensions();
       Polyfill.addClass(this.el, this.drag.options.placeholderClass);
       this.el.setAttribute('data-drag-placeholder', '');
       this.el.style.opacity = "0";
-      this.setState("hidden", false);
     }
 
 
@@ -52,8 +49,8 @@ module Tactile {
             this.el.style.visibility = 'hidden';
             Animation.set(this.el,
               {
-                marginBottom: -this.size[1],
-                marginRight: -this.size[0]
+                marginBottom: -this.size[1] - parseInt(this._originalStyles.marginBottom, 10),
+                marginRight: -this.size[0] - parseInt(this._originalStyles.marginRight, 10)
               },
               animate ? this.drag.options.containerResizeAnimation : undefined);
             break;

@@ -41,7 +41,11 @@ module Tactile {
       // the simple layout algorithm that uses transform:translate() rather than
       // repositioning the placeholders in the DOM does not support wrapping
       // sortable layouts. In this case revert to DOM-based positioning
-      if (this._direction == 'wrap') this._avoidDomMutations = false;
+      if (this._direction === 'wrap') {
+        this._avoidDomMutations = false;
+      } else {
+        this._avoidDomMutations = this.drag.options.avoidDomMutations;
+      }
     }
 
 
@@ -108,22 +112,6 @@ module Tactile {
       this._setPlaceholderIndex(newIndex);
     }
 
-    private _setPlaceholderIndex(newIndex:number):void {
-      if (newIndex !== this.index) {
-        this.index = newIndex;
-        this._updatePlaceholderIndex();
-      }
-    }
-
-
-    private _updatePlaceholderPosition():void {
-      if (this._avoidDomMutations) {
-        this._updateChildTranslations();
-      } else {
-        this._updatePlaceholderIndex();
-      }
-    }
-
 
     leave():void {
       if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
@@ -138,9 +126,25 @@ module Tactile {
 
 
     finalizePosition(el:HTMLElement):void {
-      this.el.insertBefore(el, this.el.children[this.index]);
+      this.el.insertBefore(el, this._siblingEls[this.index]);
     }
 
+
+    private _setPlaceholderIndex(newIndex:number):void {
+      if (newIndex !== this.index) {
+        this.index = newIndex;
+        this._updatePlaceholderPosition();
+      }
+    }
+
+
+    private _updatePlaceholderPosition():void {
+      if (this._avoidDomMutations) {
+        this._updateChildTranslations();
+      } else {
+        this._updatePlaceholderIndex();
+      }
+    }
 
 
     private _getChildMeasure(el:HTMLElement):any {
@@ -160,8 +164,8 @@ module Tactile {
     // this method is slower than using translations as it mutates the dom
     // and triggers a layout pass, however it supports all sortable directions
     private _updatePlaceholderIndex():void {
-      let domMutation = () => this.el.insertBefore(this.placeholder.el, this.el.children[this.index]);
-      Animation.animateDomMutation(this.el, domMutation, this.drag.options.reorderAnimation);
+      let domMutation = () => this.el.insertBefore(this.placeholder.el, this._siblingEls[this.index]);
+      Animation.animateDomMutation(this.el, domMutation, { animationOptions: this.drag.options.reorderAnimation });
     }
 
 

@@ -29,74 +29,24 @@ module Tactile.Animation {
     }
   }
 
-  export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any = {}):void {
+  export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any):void {
     const startIndex = options.startIndex || 0;
     const endIndex   = Math.min(options.endIndex || el.children.length + 1,
-                                startIndex + options.elementLimit);
-    const easing     = options.easing;
-    const duration   = options.duration;
-    let originalStyleHeight:string = null,
-        originalStyleWidth:string = null,
-        oldSize:[number,number] = null,
-        newSize:[number,number] = null;
+                                startIndex + options.elementLimit || Number.MAX_VALUE);
 
     const cache = new Cache();
     const oldOffsets = childOffsetMap(cache, 'old', el, startIndex, endIndex);
-    if (options.animateParentSize) {
-      originalStyleHeight = '';
-      originalStyleWidth = '';
-      el.style.width = '';
-      el.style.height = '';
-      oldSize = [el.offsetWidth, el.offsetHeight];
-    }
     mutationFunction();
     const newOffsets = childOffsetMap(cache, 'new', el, startIndex, endIndex);
-    if (options.animateParentSize) {
-      newSize = [el.offsetWidth, el.offsetHeight];
-    }
 
     animateBetweenOffsets(
       cache,
       el,
       startIndex,
       endIndex,
-      duration,
-      easing);
-
-    if (options.animateParentSize) {
-      animateSize(
-        el,
-        oldSize,
-        newSize,
-        originalStyleWidth,
-        originalStyleHeight,
-        duration,
-        easing);
-    }
+      options.animationOptions);
   }
 
-  function animateSize(
-    el:HTMLElement,
-    oldSize:[number,number],
-    newSize:[number,number],
-    originalStyleWidth:string,
-    originalStyleHeight:string,
-    duration:number,
-    easing:string) {
-    function complete() {
-      el.style.width = originalStyleWidth;
-      el.style.height = originalStyleHeight;
-    }
-    window['Velocity'](el, {
-      width: [newSize[0], oldSize[0]],
-      height: [newSize[1], oldSize[1]],
-    }, {
-      duration: duration,
-      easing: easing,
-      queue: false,
-      complete: complete
-    });
-  }
 
 
   function animateBetweenOffsets(
@@ -104,37 +54,38 @@ module Tactile.Animation {
     el:HTMLElement,
     startIndex:number,
     endIndex:number,
-    duration:number,
-    easing:string) {
-    for (let i = startIndex; i < endIndex + 1; i++) {
-      let childEl = <HTMLElement>el.children[i];
-      if (!childEl) continue;
+    animationOptions:any) {
 
-      //if (childEl.matches('[data-drag-placeholder]')) continue;
+
+    let translatedEls = [];
+    let startXValues = [];
+    let endXValues = [];
+    let startYValues = [];
+    let endYValues = [];
+    for (let childEl of cache.getElements()) {
+
+      if (Dom.matches(childEl, '[data-drag-placeholder]'))
+        continue;
 
       let oldOffset = cache.get(childEl, 'old');
       let newOffset = cache.get(childEl, 'new');
       if (!oldOffset || !newOffset || (oldOffset[0] === newOffset[0] && oldOffset[1] === newOffset[1]))
         continue;
 
-      // the following line makes the animations smoother in safari
-      //childEl.style.webkitTransform = 'translate3d(0,' + (oldOffset.top - newOffset.top) + 'px,0)';
-
-      window['Velocity'](childEl, {
-        translateX: '+=' + (oldOffset[0] - newOffset[0]) + 'px',
-        translateY: '+=' + (oldOffset[1] - newOffset[1]) + 'px',
-        translateZ: 0
-      }, { duration: 0 });
-
-      window['Velocity'](childEl, {
-        translateX: 0,
-        translateY: 0
-      }, {
-        duration: duration,
-        easing: easing,
-        queue: false
-      });
+      translatedEls.push(childEl);
+      startXValues.push((oldOffset[0] - newOffset[0]) + 'px');
+      startYValues.push((oldOffset[1] - newOffset[1]) + 'px');
+      endXValues.push(0);
+      endYValues.push(0);
     }
+    window['Velocity'](translatedEls, {
+      translateX: [i => endXValues[i], i => startXValues[i]],
+      translateY: [i => endYValues[i], i => startYValues[i]],
+    }, {
+      duration: animationOptions.duration,
+      easing: animationOptions.easing,
+      queue: false
+    });
   }
 
 

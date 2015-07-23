@@ -63,6 +63,7 @@ module Tactile {
     enter(xy:[number,number]):void { }
     move(xy:[number,number]):void { }
     leave():void { }
+    finalizePosition(el:HTMLElement):void { }
     dispose():void { }
   }
 }

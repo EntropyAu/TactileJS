@@ -23,6 +23,7 @@ module Tactile {
     placeholderStyle:string,
     placeholderClass:string,
     containerHoverClass:string,
+    avoidDomMutations:boolean,
     scrollSensitivity:string|number,
     scrollSpeed:number
   };
@@ -47,6 +48,7 @@ module Tactile {
     placeholderStyle: 'clone',
     placeholderClass: 'dd-drag-placeholder',
     containerHoverClass: 'dd-drag-hover',
+    avoidDomMutations: true,
     scrollSensitivity: '20%',
     scrollSpeed: 1
   };

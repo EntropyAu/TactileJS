@@ -47,9 +47,9 @@ module Tactile {
     }
 
 
-    finalizeDrop(draggable:Draggable) {
-      let el = this.placeholder.el;
+    finalizePosition(el:HTMLElement):void {
       Dom.topLeft(el, this.offset);
+      this.el.appendChild(el);
     }
 
 
@@ -74,8 +74,9 @@ module Tactile {
     }
 
     dispose():void {
-      this.placeholder.setState("materialized", false);
-      if (this.placeholder) this.placeholder.dispose()
+      if (this.placeholder) {
+        this.placeholder.dispose()
+      }
     }
   }
 }

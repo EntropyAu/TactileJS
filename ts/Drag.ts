@@ -67,7 +67,7 @@ module Tactile {
       if (!abort) {
         this._dragEnded = true;
         if (this._afRequestId) Polyfill.cancelAnimationFrame(this._afRequestId);
-        this.draggable.revertOriginal();
+        this.draggable.finalizeRevert();
       } else {
         // if we are aborting we'll leave all elements in their current positions
         // to enable easier debugging of the DOM
