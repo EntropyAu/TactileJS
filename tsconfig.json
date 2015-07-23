@@ -28,7 +28,7 @@
         "ts/Draggable.ts",
         "ts/DragManager.ts",
         "ts/Droppable.ts",
-        "ts/Fence.ts",
+        "ts/Boundary.ts",
         "ts/Helper.ts",
         "ts/Placeholder.ts",
         "ts/Scrollable.ts",

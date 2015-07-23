@@ -826,7 +826,7 @@ var Tactile;
             this.xyEl = xyEl || Tactile.Dom.elementFromPoint(this.xy);
             this.draggable = new Tactile.Draggable(draggableEl, this);
             this.helper = new Tactile.Helper(this, this.draggable);
-            this.fence = Tactile.Fence.closestForDraggable(this, this.draggable);
+            this.bounds = Tactile.Boundary.closestForDraggable(this, this.draggable);
             this.copy = false;
             this.geometryCache = new Tactile.Cache();
             this.containerCache = new Tactile.Cache();
@@ -854,6 +854,7 @@ var Tactile;
                 if (this._afRequestId)
                     Tactile.Polyfill.cancelAnimationFrame(this._afRequestId);
                 this.draggable.finalizeRevert();
+                this.dispose();
             }
             else {
             }
@@ -902,8 +903,8 @@ var Tactile;
         Drag.prototype._tick = function () {
             this._afRequestId = null;
             if (this._xyChanged || this._hasScrolled) {
-                if (this.fence) {
-                    var constrainedXY = this.fence.getConstrainedXY(this.xy);
+                if (this.bounds) {
+                    var constrainedXY = this.bounds.getConstrainedXY(this.xy);
                     if (!Tactile.Vector.equals(constrainedXY, this.xy)) {
                         this.xy = constrainedXY;
                         this.xyEl = null;
@@ -945,9 +946,9 @@ var Tactile;
             if (this.source && this.source.leaveAction === "delete" && newTarget !== this.source) {
                 newTarget = null;
             }
-            if (newTarget && this.fence
-                && !Tactile.Dom.isDescendant(this.fence.el, newTarget.el)
-                && this.fence.el !== newTarget.el)
+            if (newTarget && this.bounds
+                && !Tactile.Dom.isDescendant(this.bounds.el, newTarget.el)
+                && this.bounds.el !== newTarget.el)
                 return;
             if (newTarget === oldTarget)
                 return;
@@ -990,7 +991,7 @@ var Tactile;
         };
         Drag.prototype._finalizeAction = function () {
             this._raise(this.draggable.el, 'enddrop');
-            if (this._raise(this.draggable.el, 'drop').returnValue) {
+            if (this._raise(this.draggable.el, 'drop').returnValue !== false) {
                 switch (this.action) {
                     case "move":
                         this.draggable.finalizeMove(this.target);
@@ -1041,7 +1042,7 @@ var Tactile;
                 copy: this.copy,
                 helperEl: this.helper.el,
                 helperXY: this.helper.xy,
-                fenceEl: this.fence ? this.fence.el : null,
+                BoundEl: this.bounds ? this.bounds.el : null,
                 sourceEl: this.draggable.originalParentEl,
                 sourceIndex: this.draggable.originalIndex,
                 sourceOffset: this.draggable.originalOffset,
@@ -1277,30 +1278,30 @@ var Tactile;
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
-    var attribute = 'data-drag-fence';
-    var selector = '[data-drag-fence]';
-    var Fence = (function () {
-        function Fence(el, drag) {
+    var attribute = 'data-drag-bounds';
+    var selector = '[data-drag-bounds]';
+    var Boundary = (function () {
+        function Boundary(el, drag) {
             this.el = el;
             this.drag = drag;
             this.tags = Tactile.Attributes.getTags(el, attribute, ['*']);
         }
-        Fence.closestForDraggable = function (drag, draggable) {
+        Boundary.closestForDraggable = function (drag, draggable) {
             var el = draggable.el;
             while (el = Tactile.Dom.closest(el.parentElement, selector)) {
-                var candidateFence = new Fence(el, drag);
-                if (candidateFence.constrains(draggable.tags)) {
-                    return candidateFence;
+                var candidateBound = new Boundary(el, drag);
+                if (candidateBound.constrains(draggable.tags)) {
+                    return candidateBound;
                 }
             }
             return null;
         };
-        Fence.prototype.constrains = function (tags) {
+        Boundary.prototype.constrains = function (tags) {
             var _this = this;
             return this.tags.indexOf('*') !== -1
                 || tags.some(function (t) { return _this.tags.indexOf(t) !== -1; });
         };
-        Fence.prototype.getConstrainedXY = function (xy) {
+        Boundary.prototype.getConstrainedXY = function (xy) {
             var _this = this;
             var gripOffset = this.drag.helper.gripOffset;
             var size = this.drag.helper.size;
@@ -1310,9 +1311,9 @@ var Tactile;
             tl[1] = Tactile.Maths.coerce(tl[1], rect.top, rect.bottom - size[1]);
             return [tl[0] - gripOffset[0], tl[1] - gripOffset[1]];
         };
-        return Fence;
+        return Boundary;
     })();
-    Tactile.Fence = Fence;
+    Tactile.Boundary = Boundary;
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {

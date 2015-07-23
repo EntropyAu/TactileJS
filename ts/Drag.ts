@@ -9,7 +9,7 @@ module Tactile {
     helper:Helper;
     source:Container = null;
     target:Container = null;
-    fence:Fence;
+    bounds:Boundary;
     action:string;
     copy:boolean;
     options:Options;
@@ -35,7 +35,7 @@ module Tactile {
 
       this.draggable = new Draggable(draggableEl, this);
       this.helper = new Helper(this, this.draggable);
-      this.fence = Fence.closestForDraggable(this, this.draggable);
+      this.bounds = Boundary.closestForDraggable(this, this.draggable);
       this.copy = false;
 
       this.geometryCache = new Cache();
@@ -68,6 +68,7 @@ module Tactile {
         this._dragEnded = true;
         if (this._afRequestId) Polyfill.cancelAnimationFrame(this._afRequestId);
         this.draggable.finalizeRevert();
+        this.dispose();
       } else {
         // if we are aborting we'll leave all elements in their current positions
         // to enable easier debugging of the DOM
@@ -127,10 +128,10 @@ module Tactile {
 
       if (this._xyChanged || this._hasScrolled) {
 
-        // apply fence constraints to the pointer XY value - we pretend that the user
-        // has not moved the pointer outside the content bounds of the fence element
-        if (this.fence) {
-          let constrainedXY = this.fence.getConstrainedXY(this.xy);
+        // apply bound constraints to the pointer XY value - we pretend that the user
+        // has not moved the pointer outside the content bounds of the Boundary element
+        if (this.bounds) {
+          let constrainedXY = this.bounds.getConstrainedXY(this.xy);
           if (!Vector.equals(constrainedXY, this.xy)) {
             this.xy = constrainedXY;
             this.xyEl = null;
@@ -139,7 +140,7 @@ module Tactile {
 
         // if we were not passed the topmost DOM element underneath the mouse XY coordinates
         // as part of the pointer event, or it was cleared as the XY coordinates have been
-        // constrained by a data-drag-fence, then recalculate the current topmost DOM element
+        // constrained by a data-drag-Boundary, then recalculate the current topmost DOM element
         if (!this.xyEl) this.xyEl = Dom.elementFromPoint(this.xy);
 
         // check to see whether the helper is hovering over a data-drag-scrollable element
@@ -204,11 +205,11 @@ module Tactile {
         newTarget = null;
       }
 
-      // if the current drag operation is fenced, then the target container
-      // must be a descendant of the fence element
-      if (newTarget && this.fence
-                    && !Dom.isDescendant(this.fence.el, newTarget.el)
-                    && this.fence.el !== newTarget.el) return;
+      // if the current drag operation is Boundd, then the target container
+      // must be a descendant of the Boundary element
+      if (newTarget && this.bounds
+                    && !Dom.isDescendant(this.bounds.el, newTarget.el)
+                    && this.bounds.el !== newTarget.el) return;
 
       if (newTarget === oldTarget) return;
 
@@ -271,7 +272,7 @@ module Tactile {
     private _finalizeAction():void {
       this._raise(this.draggable.el, 'enddrop');
 
-      if (this._raise(this.draggable.el, 'drop').returnValue) {
+      if (this._raise(this.draggable.el, 'drop').returnValue !== false) {
         // if the drop event listeners return true then update the DOM
         // to reflect the drag changes. If the listeners return false
         // then it is up to the event handler to trigger appropriate updates
@@ -340,7 +341,7 @@ module Tactile {
         copy: this.copy,
         helperEl: this.helper.el,
         helperXY: this.helper.xy,
-        fenceEl: this.fence ? this.fence.el : null,
+        BoundEl: this.bounds ? this.bounds.el : null,
         sourceEl: this.draggable.originalParentEl,
         sourceIndex: this.draggable.originalIndex,
         sourceOffset: this.draggable.originalOffset,
