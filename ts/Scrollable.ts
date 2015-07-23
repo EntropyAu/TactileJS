@@ -40,7 +40,7 @@ module Tactile {
         const h = document.documentElement.clientHeight;
         this._bounds = { left: 0, top: 0, width: w, height: h, right: w, bottom: h };
       } else {
-        this._bounds = this.drag.scrollCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
+        this._bounds = this.drag.geometryCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
       }
 
       // initialize sensitivity

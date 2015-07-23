@@ -14,22 +14,22 @@ module Tactile {
     enter(xy:[number,number]):void {
       if (!this.placeholder) {
         this._insertPlaceholder();
-        this.placeholderSize = this.placeholder.size;
-        this.placeholderScale = this.placeholder.scale;
+        this.helperSize = this.placeholder.size;
+        this.helperScale = this.placeholder.scale;
       }
       this.move(xy); // calculate the initial position of items
     }
 
 
     move(xy:[number,number]):void {
-      const rect = this.drag.scrollCache.get(this.el, 'clientRect', () => this.el.getBoundingClientRect());
-      const scrollOffset = this.drag.scrollCache.get(this.el, 'scrollOffset', () => [this.el.scrollLeft, this.el.scrollTop]);
+      const rect = this.drag.geometryCache.get(this.el, 'clientRect', () => this.el.getBoundingClientRect());
+      const scrollOffset = this.drag.geometryCache.get(this.el, 'scrollOffset', () => [this.el.scrollLeft, this.el.scrollTop]);
 
       let localOffset:[number,number] =
         [xy[0] - rect.left + scrollOffset[0] + this.drag.helper.gripOffset[0],
          xy[1] - rect.top  + scrollOffset[1] + this.drag.helper.gripOffset[1]];
 
-      localOffset = Vector.divide(localOffset, this.placeholderScale);
+      localOffset = Vector.divide(localOffset, this.helperScale);
       if (this._grid) {
         localOffset = [Math.round(localOffset[0] / this._grid[0]) * this._grid[0],
                        Math.round(localOffset[1] / this._grid[1]) * this._grid[1]];

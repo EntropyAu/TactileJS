@@ -64,12 +64,29 @@ module Tactile {
                 : Attributes.getTags(el.parentElement, 'data-drag-tag');
     }
 
+    finalizeMove(target:Container) {
+      target.finalizePosition(this.el);
+    }
+
+
+    finalizeCopy(target:Container) {
+      let el:HTMLElement = <HTMLElement>this.el.cloneNode(true);
+      el.removeAttribute('id');
+      target.finalizePosition(el);
+    }
+
+
+    finalizeDelete() {
+      Polyfill.remove(this.el);
+    }
+
 
     finalizeRevert():void {
       this.originalParentEl.insertBefore(
         this.el,
         this.originalParentEl.children[this.originalIndex]);
     }
+
 
     revertOriginal():void {
       this.el.setAttribute('style', this.originalStyle);

@@ -7,7 +7,7 @@ module Tactile {
     private _onPointerDownListener:EventListener;
     private _onPointerMoveListener:EventListener;
     private _onPointerUpListener:EventListener;
-    private _onKeyPressListener:EventListener;
+    private _onKeyDownListener:EventListener;
 
 
     constructor() {
@@ -15,7 +15,7 @@ module Tactile {
       this._onPointerDownListener = this._onPointerDown.bind(this);
       this._onPointerMoveListener = this._onPointerMove.bind(this);
       this._onPointerUpListener = this._onPointerUp.bind(this);
-      this._onKeyPressListener = this._onKeyPress.bind(this);
+      this._onKeyDownListener = this._onKeyDown.bind(this);
       this._bindEvents();
     }
 
@@ -31,14 +31,14 @@ module Tactile {
 
 
     private _bindDraggingEvents() {
-      window.addEventListener('keypress', this._onKeyPressListener, false);
+      window.addEventListener('keydown', this._onKeyDownListener, false);
       window.addEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
       window.addEventListener(Events.pointerUpEvent, this._onPointerUpListener, false);
     }
 
 
     private _unbindDraggingEvents() {
-      window.removeEventListener('keypress', this._onKeyPressListener, false);
+      window.removeEventListener('keydown', this._onKeyDownListener, false);
       window.removeEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
       window.removeEventListener(Events.pointerUpEvent, this._onPointerUpListener, false);
     }
@@ -107,9 +107,11 @@ module Tactile {
     }
 
 
-    private _onKeyPress(e:KeyboardEvent):void {
+    private _onKeyDown(e:KeyboardEvent):void {
       if (e.which === 27 /* ESC */) {
-        Object.keys(this._drags).forEach(dragId => this.endDrag(parseInt(dragId, 10), true));
+        Object.keys(this._drags).forEach(function (dragId) {
+          this.endDrag(parseInt(dragId, 10), true, e.shiftKey);
+        }.bind(this));
       }
     }
 
@@ -133,9 +135,9 @@ module Tactile {
     }
 
 
-    endDrag(dragId:number, cancel:boolean = false) {
+    endDrag(dragId:number, cancel:boolean = false, abort:boolean = false) {
       let drag = this._drags[dragId];
-      if (!cancel) drag.drop(); else drag.cancel();
+      if (!cancel) drag.drop(); else drag.cancel(abort);
       delete this._drags[dragId];
       if (Object.keys(this._drags).length == 0) {
         document.body.removeAttribute('data-drag-in-progress');

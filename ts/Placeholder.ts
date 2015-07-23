@@ -11,6 +11,7 @@ module Tactile {
     state:string;
 
     _originalStyle: string;
+    _originalStyles: CSSStyleDeclaration;
 
     static buildPlaceholder(containerEl:HTMLElement, drag:Drag):Placeholder {
       let el:HTMLElement = <HTMLElement>drag.draggable.el.cloneNode(true);
@@ -25,6 +26,7 @@ module Tactile {
       this.drag = drag;
       this.isOriginalEl = isOriginalEl;
       this._originalStyle = el.getAttribute('style');
+      this._originalStyles = getComputedStyle(el);
       this._updateDimensions();
       Polyfill.addClass(this.el, this.drag.options.placeholderClass);
       this.el.setAttribute('data-drag-placeholder', '');
@@ -39,6 +41,7 @@ module Tactile {
       this.scale = Dom.clientScale(this.el);
     }
 
+
     setState(state:string, animate:boolean = true):void {
         if (this.state === state) return;
         let velocityOptions = animate
@@ -47,20 +50,24 @@ module Tactile {
         switch (state) {
           case "hidden":
             this.el.style.visibility = 'hidden';
-            this.el.style.marginBottom = (-this.size[1]) + 'px';
-            this._updateDimensions();
+            Animation.set(this.el,
+              {
+                marginBottom: -this.size[1],
+                marginRight: -this.size[0]
+              },
+              animate ? this.drag.options.containerResizeAnimation : undefined);
             break;
           case "ghost":
-            this.el.style.visibility = '';
-            this.el.style.marginBottom = '';
-            this._updateDimensions();
-            Animation.set(this.el, { opacity: 0.1 }, velocityOptions);
-            break;
           case "materialized":
             this.el.style.visibility = '';
             this.el.style.marginBottom = '';
-            this._updateDimensions();
-            Animation.set(this.el, { opacity: 1.0 }, velocityOptions);
+            Animation.set(this.el, { opacity: state === 'ghost' ? 0.1 : 1.0 }, velocityOptions);
+            Animation.set(this.el,
+              {
+                marginBottom: parseInt(this._originalStyles.marginBottom, 10),
+                marginRight: parseInt(this._originalStyles.marginRight, 10)
+              },
+              animate ? this.drag.options.containerResizeAnimation : undefined);
             break;
         }
         this.state = state;
@@ -69,20 +76,15 @@ module Tactile {
 
     dispose():void {
       Animation.stop(this.el);
-      switch (this.state) {
-        case "hidden":
-          Polyfill.remove(this.el);
-          this.el = null;
-          break;
-        case "ghost":
-        case "materialized":
-          // restore the original draggable element settings
-          this.el.removeAttribute('data-drag-placeholder');
-          Polyfill.removeClass(this.el, this.drag.options.placeholderClass);
-          this.el.style.visibility = '';
-          this.el.style.opacity = '';
-          this.el.style.transform = '';
-          break;
+      if (this.isOriginalEl) {
+        this.el.removeAttribute('data-drag-placeholder');
+        Polyfill.removeClass(this.el, this.drag.options.placeholderClass);
+        this.el.style.visibility = '';
+        this.el.style.opacity = '';
+        this.el.style.transform = '';
+      } else {
+        Polyfill.remove(this.el);
+        this.el = null;
       }
     }
   }

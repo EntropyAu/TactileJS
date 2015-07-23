@@ -1,5 +1,7 @@
 module Tactile {
 
+  let uuid = 1;
+
   // use es6 map where it is available. we also check to ensure the iterator function
   // returned by Map.prototype.values implements next() to avoid a bug in Safari 7/8
   // and the lack of a values() function in internet explorer 9/10
@@ -18,18 +20,18 @@ module Tactile {
       if (_useMap) {
         this._cache = new Map();
       } else {
-        this._id = "__tactile" + Math.random().toString().replace('.', '')
+        this._id = "__tactile" + uuid++;
         this._els = [];
       }
     }
 
 
-    get(el:HTMLElement, key:string, fn:Function = function(){}):any {
+    get(el:HTMLElement, key:string, fn?:Function):any {
       let elCache = this._getElementCache(el);
       if (elCache[key] !== undefined) {
         return elCache[key];
       } else {
-        return elCache[key] = fn();
+        return fn ? elCache[key] = fn() : null;
       }
     }
 

@@ -18,7 +18,7 @@ module Tactile.Events {
   }
 
 
-  export function raise(source:Element, eventName:string, eventData:any):boolean {
+  export function raise(source:Element, eventName:string, eventData:any):CustomEvent {
     let event = null;
     if (typeof CustomEvent === 'function') {
       event = new CustomEvent(eventName, eventData);
@@ -28,7 +28,7 @@ module Tactile.Events {
       event.initCustomEvent(event, true, true, eventData);
     }
     source.dispatchEvent(event);
-    return !event.defaultPrevented;
+    return event;
   }
 
 

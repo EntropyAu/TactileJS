@@ -66,8 +66,8 @@ module Tactile {
         this._initializeChildAndSiblingEls();
       }
       this.placeholder.setState("ghost");
-      this.placeholderSize = this.placeholder.size;
-      this.placeholderScale = this.placeholder.scale;
+      this.helperSize = this.placeholder.size;
+      this.helperScale = this.placeholder.scale;
       this.move(xy);
       this._childMeasures.clear();
     }
@@ -82,9 +82,9 @@ module Tactile {
         return;
       }
 
-      const bounds = this.drag.scrollCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
-      const sl = this.drag.scrollCache.get(this.el, 'sl', () => this.el.scrollLeft);
-      const st = this.drag.scrollCache.get(this.el, 'st', () => this.el.scrollTop);
+      const bounds = this.drag.geometryCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
+      const sl = this.drag.geometryCache.get(this.el, 'sl', () => this.el.scrollLeft);
+      const st = this.drag.geometryCache.get(this.el, 'st', () => this.el.scrollTop);
 
       // calculate the position of the item relative to this container
       const innerXY = [xy[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
@@ -92,23 +92,23 @@ module Tactile {
       let adjustedXY = [innerXY[0] - this.drag.helper.gripXY[0],
                         innerXY[1] - this.drag.helper.gripXY[1]];
 
-      adjustedXY = [adjustedXY[0] / this.placeholderScale[0],
-                    adjustedXY[1] / this.placeholderScale[1]];
+      adjustedXY = [adjustedXY[0] / this.helperScale[0],
+                    adjustedXY[1] / this.helperScale[1]];
 
 
       let naturalOffset = 0;
       let newIndex = 0;
       do {
         let measure = this._getChildMeasure(this._siblingEls[newIndex]);
-        if (adjustedXY[this._directionProperties.index] < naturalOffset + measure.measure / 2) break;
-        naturalOffset += measure.measure;
+        if (adjustedXY[this._directionProperties.index] < naturalOffset + measure.dimension / 2) break;
+        naturalOffset += measure.dimension;
         newIndex++;
       }
       while (newIndex < this._siblingEls.length);
       this._setPlaceholderIndex(newIndex);
     }
 
-    _setPlaceholderIndex(newIndex:number):void {
+    private _setPlaceholderIndex(newIndex:number):void {
       if (newIndex !== this.index) {
         this.index = newIndex;
         this._updateChildTranslations();
@@ -128,19 +128,17 @@ module Tactile {
     }
 
 
-    finalizeDrop(draggable:Draggable):void {
-      this._clearChildTranslations();
-      this.el.insertBefore(this.placeholder.el, this._siblingEls[this.index]);
-      this.placeholder.dispose();
-      this.placeholder = null;
+    finalizePosition(el:HTMLElement):void {
+      this.el.insertBefore(el, this.el.children[this.index]);
     }
+
 
 
     private _getChildMeasure(el:HTMLElement):any {
       function getMeasure() {
         return {
-          offset: el[this._directionProperties.layoutOffset] - parseInt(this._style[this._directionProperties.paddingStart], 10),
-          measure: Dom[this._directionProperties.outerDimension](el, true),
+          layoutOffset: el[this._directionProperties.layoutOffset] - parseInt(this._style[this._directionProperties.paddingStart], 10),
+          dimension: Dom[this._directionProperties.outerDimension](el, true),
           translation: <number>null
         };
       }
@@ -154,32 +152,40 @@ module Tactile {
       let offset:number = 0;
       let placeholderOffset:number = null;
 
-      let els = [];
-      let values = [];
+      let translatedEls = []
+      let translatedValues = [];
+
       this._siblingEls.forEach(function (el:HTMLElement, index:number) {
         if (index === this.index) {
           placeholderOffset = offset;
           offset += this.placeholder.outerSize[this._directionProperties.index];
         }
         let measure = this._getChildMeasure(el);
-        let newTranslation = offset - measure.offset
+        let newTranslation = offset - measure.layoutOffset
         if (measure.translation !== newTranslation || this._forceFeedRequired) {
           measure.translation = newTranslation;
-          els.push(el);
-          values.push(measure.translation);
+          translatedEls.push(el);
+          translatedValues.push(newTranslation);
         }
-        offset += measure.measure;
+        offset += measure.dimension;
       }.bind(this));
 
-      if (this._forceFeedRequired)
-        Animation.set(els, { translateY: [function(i) { return values[i]; }, function(i) { return values[i] + Math.random() / 100; }]}, this.drag.options.reorderAnimation);
-      else
-        Animation.set(els, { translateY: function(i) { return values[i]; }}, this.drag.options.reorderAnimation);
+      if (this._forceFeedRequired) {
+        Animation.set(
+          translatedEls,
+          { [this._directionProperties.translate]: [function(i) { return translatedValues[i]; },
+                                                    function(i) { return translatedValues[i] + Math.random() / 100; }] },this.drag.options.reorderAnimation);
+      } else {
+        Animation.set(
+          translatedEls,
+          { [this._directionProperties.translate]: function(i) { return translatedValues[i]; }},
+          this.drag.options.reorderAnimation);
+      }
 
 
       if (placeholderOffset === null)  placeholderOffset = offset;
       let placeholderMeasure = this._getChildMeasure(this.placeholder.el);
-      let newPlaceholderTranslation = placeholderOffset - placeholderMeasure.offset;
+      let newPlaceholderTranslation = placeholderOffset - placeholderMeasure.layoutOffset;
       if (placeholderMeasure.translation !== newPlaceholderTranslation || this._forceFeedRequired) {
         // teleport the placeholder into it's new position (no animation)
         Dom.transform(this.placeholder.el, { [this._directionProperties.translate]: newPlaceholderTranslation });
@@ -201,7 +207,6 @@ module Tactile {
       }
       this._forceFeedRequired = true;
     }
-
 
     dispose():void {
       if (this.placeholder) this.placeholder.dispose()

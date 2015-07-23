@@ -30,8 +30,8 @@ module Tactile {
     el:HTMLElement;
     drag:Drag;
     placeholder:Placeholder;
-    placeholderSize:[number,number];
-    placeholderScale:[number,number];
+    helperSize:[number,number];
+    helperScale:[number,number];
     accepts:string[];
     leaveAction:string;
     enterAction:string;
@@ -60,24 +60,9 @@ module Tactile {
     }
 
 
-    enter(xy:[number,number]):void {
-      Polyfill.addClass(this.el, this.drag.options.containerHoverClass);
-    }
-
-
-
-    move(xy:[number,number]):void {
-      // do nothing
-    }
-
-
-    leave():void {
-      Polyfill.removeClass(this.el, this.drag.options.containerHoverClass);
-    }
-
-
-    dispose():void {
-      Polyfill.removeClass(this.el, this.drag.options.containerHoverClass);
-    }
+    enter(xy:[number,number]):void { }
+    move(xy:[number,number]):void { }
+    leave():void { }
+    dispose():void { }
   }
 }
