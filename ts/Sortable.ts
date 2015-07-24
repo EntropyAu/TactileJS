@@ -80,14 +80,13 @@ module Tactile {
     _updateIndexViaSelectionApi(xy:[number,number]):void {
       const closestElement = Dom.elementFromPointViaSelection(xy);
       const closestElementParents = Dom.ancestors(closestElement, 'li');
-      const closestChildEl = this._siblingEls.filter(el => closestElementParents.indexOf(el) !== -1)[0];
-      if (!closestChildEl) return;
-
-      const childBounds = closestChildEl.getBoundingClientRect();
-      const childIndex = this._siblingEls.indexOf(closestChildEl);
-      let newIndex = childIndex;
-      if (xy[0] > childBounds.left + childBounds.width / 2) newIndex++;
-      this._setPlaceholderIndex(newIndex);
+      const closestSiblingEl = this._siblingEls.filter(el => closestElementParents.indexOf(el) !== -1)[0];
+      if (closestSiblingEl) {
+        let newIndex = this._siblingEls.indexOf(closestSiblingEl);
+        const childBounds = closestSiblingEl.getBoundingClientRect();
+        if (xy[0] > childBounds.left + childBounds.width / 2) newIndex++;
+        this._setPlaceholderIndex(newIndex);
+      }
     }
 
 

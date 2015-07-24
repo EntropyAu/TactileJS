@@ -17,6 +17,8 @@ module Tactile {
       // do nothing
     }
 
-    finalizeDrop(draggable:Draggable):void {}
+    finalizePosition(el:HTMLElement):void {
+      Polyfill.remove(el);
+    }
   }
 }

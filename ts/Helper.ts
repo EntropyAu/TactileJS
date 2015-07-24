@@ -108,8 +108,6 @@ module Tactile {
       if (Vector.equals(this.size, size) && Vector.equals(this.scale, scale))
         return;
 
-      this.size = size;
-      this.scale = scale;
       this.gripXY = Vector.multiply(this.gripRelative, size);
       this.gripOffset = Vector.multiplyScalar(this.gripXY, -1);
 
@@ -125,6 +123,9 @@ module Tactile {
         scaleY: [scale[1], this.scale[1] + minimalDelta]
       },
       animate ? this.drag.options.resizeAnimation : undefined);
+
+      this.size = size;
+      this.scale = scale;
     }
 
 

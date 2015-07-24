@@ -47,24 +47,12 @@ module Tactile {
         switch (state) {
           case "hidden":
             this.el.style.visibility = 'hidden';
-            Animation.set(this.el,
-              {
-                marginBottom: -this.size[1] - parseInt(this._originalStyles.marginBottom, 10),
-                marginRight: -this.size[0] - parseInt(this._originalStyles.marginRight, 10)
-              },
-              animate ? this.drag.options.containerResizeAnimation : undefined);
             break;
           case "ghost":
           case "materialized":
             this.el.style.visibility = '';
             this.el.style.marginBottom = '';
             Animation.set(this.el, { opacity: state === 'ghost' ? 0.1 : 1.0 }, velocityOptions);
-            Animation.set(this.el,
-              {
-                marginBottom: parseInt(this._originalStyles.marginBottom, 10),
-                marginRight: parseInt(this._originalStyles.marginRight, 10)
-              },
-              animate ? this.drag.options.containerResizeAnimation : undefined);
             break;
         }
         this.state = state;

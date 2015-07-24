@@ -1266,7 +1266,9 @@ var Tactile;
         };
         Droppable.prototype.leave = function () {
         };
-        Droppable.prototype.finalizeDrop = function (draggable) { };
+        Droppable.prototype.finalizePosition = function (el) {
+            Tactile.Polyfill.remove(el);
+        };
         return Droppable;
     })(Tactile.Container);
     Tactile.Droppable = Droppable;
@@ -1388,8 +1390,6 @@ var Tactile;
             if (animate === void 0) { animate = true; }
             if (Tactile.Vector.equals(this.size, size) && Tactile.Vector.equals(this.scale, scale))
                 return;
-            this.size = size;
-            this.scale = scale;
             this.gripXY = Tactile.Vector.multiply(this.gripRelative, size);
             this.gripOffset = Tactile.Vector.multiplyScalar(this.gripXY, -1);
             var minimalDelta = 0.0001;
@@ -1403,6 +1403,8 @@ var Tactile;
                 scaleX: [scale[0], this.scale[0] + minimalDelta],
                 scaleY: [scale[1], this.scale[1] + minimalDelta]
             }, animate ? this.drag.options.resizeAnimation : undefined);
+            this.size = size;
+            this.scale = scale;
         };
         Helper.prototype.animateToElementAndPutDown = function (el, complete) {
             Tactile.Animation.stop(this.el);
@@ -1473,20 +1475,12 @@ var Tactile;
             switch (state) {
                 case "hidden":
                     this.el.style.visibility = 'hidden';
-                    Tactile.Animation.set(this.el, {
-                        marginBottom: -this.size[1] - parseInt(this._originalStyles.marginBottom, 10),
-                        marginRight: -this.size[0] - parseInt(this._originalStyles.marginRight, 10)
-                    }, animate ? this.drag.options.containerResizeAnimation : undefined);
                     break;
                 case "ghost":
                 case "materialized":
                     this.el.style.visibility = '';
                     this.el.style.marginBottom = '';
                     Tactile.Animation.set(this.el, { opacity: state === 'ghost' ? 0.1 : 1.0 }, velocityOptions);
-                    Tactile.Animation.set(this.el, {
-                        marginBottom: parseInt(this._originalStyles.marginBottom, 10),
-                        marginRight: parseInt(this._originalStyles.marginRight, 10)
-                    }, animate ? this.drag.options.containerResizeAnimation : undefined);
                     break;
             }
             this.state = state;
@@ -1658,15 +1652,14 @@ var Tactile;
         Sortable.prototype._updateIndexViaSelectionApi = function (xy) {
             var closestElement = Tactile.Dom.elementFromPointViaSelection(xy);
             var closestElementParents = Tactile.Dom.ancestors(closestElement, 'li');
-            var closestChildEl = this._siblingEls.filter(function (el) { return closestElementParents.indexOf(el) !== -1; })[0];
-            if (!closestChildEl)
-                return;
-            var childBounds = closestChildEl.getBoundingClientRect();
-            var childIndex = this._siblingEls.indexOf(closestChildEl);
-            var newIndex = childIndex;
-            if (xy[0] > childBounds.left + childBounds.width / 2)
-                newIndex++;
-            this._setPlaceholderIndex(newIndex);
+            var closestSiblingEl = this._siblingEls.filter(function (el) { return closestElementParents.indexOf(el) !== -1; })[0];
+            if (closestSiblingEl) {
+                var newIndex = this._siblingEls.indexOf(closestSiblingEl);
+                var childBounds = closestSiblingEl.getBoundingClientRect();
+                if (xy[0] > childBounds.left + childBounds.width / 2)
+                    newIndex++;
+                this._setPlaceholderIndex(newIndex);
+            }
         };
         Sortable.prototype.leave = function () {
             if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
