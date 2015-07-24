@@ -1,2 +1,2 @@
-export interface Velocity { (el:Element, properties:any, options:any):void; }
-declare var Velocity:Velocity;
+export interface Velocity { (el:HTMLElement|HTMLElement[], properties:any, options?:any):void; }
+export declare var Velocity:Velocity;

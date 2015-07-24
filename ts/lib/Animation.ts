@@ -56,31 +56,26 @@ module Tactile.Animation {
     endIndex:number,
     animationOptions:any) {
 
+    let els:HTMLElement[] = [];
+    let elOffsets:[number,number][] = [];
 
-    let translatedEls = [];
-    let startXValues = [];
-    let endXValues = [];
-    let startYValues = [];
-    let endYValues = [];
     for (let childEl of cache.getElements()) {
 
-      if (Dom.matches(childEl, '[data-drag-placeholder]'))
-        continue;
-
+      if (Dom.matches(childEl, '[data-drag-placeholder]')) continue;
       let oldOffset = cache.get(childEl, 'old');
       let newOffset = cache.get(childEl, 'new');
-      if (!oldOffset || !newOffset || (oldOffset[0] === newOffset[0] && oldOffset[1] === newOffset[1]))
-        continue;
+      if (!oldOffset || !newOffset || Vector.equals(oldOffset, newOffset)) continue;
 
-      translatedEls.push(childEl);
-      startXValues.push((oldOffset[0] - newOffset[0]) + 'px');
-      startYValues.push((oldOffset[1] - newOffset[1]) + 'px');
-      endXValues.push(0);
-      endYValues.push(0);
+      els.push(childEl);
+      elOffsets.push(Vector.subtract(oldOffset, newOffset));
+
+      // immediately set the start offset to avoid flickering (velocity appears
+      // to start the animation only on the next animation frame cycle)
+      Dom.translate(childEl, Vector.subtract(oldOffset, newOffset));
     }
-    window['Velocity'](translatedEls, {
-      translateX: [i => endXValues[i], i => startXValues[i]],
-      translateY: [i => endYValues[i], i => startYValues[i]],
+    Velocity(els, {
+      translateX: [0, i => elOffsets[i][0]],
+      translateY: [0, i => elOffsets[i][1]],
     }, {
       duration: animationOptions.duration,
       easing: animationOptions.easing,

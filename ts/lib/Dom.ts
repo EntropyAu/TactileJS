@@ -42,6 +42,17 @@ module Tactile.Dom {
     return parents;
   }
 
+  export function ancestors(el:HTMLElement, selector:string):HTMLElement[] {
+    if (el === null) return [];
+    let ancestors:HTMLElement[] = [];
+    do {
+      if (matches(el, selector)) ancestors.push(el);
+    }
+    while (el = <HTMLElement>el.parentNode)
+    return ancestors;
+  }
+
+
 
   export function copyComputedStyles(sourceEl:HTMLElement, targetEl:HTMLElement):void {
     targetEl.style.cssText = getComputedStyle(sourceEl).cssText;
@@ -76,17 +87,6 @@ module Tactile.Dom {
 
   export function children(el:HTMLElement):HTMLElement[] {
     return [].slice.call(el.children);
-  }
-
-
-  export function ancestors(el:HTMLElement, selector:string):HTMLElement[] {
-    if (el === null) return [];
-    let ancestors:HTMLElement[] = [];
-    do {
-      if (matches(el, selector)) ancestors.push(el);
-    }
-    while (el = <HTMLElement>el.parentNode)
-    return ancestors;
   }
 
 
