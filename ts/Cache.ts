@@ -1,3 +1,4 @@
+
 module Tactile {
 
   let uuid = 1;
@@ -14,7 +15,7 @@ module Tactile {
 
     _id:string;
     _els:HTMLElement[];
-    _cache:Map;
+    _cache:Map<HTMLElement,{[key:string]:any}>;
 
     constructor() {
       if (_useMap) {
@@ -43,7 +44,7 @@ module Tactile {
 
     clear():void {
       if (_useMap) {
-        this._cache = new Map();
+        this._cache.clear();
       } else {
         this._els.forEach((el:HTMLElement) => delete <any>el[this._id]);
         this._els = [];

@@ -61,22 +61,25 @@ module Tactile {
 
     step(xy:[number,number]) {
       this._updateVelocity(xy);
+      // if this is the first movement of the scrollable, record the current
+      // scroll position. We keep track of this separately to allow for
+      // subpixel scrolling
       if (!this._lastUpdate) {
         this._offset = [this.el.scrollLeft, this.el.scrollTop];
       };
 
-      // calculate the amount we want to scroll
       let currentUpdate = new Date();
-      let elapsedTimeMs = this._lastUpdate !== null ? (currentUpdate.getTime() - this._lastUpdate.getTime()) : 16;
-      this._offset = Vector.add(this._offset, Vector.multiplyScalar(this._velocity, elapsedTimeMs));
+      let elapsedTimeMs = this._lastUpdate !== null
+                        ? (currentUpdate.getTime() - this._lastUpdate.getTime())
+                        : 16;
 
       // scroll the scrollable
+      this._offset = Vector.add(this._offset, Vector.multiplyScalar(this._velocity, elapsedTimeMs));
       if (this._velocity[0] !== 0) this.el.scrollLeft = this._offset[0];
       if (this._velocity[1] !== 0) this.el.scrollTop  = this._offset[1];
       this._lastUpdate = currentUpdate;
 
-      // schedule the next scroll update
-      return (this._velocity[0] !== 0 || this._velocity[1] !== 0);
+      return Vector.lengthSquared(this._velocity) > 0;
     }
 
 
@@ -85,7 +88,7 @@ module Tactile {
       const b = this._bounds;
 
       let v:[number,number] = [0,0];
-      if (Maths.contains(b, xy)) {
+      if (Geometry.rectContains(b, xy)) {
         if (this._hEnabled) {
           if (xy[0] > b.right - this._hSensitivity && Dom.canScrollRight(this.el)) v[0] = Maths.scale(xy[0], [b.right-this._hSensitivity, b.right], [0, +maxV]);
           if (xy[0] < b.left + this._hSensitivity && Dom.canScrollLeft(this.el)) v[0] = Maths.scale(xy[0], [b.left+this._hSensitivity, b.left], [0, -maxV]);

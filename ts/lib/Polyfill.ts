@@ -1,4 +1,6 @@
 module Tactile.Polyfill {
+
+
   // internet explorer 9
   var timeLast = 0;
   export function requestAnimationFrame(callback:FrameRequestCallback):number
@@ -27,11 +29,11 @@ module Tactile.Polyfill {
   };
 
 
+  // internet explorer 9
   export function addClass(el:HTMLElement, className:string):void {
     if (el.classList !== undefined) {
       el.classList.add(className);
     } else {
-      // internet explorer 9
       let classes:string[] = (el.getAttribute('class') || '').split(/\s+/);
       if (classes.indexOf(className) === -1) {
         classes.push(className);
@@ -41,11 +43,11 @@ module Tactile.Polyfill {
   }
 
 
+  // internet explorer 9
   export function removeClass(el:HTMLElement, className:string):void {
     if (el.classList !== undefined) {
       el.classList.remove(className);
     } else {
-      // internet explorer 9
       let classes:string[] = (el.getAttribute('class') || '').split(/\s+/);
       let index = classes.indexOf(className);
       if (index !== -1) {
@@ -56,11 +58,11 @@ module Tactile.Polyfill {
   }
 
 
+  // internet explorer 9/10/11
   export function remove(el:HTMLElement) {
     if (typeof el.remove === 'function') {
       el.remove();
     } else {
-      // internet explorer 9/10/11
       el.parentNode.removeChild(el);
     }
   }

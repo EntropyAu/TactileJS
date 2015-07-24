@@ -22,7 +22,7 @@ module Tactile.Vector {
   export function divideScalar(v:[number,number], s:number):[number,number] {
     return [v[0] / s, v[1] / s];
   }
-
+  
   export function lengthSquared(v:[number,number]):number {
     return v[0] * v[0] + v[1] * v[1];
   }

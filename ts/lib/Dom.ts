@@ -67,7 +67,7 @@ module Tactile.Dom {
   }
 
 
-  export function getPaddingClientRect(el:Element) {
+  export function getContentBoxClientRect(el:Element) {
     const style = getComputedStyle(el);
     const rect = el.getBoundingClientRect();
     let l = parseInt(style.borderLeftWidth,   10);

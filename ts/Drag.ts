@@ -63,23 +63,22 @@ module Tactile {
     }
 
 
-    cancel(abort:boolean = false):void {
-      if (!abort) {
-        this._dragEnded = true;
-        if (this._afRequestId) Polyfill.cancelAnimationFrame(this._afRequestId);
+    cancel(debugElements:boolean = false):void {
+      this._dragEnded = true;
+      if (this._afRequestId) {
+        Polyfill.cancelAnimationFrame(this._afRequestId);
+      }
+      if (!debugElements) {
         this.draggable.finalizeRevert();
         this.dispose();
-      } else {
-        // if we are aborting we'll leave all elements in their current positions
-        // to enable easier debugging of the DOM
       }
     }
 
 
     drop():void {
       this._dragEnded = true;
-      if (this._afRequestId) Polyfill.cancelAnimationFrame(this._afRequestId);
       this._scroller = null;
+      if (this._afRequestId) Polyfill.cancelAnimationFrame(this._afRequestId);
       this._tick();
       if (!this._raise(this.draggable.el, "begindrop").defaultPrevented) {
         switch (this.action) {
@@ -100,7 +99,8 @@ module Tactile {
             this._finalizeAction();
         }
       } else {
-        // handle drop cancelled
+        // drop has been cancelled on the begindrop event
+        this.cancel();
       }
     }
 

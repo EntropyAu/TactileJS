@@ -16,6 +16,7 @@
         "ts/lib/Dom.ts",
         "ts/lib/Events.ts",
         "ts/lib/Maths.ts",
+        "ts/lib/Geometry.ts",
         "ts/lib/Polyfill.ts",
         "ts/lib/Vector.ts",
 

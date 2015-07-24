@@ -227,7 +227,7 @@ var Tactile;
             children(el).forEach(function (el) { return stripClasses(el); });
         }
         Dom.stripClasses = stripClasses;
-        function getPaddingClientRect(el) {
+        function getContentBoxClientRect(el) {
             var style = getComputedStyle(el);
             var rect = el.getBoundingClientRect();
             var l = parseInt(style.borderLeftWidth, 10);
@@ -243,7 +243,7 @@ var Tactile;
                 height: rect.height - t - b
             };
         }
-        Dom.getPaddingClientRect = getPaddingClientRect;
+        Dom.getContentBoxClientRect = getContentBoxClientRect;
         function children(el) {
             return [].slice.call(el.children);
         }
@@ -444,12 +444,18 @@ var Tactile;
             return (value - domain[0]) / (domain[1] - domain[0]) * (range[1] - range[0]) + range[0];
         }
         Maths.scale = scale;
-        function contains(rect, xy) {
+    })(Maths = Tactile.Maths || (Tactile.Maths = {}));
+})(Tactile || (Tactile = {}));
+var Tactile;
+(function (Tactile) {
+    var Geometry;
+    (function (Geometry) {
+        function rectContains(rect, xy) {
             return xy[0] >= rect.left && xy[0] <= rect.right
                 && xy[1] >= rect.top && xy[1] <= rect.bottom;
         }
-        Maths.contains = contains;
-    })(Maths = Tactile.Maths || (Tactile.Maths = {}));
+        Geometry.rectContains = rectContains;
+    })(Geometry = Tactile.Geometry || (Tactile.Geometry = {}));
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
@@ -678,7 +684,7 @@ var Tactile;
         Cache.prototype.clear = function () {
             var _this = this;
             if (_useMap) {
-                this._cache = new Map();
+                this._cache.clear();
             }
             else {
                 this._els.forEach(function (el) { return delete el[_this._id]; });
@@ -842,23 +848,22 @@ var Tactile;
             this.xyEl = xyEl;
             this._xyChanged = true;
         };
-        Drag.prototype.cancel = function (abort) {
-            if (abort === void 0) { abort = false; }
-            if (!abort) {
-                this._dragEnded = true;
-                if (this._afRequestId)
-                    Tactile.Polyfill.cancelAnimationFrame(this._afRequestId);
+        Drag.prototype.cancel = function (debugElements) {
+            if (debugElements === void 0) { debugElements = false; }
+            this._dragEnded = true;
+            if (this._afRequestId) {
+                Tactile.Polyfill.cancelAnimationFrame(this._afRequestId);
+            }
+            if (!debugElements) {
                 this.draggable.finalizeRevert();
                 this.dispose();
-            }
-            else {
             }
         };
         Drag.prototype.drop = function () {
             this._dragEnded = true;
+            this._scroller = null;
             if (this._afRequestId)
                 Tactile.Polyfill.cancelAnimationFrame(this._afRequestId);
-            this._scroller = null;
             this._tick();
             if (!this._raise(this.draggable.el, "begindrop").defaultPrevented) {
                 switch (this.action) {
@@ -879,6 +884,7 @@ var Tactile;
                 }
             }
             else {
+                this.cancel();
             }
         };
         Drag.prototype.dispose = function () {
@@ -1295,17 +1301,16 @@ var Tactile;
         };
         Boundary.prototype.constrains = function (tags) {
             var _this = this;
-            return this.tags.indexOf('*') !== -1
-                || tags.some(function (t) { return _this.tags.indexOf(t) !== -1; });
+            return this.tags.indexOf('*') !== -1 || tags.some(function (t) { return _this.tags.indexOf(t) !== -1; });
         };
         Boundary.prototype.getConstrainedXY = function (xy) {
             var _this = this;
             var gripOffset = this.drag.helper.gripOffset;
-            var size = this.drag.helper.size;
+            var helperSize = this.drag.helper.size;
             var tl = [xy[0] + gripOffset[0], xy[1] + gripOffset[1]];
-            var rect = this.drag.geometryCache.get(this.el, 'pr', function () { return Tactile.Dom.getPaddingClientRect(_this.el); });
-            tl[0] = Tactile.Maths.coerce(tl[0], rect.left, rect.right - size[0]);
-            tl[1] = Tactile.Maths.coerce(tl[1], rect.top, rect.bottom - size[1]);
+            var rect = this.drag.geometryCache.get(this.el, 'pr', function () { return Tactile.Dom.getContentBoxClientRect(_this.el); });
+            tl[0] = Tactile.Maths.coerce(tl[0], rect.left, rect.right - helperSize[0]);
+            tl[1] = Tactile.Maths.coerce(tl[1], rect.top, rect.bottom - helperSize[1]);
             return [tl[0] - gripOffset[0], tl[1] - gripOffset[1]];
         };
         return Boundary;
@@ -1557,20 +1562,22 @@ var Tactile;
             }
             ;
             var currentUpdate = new Date();
-            var elapsedTimeMs = this._lastUpdate !== null ? (currentUpdate.getTime() - this._lastUpdate.getTime()) : 16;
+            var elapsedTimeMs = this._lastUpdate !== null
+                ? (currentUpdate.getTime() - this._lastUpdate.getTime())
+                : 16;
             this._offset = Tactile.Vector.add(this._offset, Tactile.Vector.multiplyScalar(this._velocity, elapsedTimeMs));
             if (this._velocity[0] !== 0)
                 this.el.scrollLeft = this._offset[0];
             if (this._velocity[1] !== 0)
                 this.el.scrollTop = this._offset[1];
             this._lastUpdate = currentUpdate;
-            return (this._velocity[0] !== 0 || this._velocity[1] !== 0);
+            return Tactile.Vector.lengthSquared(this._velocity) > 0;
         };
         Scrollable.prototype._updateVelocity = function (xy) {
             var maxV = this.drag.options.scrollSpeed;
             var b = this._bounds;
             var v = [0, 0];
-            if (Tactile.Maths.contains(b, xy)) {
+            if (Tactile.Geometry.rectContains(b, xy)) {
                 if (this._hEnabled) {
                     if (xy[0] > b.right - this._hSensitivity && Tactile.Dom.canScrollRight(this.el))
                         v[0] = Tactile.Maths.scale(xy[0], [b.right - this._hSensitivity, b.right], [0, +maxV]);

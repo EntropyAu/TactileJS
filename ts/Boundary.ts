@@ -29,22 +29,21 @@ module Tactile {
 
 
     constrains(tags:string[]):boolean {
-      return this.tags.indexOf('*') !== -1
-          || tags.some(t => this.tags.indexOf(t) !== -1);
+      return this.tags.indexOf('*') !== -1 || tags.some(t => this.tags.indexOf(t) !== -1);
     }
 
 
     getConstrainedXY(xy:[number,number]):[number,number] {
       const gripOffset = this.drag.helper.gripOffset;
-      const size = this.drag.helper.size;
+      const helperSize = this.drag.helper.size;
 
       // adjust for helper grip offset
       let tl = [xy[0] + gripOffset[0], xy[1] + gripOffset[1]];
 
       // coerce the top-left coordinates to fit within the Boundary element bounds
-      let rect = this.drag.geometryCache.get(this.el, 'pr', () => Dom.getPaddingClientRect(this.el));
-      tl[0] = Maths.coerce(tl[0], rect.left, rect.right - size[0]);
-      tl[1] = Maths.coerce(tl[1], rect.top, rect.bottom - size[1]);
+      let rect = this.drag.geometryCache.get(this.el, 'pr', () => Dom.getContentBoxClientRect(this.el));
+      tl[0] = Maths.coerce(tl[0], rect.left, rect.right - helperSize[0]);
+      tl[1] = Maths.coerce(tl[1], rect.top, rect.bottom - helperSize[1]);
 
       // return the coerced values, restoring the helper grip offset
       return [tl[0] - gripOffset[0], tl[1] - gripOffset[1]];
