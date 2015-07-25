@@ -27,13 +27,13 @@ module Tactile {
       return el;
     }
 
+
     static closestEnabled(el:HTMLElement):HTMLElement {
       el = this.closest(el);
       return el && !(el.hasAttribute('data-drag-disabled') || el.parentElement && el.parentElement.hasAttribute('data-drag-disabled'))
              ? el
              : null;
     }
-
 
 
     el:HTMLElement;
@@ -63,6 +63,7 @@ module Tactile {
                 ? Attributes.getTags(el, 'data-drag-tag')
                 : Attributes.getTags(el.parentElement, 'data-drag-tag');
     }
+
 
     finalizeMove(target:Container) {
       this.el.setAttribute('style', this.originalStyle);

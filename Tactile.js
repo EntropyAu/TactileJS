@@ -627,8 +627,8 @@ var Tactile;
 var Tactile;
 (function (Tactile) {
     ;
-    Tactile.defaultOptions = {
-        cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
+    Tactile.defaults = {
+        cancel: 'input,textarea,a,button,select',
         helperResize: true,
         helperCloneStyles: false,
         animation: true,
@@ -645,10 +645,10 @@ var Tactile;
         helperRotation: -1,
         helperShadowSize: 15,
         placeholderStyle: 'clone',
-        placeholderClass: 'dd-drag-placeholder',
-        containerHoverClass: 'dd-drag-hover',
+        placeholderClass: 'tactile-drag-placeholder',
+        containerHoverClass: 'tactile-drag-hover',
         avoidDomMutations: true,
-        scrollSensitivity: '20%',
+        scrollSensitivity: '15%',
         scrollSpeed: 1
     };
 })(Tactile || (Tactile = {}));
@@ -751,8 +751,13 @@ var Tactile;
         function Canvas(el, drag) {
             _super.call(this, el, drag);
             this.offset = [0, 0];
-            this._grid = null;
-            this._initializeGrid();
+            this.grid = null;
+            var gridAttribute = Tactile.Attributes.get(this.el, 'data-drag-grid', '10,10');
+            if (gridAttribute !== null) {
+                var tokens = gridAttribute.split(',');
+                this.grid = [parseInt(tokens[0], 10) || 1,
+                    parseInt(tokens[1], 10) || parseInt(tokens[0], 10) || 1];
+            }
         }
         Canvas.prototype.enter = function (xy) {
             if (!this.placeholder) {
@@ -764,17 +769,17 @@ var Tactile;
         };
         Canvas.prototype.move = function (xy) {
             var _this = this;
-            var rect = this.drag.geometryCache.get(this.el, 'clientRect', function () { return _this.el.getBoundingClientRect(); });
-            var scrollOffset = this.drag.geometryCache.get(this.el, 'scrollOffset', function () { return [_this.el.scrollLeft, _this.el.scrollTop]; });
+            var rect = this.drag.geometryCache.get(this.el, 'cr', function () { return _this.el.getBoundingClientRect(); });
+            var scrollOffset = this.drag.geometryCache.get(this.el, 'so', function () { return [_this.el.scrollLeft, _this.el.scrollTop]; });
             var localOffset = [xy[0] - rect.left + scrollOffset[0] + this.drag.helper.gripOffset[0],
                 xy[1] - rect.top + scrollOffset[1] + this.drag.helper.gripOffset[1]];
             localOffset = Tactile.Vector.divide(localOffset, this.helperScale);
-            if (this._grid) {
-                localOffset = [Math.round(localOffset[0] / this._grid[0]) * this._grid[0],
-                    Math.round(localOffset[1] / this._grid[1]) * this._grid[1]];
+            if (this.grid) {
+                localOffset = [Math.round(localOffset[0] / this.grid[0]) * this.grid[0],
+                    Math.round(localOffset[1] / this.grid[1]) * this.grid[1]];
             }
+            Tactile.Dom.translate(this.placeholder.el, localOffset);
             this.offset = localOffset;
-            Tactile.Dom.translate(this.placeholder.el, this.offset);
         };
         Canvas.prototype.leave = function () {
             if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
@@ -785,13 +790,9 @@ var Tactile;
             Tactile.Dom.topLeft(el, this.offset);
             this.el.appendChild(el);
         };
-        Canvas.prototype._initializeGrid = function () {
-            var gridAttribute = Tactile.Attributes.get(this.el, 'data-drag-grid', '10,10');
-            if (gridAttribute !== null) {
-                var tokens = gridAttribute.split(',');
-                this._grid = [parseInt(tokens[0], 10) || 1,
-                    parseInt(tokens[1], 10) || parseInt(tokens[0], 10) || 1];
-            }
+        Canvas.prototype.dispose = function () {
+            if (this.placeholder)
+                this.placeholder.dispose();
         };
         Canvas.prototype._insertPlaceholder = function () {
             if (this.drag.draggable.originalParentEl === this.el) {
@@ -802,11 +803,6 @@ var Tactile;
             }
             Tactile.Dom.topLeft(this.placeholder.el, [0, 0]);
             this.placeholder.setState("hidden");
-        };
-        Canvas.prototype.dispose = function () {
-            if (this.placeholder) {
-                this.placeholder.dispose();
-            }
         };
         return Canvas;
     })(Tactile.Container);
@@ -1127,7 +1123,7 @@ var Tactile;
         function DragManager() {
             this._drags = {};
             this._pendingDrags = {};
-            this.options = Tactile.defaultOptions;
+            this.options = Tactile.defaults;
             this._onPointerDownListener = this._onPointerDown.bind(this);
             this._onPointerMoveListener = this._onPointerMove.bind(this);
             this._onPointerUpListener = this._onPointerUp.bind(this);
@@ -1281,17 +1277,15 @@ var Tactile;
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
-    var attribute = 'data-drag-bounds';
-    var selector = '[data-drag-bounds]';
     var Boundary = (function () {
         function Boundary(el, drag) {
             this.el = el;
             this.drag = drag;
-            this.tags = Tactile.Attributes.getTags(el, attribute, ['*']);
+            this.tags = Tactile.Attributes.getTags(el, 'data-drag-bounds', ['*']);
         }
         Boundary.closestForDraggable = function (drag, draggable) {
             var el = draggable.el;
-            while (el = Tactile.Dom.closest(el.parentElement, selector)) {
+            while (el = Tactile.Dom.closest(el.parentElement, '[data-drag-bounds]')) {
                 var candidateBound = new Boundary(el, drag);
                 if (candidateBound.constrains(draggable.tags)) {
                     return candidateBound;
@@ -1308,7 +1302,7 @@ var Tactile;
             var gripOffset = this.drag.helper.gripOffset;
             var helperSize = this.drag.helper.size;
             var tl = [xy[0] + gripOffset[0], xy[1] + gripOffset[1]];
-            var rect = this.drag.geometryCache.get(this.el, 'pr', function () { return Tactile.Dom.getContentBoxClientRect(_this.el); });
+            var rect = this.drag.geometryCache.get(this.el, 'cb', function () { return Tactile.Dom.getContentBoxClientRect(_this.el); });
             tl[0] = Tactile.Maths.coerce(tl[0], rect.left, rect.right - helperSize[0]);
             tl[1] = Tactile.Maths.coerce(tl[1], rect.top, rect.bottom - helperSize[1]);
             return [tl[0] - gripOffset[0], tl[1] - gripOffset[1]];

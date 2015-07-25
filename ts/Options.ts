@@ -28,12 +28,12 @@ module Tactile {
     scrollSpeed:number
   };
 
-  export var defaultOptions:Options = {
-    cancel: 'input,textarea,a,button,select,[data-drag-placeholder]',
+  export var defaults:Options = {
+    cancel: 'input,textarea,a,button,select',
     helperResize: true,
     helperCloneStyles: false,
     animation: true,
-    revertBehaviour:   'last', // original, last
+    revertBehaviour: 'last', // original, last
     pickUpAnimation:           { duration: 300, easing: 'ease-in-out' },
     pickDownAnimation:         { duration: 300, easing: 'ease-in-out' },
     resizeAnimation:           { duration: 300, easing: 'ease-in-out' },
@@ -46,10 +46,10 @@ module Tactile {
     helperRotation: -1,
     helperShadowSize: 15,
     placeholderStyle: 'clone',
-    placeholderClass: 'dd-drag-placeholder',
-    containerHoverClass: 'dd-drag-hover',
+    placeholderClass: 'tactile-drag-placeholder',
+    containerHoverClass: 'tactile-drag-hover',
     avoidDomMutations: true,
-    scrollSensitivity: '20%',
+    scrollSensitivity: '15%',
     scrollSpeed: 1
   };
 }

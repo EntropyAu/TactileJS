@@ -11,7 +11,7 @@ module Tactile {
 
 
     constructor() {
-      this.options = defaultOptions;
+      this.options = defaults;
       this._onPointerDownListener = this._onPointerDown.bind(this);
       this._onPointerMoveListener = this._onPointerMove.bind(this);
       this._onPointerUpListener = this._onPointerUp.bind(this);
