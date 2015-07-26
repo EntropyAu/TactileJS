@@ -23,6 +23,7 @@ module Tactile {
         this.helperSize = this.placeholder.size;
         this.helperScale = this.placeholder.scale;
       }
+      this.placeholder.setState("ghost");
       this.move(xy);
     }
 
@@ -49,6 +50,8 @@ module Tactile {
       if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
         // TODO animate placeholder back to it's original position
         this.placeholder.setState("materialized");
+      } else {
+        this.placeholder.setState("hidden");
       }
     }
 

@@ -1,6 +1,19 @@
 module Tactile {
 
-  export class Drag {
+  // TODO: resizing of sortables with adding/removing elements
+  // TODO: invalidating geometry cache with heirarchical sortables
+  // TODO: - invalidate child measures when entering / exiting hierarchical
+  // TODO: cache sortable containers
+  // TODO: update source mode if enter-action is defined on target
+  // TODO: constrain placement in canvas
+  // TODO: constrain scroll with blah
+  // TODO: constrain scroll with max scroll (iOS does not enforce)
+  // TODO: listen to dom mutation events
+  // TODO: use pointer (not constrained) location for scrolling (scrolling can be prevented for large items)
+  // TODO:  - scrolling should be constrained within boundary
+  // TODO: enable events to be registered manually
+
+    export class Drag {
 
     xy:[number,number];
     xyEl:HTMLElement;
@@ -9,7 +22,7 @@ module Tactile {
     helper:Helper;
     source:Container = null;
     target:Container = null;
-    bounds:Boundary;
+    boundary:Boundary;
     action:string;
     copy:boolean;
     options:Options;
@@ -35,7 +48,7 @@ module Tactile {
 
       this.draggable = new Draggable(draggableEl, this);
       this.helper = new Helper(this, this.draggable);
-      this.bounds = Boundary.closestForDraggable(this, this.draggable);
+      this.boundary = Boundary.closestForDraggable(this, this.draggable);
       this.copy = false;
 
       this.geometryCache = new Cache();
@@ -130,8 +143,8 @@ module Tactile {
 
         // apply bound constraints to the pointer XY value - we pretend that the user
         // has not moved the pointer outside the content bounds of the Boundary element
-        if (this.bounds) {
-          let constrainedXY = this.bounds.getConstrainedXY(this.xy);
+        if (this.boundary) {
+          let constrainedXY = this.boundary.getConstrainedXY(this.xy);
           if (!Vector.equals(constrainedXY, this.xy)) {
             this.xy = constrainedXY;
             this.xyEl = null;
@@ -207,9 +220,9 @@ module Tactile {
 
       // if the current drag operation is Boundd, then the target container
       // must be a descendant of the Boundary element
-      if (newTarget && this.bounds
-                    && !Dom.isDescendant(this.bounds.el, newTarget.el)
-                    && this.bounds.el !== newTarget.el) return;
+      if (newTarget && this.boundary
+                    && !Dom.isDescendant(this.boundary.el, newTarget.el)
+                    && this.boundary.el !== newTarget.el) return;
 
       if (newTarget === oldTarget) return;
 
@@ -341,7 +354,7 @@ module Tactile {
         copy: this.copy,
         helperEl: this.helper.el,
         helperXY: this.helper.xy,
-        BoundEl: this.bounds ? this.bounds.el : null,
+        boundaryEl: this.boundary ? this.boundary.el : null,
         sourceEl: this.draggable.originalParentEl,
         sourceIndex: this.draggable.originalIndex,
         sourceOffset: this.draggable.originalOffset,

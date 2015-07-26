@@ -46,13 +46,21 @@ module Tactile {
                             : { duration:   0, queue: false };
         switch (state) {
           case "hidden":
+            // move the placeholder off the screen so it's no longer visible
+            // but it maintains its measurements
             this.el.style.visibility = 'hidden';
+            this.el.style.position = "absolute";
+            this.el.style.top = "-10000px";
+            this.el.style.left = "-10000px";
             break;
           case "ghost":
           case "materialized":
             this.el.style.visibility = '';
-            this.el.style.marginBottom = '';
+            this.el.style.position = "";
+            this.el.style.top = '';
+            this.el.style.left = '';
             Animation.set(this.el, { opacity: state === 'ghost' ? 0.1 : 1.0 }, velocityOptions);
+            this._updateDimensions();
             break;
         }
         this.state = state;

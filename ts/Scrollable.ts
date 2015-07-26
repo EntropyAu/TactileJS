@@ -44,7 +44,7 @@ module Tactile {
       }
 
       // initialize sensitivity
-      const sensitivity = this.drag.options.scrollSensitivity;
+      const sensitivity:string|number = this.drag.options.scrollSensitivity;
       const percent = sensitivity.toString().indexOf('%') !== -1
                     ? parseInt(sensitivity.toString(), 10) / 100
                     : null;
@@ -60,13 +60,16 @@ module Tactile {
 
 
     step(xy:[number,number]) {
-      this._updateVelocity(xy);
+
       // if this is the first movement of the scrollable, record the current
       // scroll position. We keep track of this separately to allow for
       // subpixel scrolling
       if (!this._lastUpdate) {
         this._offset = [this.el.scrollLeft, this.el.scrollTop];
       };
+
+      this._updateVelocity(xy);
+
 
       let currentUpdate = new Date();
       let elapsedTimeMs = this._lastUpdate !== null

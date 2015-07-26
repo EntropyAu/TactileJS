@@ -12,7 +12,6 @@ li, ol li {
 
 ol[data-drag-sortable] {
   list-style: none;
-  border: 1px solid #EEE;
   margin: 0;
   padding: 0;
   min-height: 20px;

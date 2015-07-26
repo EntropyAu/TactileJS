@@ -47,6 +47,33 @@ module Tactile.Animation {
       options.animationOptions);
   }
 
+  export function animateDomMutationLayoutSize(el:HTMLElement, mutationFunction:Function, options:any):void {
+    let oldScrollSize = [el.scrollWidth, el.scrollHeight];
+    let oldOffsetSize = [el.offsetWidth, el.offsetHeight];
+    let oldWidthStyle = el.style.width;
+    let oldHeightStyle = el.style.height;
+    el.style.width = `${oldOffsetSize[0]}px`;
+    el.style.height = `${oldOffsetSize[1]}px`;
+
+    mutationFunction();
+    let newScrollSize = [el.scrollWidth, el.scrollHeight];
+
+    function complete() {
+      el.style.width = oldWidthStyle;
+      el.style.height = oldHeightStyle;
+    }
+    Velocity(el, {
+      width: oldOffsetSize[0] + (newScrollSize[0] - oldScrollSize[0]),
+      height: oldOffsetSize[1] + (newScrollSize[1] - oldScrollSize[1])
+    }, {
+      duration: 3000,
+      easing: 'ease-in-out',
+      complete: complete
+    });
+  };
+
+
+
 
 
   function animateBetweenOffsets(

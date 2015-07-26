@@ -20,13 +20,19 @@ ul[data-drag-canvas] {
 *[data-drag-draggable],
 ol[data-drag-sortable] > li,
 ul[data-drag-canvas] > li {
+  z-index: 1;
+}
+
+*[data-drag-draggable]:not(*[data-drag-use-handles]),
+ol[data-drag-sortable]:not(ol[data-drag-use-handles]) > li,
+ul[data-drag-canvas]:not(ul[data-drag-use-handles]) > li {
   cursor:      default;
   cursor: -webkit-grab;
   cursor:    -moz-grab;
   cursor:     -ms-grab;
   cursor:         grab;
-  z-index: 1;
 }
+
 
 /* encourage hardware acceleration for all draggable items */
 /* don't apply to the body element as this can cause side-effects (disappearing helpers) */
@@ -135,7 +141,6 @@ ul[data-drag-canvas] > * {
   cursor:         grab;
 }
 
-/*
 body[data-drag-in-progress] {
   cursor: move;
   cursor: -webkit-grabbing;
@@ -147,6 +152,7 @@ body[data-drag-in-progress] {
       -ms-user-select: none !important;
           user-select: none !important;
 }
+/*
 
 body[data-drag-in-progress] > * {
   -webkit-pointer-events: none !important;

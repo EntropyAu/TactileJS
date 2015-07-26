@@ -142,10 +142,8 @@ module Tactile {
         boxShadowBlur: 0,
         top: [0, 0 + minimalDelta],
         left: [0, 0 + minimalDelta],
-        translateX: [rect.left, this.xy[0] - this.gripRelative[0] * rect.width + minimalDelta],
-        translateY: [rect.top, this.xy[1] - this.gripRelative[1] * rect.height + minimalDelta],
-        transformOriginX: [this.gripXY[0], this.gripXY[0] + minimalDelta],
-        transformOriginY: [this.gripXY[1], this.gripXY[1] + minimalDelta],
+        translateX: [rect.left - rect.width * (1 - this.scale[0]), this.xy[0] - this.gripRelative[0] * rect.width / this.scale[0] + minimalDelta],
+        translateY: [rect.top - rect.height * (1 - this.scale[1]), this.xy[1] - this.gripRelative[1] * rect.height / this.scale[0] + minimalDelta],
         width: el.offsetWidth,
         height: el.offsetHeight
       }, this.drag.options.dropAnimation, complete);

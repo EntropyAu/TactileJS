@@ -17,15 +17,16 @@ module Tactile.Dom {
   }
 
 
-  export function isDescendant(el:HTMLElement, descendantEl:Element):boolean {
-    do {
-      descendantEl = descendantEl.parentElement;
-    } while (descendantEl && descendantEl !== el);
-    return descendantEl === el;
+  export function isDescendant(el:HTMLElement, descendantEl:HTMLElement):boolean {
+    return ( el !== descendantEl && el.contains(descendantEl));
   }
 
   export function closest(el:HTMLElement, selector:string):HTMLElement {
     if (el === null) return;
+    if (typeof el["closest"] === 'function') {
+      // chrome 41, firefox 35, not supported in IE or Safari
+      return el["closest"](selector);
+    }
     do {
       if (matches(el, selector)) return el;
     }
@@ -34,13 +35,14 @@ module Tactile.Dom {
   }
 
 
-  export function parents(el:HTMLElement, selector:string):HTMLElement[] {
+  export function parents(el:HTMLElement, selector?:string):HTMLElement[] {
     const parents:HTMLElement[] = [];
     while (el = <HTMLElement>el.parentNode) {
-      if (matches(el, selector)) parents.push(el);
+      if (!selector || matches(el, selector)) parents.push(el);
     }
     return parents;
   }
+
 
   export function ancestors(el:HTMLElement, selector:string):HTMLElement[] {
     if (el === null) return [];
@@ -55,9 +57,11 @@ module Tactile.Dom {
 
 
   export function copyComputedStyles(sourceEl:HTMLElement, targetEl:HTMLElement):void {
-    targetEl.style.cssText = getComputedStyle(sourceEl).cssText;
-    const targetChildren = children(targetEl);
-    children(sourceEl).forEach((el:HTMLElement,i:number) => copyComputedStyles(el, targetChildren[i]));
+    if (sourceEl && targetEl) {
+      targetEl.style.cssText = getComputedStyle(sourceEl).cssText;
+      const targetChildren = children(targetEl);
+      children(sourceEl).forEach((el:HTMLElement,i:number) => copyComputedStyles(el, targetChildren[i]));
+    }
   }
 
 
