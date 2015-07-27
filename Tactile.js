@@ -15,10 +15,11 @@ var Tactile;
                 window['Velocity'](els, target, velocityOptions);
             }
             else {
-                for (var _i = 0, _a = [].concat(els); _i < _a.length; _i++) {
-                    var el = _a[_i];
-                    applyStyleProperties(el, target);
-                    applyTransformProperties(el, target);
+                var elsArray = [].concat(els);
+                for (var i = 0; i < elsArray.length; i++) {
+                    var el = elsArray[i];
+                    applyStyleProperties(el, target, i);
+                    applyTransformProperties(el, target, i);
                 }
                 if (complete)
                     complete();
@@ -89,13 +90,12 @@ var Tactile;
                 elOffsets.push(Tactile.Vector.subtract(oldOffset, newOffset));
                 Tactile.Dom.translate(childEl, Tactile.Vector.subtract(oldOffset, newOffset));
             }
-            Velocity(els, {
+            set(els, {
                 translateX: [0, function (i) { return elOffsets[i][0]; }],
                 translateY: [0, function (i) { return elOffsets[i][1]; }]
             }, {
                 duration: animationOptions.duration,
-                easing: animationOptions.easing,
-                queue: false
+                easing: animationOptions.easing
             });
         }
         function childOffsetMap(cache, key, el, startIndex, endIndex) {
@@ -105,10 +105,12 @@ var Tactile;
                     cache.set(childEl, key, [childEl.offsetLeft, childEl.offsetTop]);
             }
         }
-        function unwrapVelocityPropertyValue(value) {
+        function unwrapVelocityPropertyValue(value, index) {
+            if (typeof value === 'function')
+                value = value(index);
             return Array.isArray(value) ? value[0] : value;
         }
-        function applyStyleProperties(el, properties) {
+        function applyStyleProperties(el, properties, index) {
             var cssProperties = {
                 "top": "px",
                 "left": "px",
@@ -118,12 +120,12 @@ var Tactile;
             };
             for (var property in properties) {
                 if (cssProperties[property]) {
-                    var value = unwrapVelocityPropertyValue(properties[property]);
+                    var value = unwrapVelocityPropertyValue(properties[property], index);
                     el.style[property] = value + cssProperties[property];
                 }
             }
         }
-        function applyTransformProperties(el, properties) {
+        function applyTransformProperties(el, properties, index) {
             var transformProperties = {
                 "translateX": "px",
                 "translateY": "px",
@@ -136,7 +138,7 @@ var Tactile;
             var transformHash = el['__tactile_transform'] || {};
             for (var property in properties) {
                 if (transformProperties[property]) {
-                    var value_1 = unwrapVelocityPropertyValue(properties[property]);
+                    var value_1 = unwrapVelocityPropertyValue(properties[property], index);
                     transformHash[property] = value_1 + transformProperties[property];
                 }
             }
@@ -1653,10 +1655,9 @@ var Tactile;
         function Sortable(el, drag) {
             _super.call(this, el, drag);
             this._style = getComputedStyle(this.el);
-            this._forceFeedRequired = true;
             this._avoidDomMutations = true;
             this._ignoreMutObserver = false;
-            this._childMeasures = new Tactile.Cache();
+            this._childGeometry = new Tactile.Cache();
             this._initializeDirection();
             this._initializeMutationListener();
         }
@@ -1664,13 +1665,10 @@ var Tactile;
             if (!window["MutationObserver"])
                 return;
             this._mutObserver = new MutationObserver(this._onDomMutation.bind(this));
-            this._mutObserver.observe(this.el, {
-                childList: true,
-                subtree: true
-            });
+            this._mutObserver.observe(this.el, { childList: true, subtree: true });
         };
         Sortable.prototype._onDomMutation = function (e) {
-            this._childMeasures.clear();
+            this._childGeometry.clear();
         };
         Sortable.prototype.enter = function (xy) {
             if (!this.placeholder) {
@@ -1682,7 +1680,7 @@ var Tactile;
             this.placeholder.setState("ghost");
             this.helperSize = this.placeholder.size;
             this.helperScale = this.placeholder.scale;
-            this._childMeasures.clear();
+            this._childGeometry.clear();
             this.move(xy);
         };
         Sortable.prototype.move = function (xy) {
@@ -1713,10 +1711,10 @@ var Tactile;
             var naturalOffset = 0;
             var newIndex = 0;
             do {
-                var measure = this._getChildMeasure(this._siblingEls[newIndex]);
-                if (adjustedXY[this._directionProperties.index] < naturalOffset + measure.dimension / 2)
+                var geometry = this._getChildGeometry(this._siblingEls[newIndex]);
+                if (adjustedXY[this._directionProperties.index] < naturalOffset + geometry.dimension / 2)
                     break;
-                naturalOffset += measure.dimension;
+                naturalOffset += geometry.dimension;
                 newIndex++;
             } while (newIndex < this._siblingEls.length);
             this._setPlaceholderIndex(newIndex);
@@ -1741,8 +1739,7 @@ var Tactile;
                 this.index = null;
                 this.placeholder.setState("hidden");
                 this._clearChildTranslations();
-                this._childMeasures.clear();
-                this._forceFeedRequired = true;
+                this._childGeometry.clear();
                 this._updatePlaceholderPosition();
             }
         };
@@ -1757,7 +1754,7 @@ var Tactile;
                 this._mutObserver = null;
             }
             this._clearChildTranslations();
-            this._childMeasures.dispose();
+            this._childGeometry.dispose();
         };
         Sortable.prototype._initializeDirection = function () {
             this._direction = this.el.getAttribute('data-drag-sortable') || "vertical";
@@ -1814,16 +1811,16 @@ var Tactile;
                 this._updatePlaceholderIndex();
             }
         };
-        Sortable.prototype._getChildMeasure = function (el) {
-            function getMeasure() {
+        Sortable.prototype._getChildGeometry = function (el) {
+            function getGeometry() {
                 return {
                     layoutOffset: el[this._directionProperties.layoutOffset] - parseInt(this._style[this._directionProperties.paddingStart], 10),
                     dimension: Tactile.Dom[this._directionProperties.outerDimension](el, true),
                     translation: null
                 };
             }
-            var measure = this._childMeasures.get(el, 'measures', getMeasure.bind(this));
-            return measure;
+            var geometry = this._childGeometry.get(el, 'geometry', getGeometry.bind(this));
+            return geometry;
         };
         Sortable.prototype._updatePlaceholderIndex = function () {
             var _this = this;
@@ -1840,33 +1837,26 @@ var Tactile;
                     placeholderOffset = offset;
                     offset += this.placeholder.outerSize[this._directionProperties.index];
                 }
-                var measure = this._getChildMeasure(el);
-                var newTranslation = offset - measure.layoutOffset;
-                if (measure.translation !== newTranslation || this._forceFeedRequired) {
-                    measure.translation = newTranslation;
+                var geometry = this._getChildGeometry(el);
+                var newTranslation = offset - geometry.layoutOffset;
+                if (geometry.translation !== newTranslation) {
+                    geometry.translation = newTranslation;
                     els.push(el);
                     elValues.push(newTranslation);
                 }
-                offset += measure.dimension;
+                offset += geometry.dimension;
             }.bind(this));
             var translate = this._directionProperties.translate;
-            var props = (_a = {},
-                _a[translate] = this._forceFeedRequired
-                    ? [function (i) { return elValues[i]; },
-                        function (i) { return elValues[i] + 0.0001; }]
-                    : function (i) { return elValues[i]; },
-                _a
-            );
+            var props = (_a = {}, _a[translate] = function (i) { return elValues[i]; }, _a);
             Tactile.Animation.set(els, props, this.drag.options.reorderAnimation);
             if (placeholderOffset === null)
                 placeholderOffset = offset;
-            var placeholderMeasure = this._getChildMeasure(this.placeholder.el);
-            var newPlaceholderTranslation = placeholderOffset - placeholderMeasure.layoutOffset;
-            if (placeholderMeasure.translation !== newPlaceholderTranslation || this._forceFeedRequired) {
+            var placeholderGeometry = this._getChildGeometry(this.placeholder.el);
+            var newPlaceholderTranslation = placeholderOffset - placeholderGeometry.layoutOffset;
+            if (placeholderGeometry.translation !== newPlaceholderTranslation) {
                 Tactile.Dom.transform(this.placeholder.el, (_b = {}, _b[translate] = newPlaceholderTranslation, _b));
-                placeholderMeasure.translation = newPlaceholderTranslation;
+                placeholderGeometry.translation = newPlaceholderTranslation;
             }
-            this._forceFeedRequired = false;
             var _a, _b;
         };
         Sortable.prototype._clearChildTranslations = function () {
@@ -1878,7 +1868,6 @@ var Tactile;
                 });
             }
             Tactile.Animation.clear(this._siblingEls || []);
-            this._forceFeedRequired = true;
         };
         return Sortable;
     })(Tactile.Container);

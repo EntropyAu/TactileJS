@@ -15,9 +15,11 @@ module Tactile.Animation {
       }
       window['Velocity'](els, target, velocityOptions);
     } else {
-      for (let el of [].concat(els)) {
-        applyStyleProperties(el, target);
-        applyTransformProperties(el, target);
+      let elsArray = [].concat(els);
+      for (let i = 0; i < elsArray.length; i++) {
+        let el = elsArray[i];
+        applyStyleProperties(el, target, i);
+        applyTransformProperties(el, target, i);
       }
       if (complete) complete();
     }
@@ -107,13 +109,12 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
       // to start the animation only on the next animation frame cycle)
       Dom.translate(childEl, Vector.subtract(oldOffset, newOffset));
     }
-    Velocity(els, {
+    set(els, {
       translateX: [0, i => elOffsets[i][0]],
       translateY: [0, i => elOffsets[i][1]],
     }, {
       duration: animationOptions.duration,
-      easing: animationOptions.easing,
-      queue: false
+      easing: animationOptions.easing
     });
   }
 
@@ -126,11 +127,12 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
   }
 
 
-  function unwrapVelocityPropertyValue(value:any):any {
+  function unwrapVelocityPropertyValue(value:any, index:number):any {
+    if (typeof value === 'function') value = value(index);
     return Array.isArray(value) ? value[0] : value;
   }
 
-  function applyStyleProperties(el:HTMLElement, properties:any):void {
+  function applyStyleProperties(el:HTMLElement, properties:any, index:number):void {
     const cssProperties = {
       "top": "px",
       "left": "px",
@@ -141,14 +143,14 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
 
     for (let property in properties) {
       if (cssProperties[property]) {
-        let value = unwrapVelocityPropertyValue(properties[property]);
+        let value = unwrapVelocityPropertyValue(properties[property], index);
         el.style[property] = value + cssProperties[property];
       }
     }
   }
 
 
-  function applyTransformProperties(el:HTMLElement, properties:any):void {
+  function applyTransformProperties(el:HTMLElement, properties:any, index:number):void {
     const transformProperties = {
       "translateX": "px",
       "translateY": "px",
@@ -166,7 +168,7 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
     let transformHash = el['__tactile_transform'] || {};
     for (let property in properties) {
       if (transformProperties[property]) {
-        let value = unwrapVelocityPropertyValue(properties[property]);
+        let value = unwrapVelocityPropertyValue(properties[property], index);
         transformHash[property] = value + transformProperties[property];
       }
     }

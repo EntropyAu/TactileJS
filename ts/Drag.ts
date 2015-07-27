@@ -2,10 +2,10 @@ module Tactile {
 
   // TODO: xxxxx invalidating geometry cache with heirarchical sortables
   // TODO: xxxxx - invalidate child measures when entering / exiting hierarchical
-  // TODO: wrapped elements - delay updates while animation is in progress
+  // TODO: xxxxx - wrapped elements - delay updates while animation is in progress
+  // TODO: xxxxx - constrain placement in canvas
   // TODO: cache scrollable containers
   // TODO: update source mode if enter-action is defined on target
-  // TODO: constrain placement in canvas
   // TODO: constrain scroll with blah
   // TODO: constrain scroll with max scroll (iOS does not enforce)
   // TODO: listen to dom mutation events
@@ -13,7 +13,7 @@ module Tactile {
   // TODO:  - scrolling should be constrained within boundary
   // TODO: enable events to be registered manually
 
-    export class Drag {
+  export class Drag {
 
     xy:[number,number];
     xyEl:HTMLElement;
