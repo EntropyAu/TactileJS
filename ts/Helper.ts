@@ -140,10 +140,8 @@ module Tactile {
       Animation.set(this.el, {
         rotateZ: 0,
         boxShadowBlur: 0,
-        top: [0, 0 + minimalDelta],
-        left: [0, 0 + minimalDelta],
-        translateX: [rect.left - rect.width * (1 - this.scale[0]), this.xy[0] - this.gripRelative[0] * rect.width / this.scale[0] + minimalDelta],
-        translateY: [rect.top - rect.height * (1 - this.scale[1]), this.xy[1] - this.gripRelative[1] * rect.height / this.scale[0] + minimalDelta],
+        translateX: rect.left - this.gripOffset[0] + this.gripOffset[0] * (1 - this.scale[0]),
+        translateY: rect.top - this.gripOffset[1] + this.gripOffset[1] * (1 - this.scale[1]),
         width: el.offsetWidth,
         height: el.offsetHeight
       }, this.drag.options.dropAnimation, complete);
@@ -152,7 +150,11 @@ module Tactile {
 
     animateDelete(complete:Function):void {
       Animation.stop(this.el);
-      Animation.set(this.el, { opacity: 0 }, this.drag.options.deleteAnimation, complete);
+      Animation.set(this.el, {
+        opacity: 0,
+        scaleX: 0,
+        scaleY: 0
+      }, this.drag.options.deleteAnimation, complete);
     }
 
 

@@ -75,12 +75,12 @@ module Tactile {
 
       // calculate the position of the item relative to this container
       const innerXY = [xy[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
-        xy[1] - bounds.top + st - parseInt(this._style.paddingTop, 10)];
+                       xy[1] - bounds.top + st - parseInt(this._style.paddingTop, 10)];
       let adjustedXY = [innerXY[0] - this.drag.helper.gripXY[0],
-        innerXY[1] - this.drag.helper.gripXY[1]];
+                        innerXY[1] - this.drag.helper.gripXY[1]];
 
       adjustedXY = [adjustedXY[0] / this.helperScale[0],
-        adjustedXY[1] / this.helperScale[1]];
+                    adjustedXY[1] / this.helperScale[1]];
 
 
       let naturalOffset = 0;
@@ -254,7 +254,7 @@ module Tactile {
       let props = {
       [translate]: this._forceFeedRequired
         ? [function(i) { return elValues[i]; },
-          function(i) { return elValues[i] + Math.random() / 100; }]
+           function(i) { return elValues[i] + 0.0001; }]
         : function(i) { return elValues[i]; }
       };
       Animation.set(els, props, this.drag.options.reorderAnimation);

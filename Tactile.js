@@ -474,27 +474,6 @@ var Tactile;
 })(Tactile || (Tactile = {}));
 var Tactile;
 (function (Tactile) {
-    var Rect;
-    (function (Rect_1) {
-        var Rect = (function () {
-            function Rect(x, y, w, h) {
-                this.xy = new Tactile.Vector(x, y);
-                this.size = new Tactile.Vector(w, h);
-            }
-            Rect.fromClientBounds = function (rect) {
-                return new Rect(rect.left, rect.top, rect.width, rect.height);
-            };
-            Rect.prototype.containsPoint = function (xy) {
-            };
-            Rect.prototype.containsRect = function (xy) {
-            };
-            return Rect;
-        })();
-        Rect_1.Rect = Rect;
-    })(Rect = Tactile.Rect || (Tactile.Rect = {}));
-})(Tactile || (Tactile = {}));
-var Tactile;
-(function (Tactile) {
     var Geometry;
     (function (Geometry) {
         function rectContains(rect, xy) {
@@ -1463,17 +1442,19 @@ var Tactile;
             Tactile.Animation.set(this.el, {
                 rotateZ: 0,
                 boxShadowBlur: 0,
-                top: [0, 0 + minimalDelta],
-                left: [0, 0 + minimalDelta],
-                translateX: [rect.left - rect.width * (1 - this.scale[0]), this.xy[0] - this.gripRelative[0] * rect.width / this.scale[0] + minimalDelta],
-                translateY: [rect.top - rect.height * (1 - this.scale[1]), this.xy[1] - this.gripRelative[1] * rect.height / this.scale[0] + minimalDelta],
+                translateX: rect.left - this.gripOffset[0] + this.gripOffset[0] * (1 - this.scale[0]),
+                translateY: rect.top - this.gripOffset[1] + this.gripOffset[1] * (1 - this.scale[1]),
                 width: el.offsetWidth,
                 height: el.offsetHeight
             }, this.drag.options.dropAnimation, complete);
         };
         Helper.prototype.animateDelete = function (complete) {
             Tactile.Animation.stop(this.el);
-            Tactile.Animation.set(this.el, { opacity: 0 }, this.drag.options.deleteAnimation, complete);
+            Tactile.Animation.set(this.el, {
+                opacity: 0,
+                scaleX: 0,
+                scaleY: 0
+            }, this.drag.options.deleteAnimation, complete);
         };
         Helper.prototype.dispose = function () {
             Tactile.Polyfill.remove(this.el);
@@ -1853,7 +1834,7 @@ var Tactile;
             var props = (_a = {},
                 _a[translate] = this._forceFeedRequired
                     ? [function (i) { return elValues[i]; },
-                        function (i) { return elValues[i] + Math.random() / 100; }]
+                        function (i) { return elValues[i] + 0.0001; }]
                     : function (i) { return elValues[i]; },
                 _a
             );
