@@ -22,6 +22,7 @@ module Tactile {
       this.el = <HTMLElement>draggable.el.cloneNode(true);
       this.el.removeAttribute("id");
       this.el.setAttribute("data-drag-helper", "");
+      this.el.removeAttribute("data-drag-placeholder");
 
       const s = this.el.style;
       if (this.drag.options.helperCloneStyles) {
@@ -140,8 +141,8 @@ module Tactile {
       Animation.set(this.el, {
         rotateZ: 0,
         boxShadowBlur: 0,
-        translateX: rect.left - this.gripOffset[0] + this.gripOffset[0] * (1 - this.scale[0]),
-        translateY: rect.top - this.gripOffset[1] + this.gripOffset[1] * (1 - this.scale[1]),
+        translateX: rect.left - this.gripOffset[0] * this.scale[0],
+        translateY: rect.top - this.gripOffset[1] * this.scale[1],
         width: el.offsetWidth,
         height: el.offsetHeight
       }, this.drag.options.dropAnimation, complete);

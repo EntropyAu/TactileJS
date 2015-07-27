@@ -17,6 +17,13 @@ ul[data-drag-canvas] {
           user-select: none !important;
 }
 
+ol[data-drag-sortable="wrap"] {
+  -webkit-user-select: text !important;
+     -moz-user-select: text !important;
+      -ms-user-select: text !important;
+          user-select: text !important;
+}
+
 *[data-drag-draggable],
 ol[data-drag-sortable] > li,
 ul[data-drag-canvas] > li {
@@ -181,8 +188,8 @@ body[data-drag-in-progress] ul[data-drag-canvas] {
           pointer-events: all !important;
 }
 */
-[data-drag-placeholder] {
-  z-index: -1;
+*[data-drag-placeholder] {
+  z-index: -1 !important;
 }
 
 .dd-drag-hover > * {

@@ -74,10 +74,10 @@ module Tactile.Dom {
   export function getContentBoxClientRect(el:Element) {
     const style = getComputedStyle(el);
     const rect = el.getBoundingClientRect();
-    let l = parseInt(style.borderLeftWidth,   10);
-    let t = parseInt(style.borderTopWidth,    10);
-    let r = parseInt(style.borderRightWidth,  10);
-    let b = parseInt(style.borderBottomWidth, 10);
+    let l = parseInt(style.borderLeftWidth,   10) || 0;
+    let t = parseInt(style.borderTopWidth,    10) || 0;
+    let r = parseInt(style.borderRightWidth,  10) || 0;
+    let b = parseInt(style.borderBottomWidth, 10) || 0;
     return {
       top:    rect.top    + t,
       left:   rect.left   + l,

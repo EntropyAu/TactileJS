@@ -39,7 +39,7 @@ module Tactile {
     resizeAnimation:           { duration: 300, easing: 'ease-in-out' },
     dropAnimation:             { duration: 300, easing: 'ease-in-out' },
     reorderAnimation:          { duration: 300, easing: 'ease-in-out' },
-    deleteAnimation:           { duration: 300, easing: 'ease-out'    },
+    deleteAnimation:           { duration: 300, easing: 'ease-in-out' },
     containerResizeAnimation:  { duration: 300, easing: 'ease-in' },
     pickUpDelay: 0,
     pickUpDistance: 0,

@@ -31,6 +31,15 @@ var Tactile;
             }
         }
         Animation.stop = stop;
+        function clear(els) {
+            if (window["Velocity"]) {
+                for (var _i = 0, _a = [].concat(els); _i < _a.length; _i++) {
+                    var el = _a[_i];
+                    Velocity.Utilities.removeData(el, ["velocity"]);
+                }
+            }
+        }
+        Animation.clear = clear;
         function animateDomMutation(el, mutationFunction, options) {
             var startIndex = options.startIndex || 0;
             var endIndex = Math.min(options.endIndex || el.children.length + 1, startIndex + options.elementLimit || Number.MAX_VALUE);
@@ -256,10 +265,10 @@ var Tactile;
         function getContentBoxClientRect(el) {
             var style = getComputedStyle(el);
             var rect = el.getBoundingClientRect();
-            var l = parseInt(style.borderLeftWidth, 10);
-            var t = parseInt(style.borderTopWidth, 10);
-            var r = parseInt(style.borderRightWidth, 10);
-            var b = parseInt(style.borderBottomWidth, 10);
+            var l = parseInt(style.borderLeftWidth, 10) || 0;
+            var t = parseInt(style.borderTopWidth, 10) || 0;
+            var r = parseInt(style.borderRightWidth, 10) || 0;
+            var b = parseInt(style.borderBottomWidth, 10) || 0;
             return {
                 top: rect.top + t,
                 left: rect.left + l,
@@ -664,7 +673,7 @@ var Tactile;
         resizeAnimation: { duration: 300, easing: 'ease-in-out' },
         dropAnimation: { duration: 300, easing: 'ease-in-out' },
         reorderAnimation: { duration: 300, easing: 'ease-in-out' },
-        deleteAnimation: { duration: 300, easing: 'ease-out' },
+        deleteAnimation: { duration: 300, easing: 'ease-in-out' },
         containerResizeAnimation: { duration: 300, easing: 'ease-in' },
         pickUpDelay: 0,
         pickUpDistance: 0,
@@ -796,10 +805,17 @@ var Tactile;
         };
         Canvas.prototype.move = function (xy) {
             var _this = this;
-            var rect = this.drag.geometryCache.get(this.el, 'cr', function () { return _this.el.getBoundingClientRect(); });
+            var gripOffset = this.drag.helper.gripOffset;
+            var helperSize = this.drag.helper.size;
+            var tl = [xy[0] + gripOffset[0], xy[1] + gripOffset[1]];
+            var rect = this.drag.geometryCache.get(this.el, 'content-box', function () { return Tactile.Dom.getContentBoxClientRect(_this.el); });
+            tl[0] = Tactile.Maths.coerce(tl[0], rect.left, rect.right - helperSize[0]);
+            tl[1] = Tactile.Maths.coerce(tl[1], rect.top, rect.bottom - helperSize[1]);
+            tl = [tl[0] - gripOffset[0],
+                tl[1] - gripOffset[1]];
             var scrollOffset = this.drag.geometryCache.get(this.el, 'so', function () { return [_this.el.scrollLeft, _this.el.scrollTop]; });
-            var localOffset = [xy[0] - rect.left + scrollOffset[0] + this.drag.helper.gripOffset[0],
-                xy[1] - rect.top + scrollOffset[1] + this.drag.helper.gripOffset[1]];
+            var localOffset = [tl[0] - rect.left - (parseInt(this.el.style.paddingLeft, 10) || 0) + scrollOffset[0] + this.drag.helper.gripOffset[0],
+                tl[1] - rect.top - (parseInt(this.el.style.paddingTop, 10) || 0) + scrollOffset[1] + this.drag.helper.gripOffset[1]];
             localOffset = Tactile.Vector.divide(localOffset, this.helperScale);
             if (this.grid) {
                 localOffset = [Math.round(localOffset[0] / this.grid[0]) * this.grid[0],
@@ -1354,6 +1370,7 @@ var Tactile;
             this.el = draggable.el.cloneNode(true);
             this.el.removeAttribute("id");
             this.el.setAttribute("data-drag-helper", "");
+            this.el.removeAttribute("data-drag-placeholder");
             var s = this.el.style;
             if (this.drag.options.helperCloneStyles) {
                 Tactile.Dom.copyComputedStyles(draggable.el, this.el);
@@ -1442,8 +1459,8 @@ var Tactile;
             Tactile.Animation.set(this.el, {
                 rotateZ: 0,
                 boxShadowBlur: 0,
-                translateX: rect.left - this.gripOffset[0] + this.gripOffset[0] * (1 - this.scale[0]),
-                translateY: rect.top - this.gripOffset[1] + this.gripOffset[1] * (1 - this.scale[1]),
+                translateX: rect.left - this.gripOffset[0] * this.scale[0],
+                translateY: rect.top - this.gripOffset[1] * this.scale[1],
                 width: el.offsetWidth,
                 height: el.offsetHeight
             }, this.drag.options.dropAnimation, complete);
@@ -1507,6 +1524,7 @@ var Tactile;
                     this.el.style.position = "absolute";
                     this.el.style.top = "-10000px";
                     this.el.style.left = "-10000px";
+                    this.drag.geometryCache.clear();
                     break;
                 case "ghost":
                 case "materialized":
@@ -1515,6 +1533,7 @@ var Tactile;
                     this.el.style.top = '';
                     this.el.style.left = '';
                     Tactile.Animation.set(this.el, { opacity: state === 'ghost' ? 0.1 : 1.0 }, velocityOptions);
+                    this.drag.geometryCache.clear();
                     this._updateDimensions();
                     break;
             }
@@ -1661,7 +1680,6 @@ var Tactile;
                 this._updatePlaceholderPosition();
             }
             this.placeholder.setState("ghost");
-            this._removeNegativeMargin();
             this.helperSize = this.placeholder.size;
             this.helperScale = this.placeholder.scale;
             this._childMeasures.clear();
@@ -1707,7 +1725,7 @@ var Tactile;
             var closestElement = Tactile.Dom.elementFromPointViaSelection(xy);
             var closestElementParents = Tactile.Dom.ancestors(closestElement, 'li');
             var closestSiblingEl = this._siblingEls.filter(function (el) { return closestElementParents.indexOf(el) !== -1; })[0];
-            if (closestSiblingEl) {
+            if (closestSiblingEl && !Tactile.Dom.matches(closestSiblingEl, '.velocity-animating')) {
                 var newIndex = this._siblingEls.indexOf(closestSiblingEl);
                 var childBounds = closestSiblingEl.getBoundingClientRect();
                 if (xy[0] > childBounds.left + childBounds.width / 2)
@@ -1722,8 +1740,9 @@ var Tactile;
             else {
                 this.index = null;
                 this.placeholder.setState("hidden");
-                this._addNegativeMargin();
+                this._clearChildTranslations();
                 this._childMeasures.clear();
+                this._forceFeedRequired = true;
                 this._updatePlaceholderPosition();
             }
         };
@@ -1858,24 +1877,8 @@ var Tactile;
                     el.style.webkitTransform = '';
                 });
             }
+            Tactile.Animation.clear(this._siblingEls || []);
             this._forceFeedRequired = true;
-        };
-        Sortable.prototype._addNegativeMargin = function () {
-            return;
-            if (this._childEls.length > 1) {
-                var lastChild = this._childEls[this._childEls.length - 1];
-                var marginBottom = -this.placeholder.outerSize[this._directionProperties.index];
-                var mutation = function () { return lastChild.style.marginBottom = marginBottom + "px"; };
-                Tactile.Animation.animateDomMutationLayoutSize(this.el, mutation, {});
-            }
-        };
-        Sortable.prototype._removeNegativeMargin = function () {
-            return;
-            if (this._childEls.length > 1) {
-                var lastChild = this._childEls[this._childEls.length - 1];
-                var mutation = function () { return lastChild.style.marginBottom = ''; };
-                Tactile.Animation.animateDomMutationLayoutSize(this.el, mutation, {});
-            }
         };
         return Sortable;
     })(Tactile.Container);

@@ -14,6 +14,7 @@ module Tactile {
     private _mutObserver:MutationObserver;
     private _ignoreMutObserver:boolean = false;
 
+
     constructor(el: HTMLElement, drag: Drag) {
       super(el, drag);
       this._childMeasures = new Cache();
@@ -41,9 +42,9 @@ module Tactile {
         this._initializeChildAndSiblingEls();
         this._initializePlaceholder();
         this._updatePlaceholderPosition();
+        // TODO: need to force measures as velocity may have cached values
       }
       this.placeholder.setState("ghost");
-      this._removeNegativeMargin();
       this.helperSize = this.placeholder.size;
       this.helperScale = this.placeholder.scale;
       this._childMeasures.clear();
@@ -100,7 +101,7 @@ module Tactile {
       const closestElement = Dom.elementFromPointViaSelection(xy);
       const closestElementParents = Dom.ancestors(closestElement, 'li');
       const closestSiblingEl = this._siblingEls.filter(el => closestElementParents.indexOf(el) !== -1)[0];
-      if (closestSiblingEl) {
+      if (closestSiblingEl && !Dom.matches(closestSiblingEl, '.velocity-animating')) {
         let newIndex = this._siblingEls.indexOf(closestSiblingEl);
         const childBounds = closestSiblingEl.getBoundingClientRect();
         if (xy[0] > childBounds.left + childBounds.width / 2) newIndex++;
@@ -115,8 +116,9 @@ module Tactile {
       } else {
         this.index = null;
         this.placeholder.setState("hidden");
-        this._addNegativeMargin();
+        this._clearChildTranslations();
         this._childMeasures.clear();
+        this._forceFeedRequired = true;
         this._updatePlaceholderPosition();
       }
     }
@@ -282,26 +284,8 @@ module Tactile {
           el.style.webkitTransform = '';
         });
       }
+      Animation.clear(this._siblingEls || []);
       this._forceFeedRequired = true;
-    }
-
-    private _addNegativeMargin(): void {
-      return;
-      if (this._childEls.length > 1) {
-        let lastChild = this._childEls[this._childEls.length - 1];
-        let marginBottom = - this.placeholder.outerSize[this._directionProperties.index]
-        let mutation = () => lastChild.style.marginBottom = `${marginBottom}px`;
-        Animation.animateDomMutationLayoutSize(this.el, mutation, {});
-      }
-    }
-
-    private _removeNegativeMargin(): void {
-      return;
-      if (this._childEls.length > 1) {
-        let lastChild = this._childEls[this._childEls.length - 1];
-        let mutation = () => lastChild.style.marginBottom = '';
-        Animation.animateDomMutationLayoutSize(this.el, mutation, {});
-      }
     }
   }
 }

@@ -3082,7 +3082,7 @@ return function (global, window, document, undefined) {
                    being supported by the browser. The element property is used for checking that the tweensContainer has been appended to. */
                 if (tweensContainer.element) {
                     /* Apply the "velocity-animating" indicator class. */
-                    //CSS.Values.addClass(element, "velocity-animating");
+                    CSS.Values.addClass(element, "velocity-animating");
 
                     /* The call array houses the tweensContainers for each element being animated in the current call. */
                     call.push(tweensContainer);
@@ -3590,7 +3590,7 @@ return function (global, window, document, undefined) {
                     }
 
                     /* Remove the "velocity-animating" indicator class. */
-                    //CSS.Values.removeClass(element, "velocity-animating");
+                    CSS.Values.removeClass(element, "velocity-animating");
                 }
             }
 

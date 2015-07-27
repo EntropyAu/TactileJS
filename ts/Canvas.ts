@@ -29,18 +29,35 @@ module Tactile {
 
 
     move(xy:[number,number]):void {
-      const rect = this.drag.geometryCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
+      const gripOffset = this.drag.helper.gripOffset;
+      const helperSize = this.drag.helper.size;
+
+      // adjust for helper grip offset
+      let tl = [xy[0] + gripOffset[0], xy[1] + gripOffset[1]];
+
+      // coerce the top-left coordinates to fit within the canvas element bounds
+      let rect = this.drag.geometryCache.get(this.el, 'content-box', () => Dom.getContentBoxClientRect(this.el));
+      tl[0] = Maths.coerce(tl[0], rect.left, rect.right - helperSize[0]);
+      tl[1] = Maths.coerce(tl[1], rect.top, rect.bottom - helperSize[1]);
+
+      // return the coerced values, restoring the helper grip offset
+      tl = [tl[0] - gripOffset[0],
+            tl[1] - gripOffset[1]];
+
+
       const scrollOffset = this.drag.geometryCache.get(this.el, 'so', () => [this.el.scrollLeft, this.el.scrollTop]);
 
       let localOffset:[number,number] =
-        [xy[0] - rect.left + scrollOffset[0] + this.drag.helper.gripOffset[0],
-         xy[1] - rect.top  + scrollOffset[1] + this.drag.helper.gripOffset[1]];
+        [tl[0] - rect.left - (parseInt(this.el.style.paddingLeft, 10)||0) + scrollOffset[0] + this.drag.helper.gripOffset[0],
+         tl[1] - rect.top -  (parseInt(this.el.style.paddingTop,  10)||0) + scrollOffset[1] + this.drag.helper.gripOffset[1]];
 
       localOffset = Vector.divide(localOffset, this.helperScale);
       if (this.grid) {
         localOffset = [Math.round(localOffset[0] / this.grid[0]) * this.grid[0],
                        Math.round(localOffset[1] / this.grid[1]) * this.grid[1]];
       }
+
+
       Dom.translate(this.placeholder.el, localOffset);
       this.offset = localOffset;
     }

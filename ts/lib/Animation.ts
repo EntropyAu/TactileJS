@@ -26,8 +26,15 @@ module Tactile.Animation {
   export function stop(els:HTMLElement|HTMLElement[]):void {
     if (window["Velocity"]) {
       window['Velocity'](els, 'stop');
+      //for (let el of [].concat(els)) Velocity.Utilities.removeData(els, ["velocity"]);
     }
   }
+
+export function clear(els:HTMLElement|HTMLElement[]):void {
+  if (window["Velocity"]) {
+    for (let el of [].concat(els)) Velocity.Utilities.removeData(el, ["velocity"]);
+  }
+}
 
   export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any):void {
     const startIndex = options.startIndex || 0;

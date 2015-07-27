@@ -52,6 +52,7 @@ module Tactile {
             this.el.style.position = "absolute";
             this.el.style.top = "-10000px";
             this.el.style.left = "-10000px";
+            this.drag.geometryCache.clear();
             break;
           case "ghost":
           case "materialized":
@@ -60,6 +61,7 @@ module Tactile {
             this.el.style.top = '';
             this.el.style.left = '';
             Animation.set(this.el, { opacity: state === 'ghost' ? 0.1 : 1.0 }, velocityOptions);
+            this.drag.geometryCache.clear();
             this._updateDimensions();
             break;
         }

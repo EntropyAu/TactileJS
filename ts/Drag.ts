@@ -1,9 +1,9 @@
 module Tactile {
 
-  // TODO: resizing of sortables with adding/removing elements
-  // TODO: invalidating geometry cache with heirarchical sortables
-  // TODO: - invalidate child measures when entering / exiting hierarchical
-  // TODO: cache sortable containers
+  // TODO: xxxxx invalidating geometry cache with heirarchical sortables
+  // TODO: xxxxx - invalidate child measures when entering / exiting hierarchical
+  // TODO: wrapped elements - delay updates while animation is in progress
+  // TODO: cache scrollable containers
   // TODO: update source mode if enter-action is defined on target
   // TODO: constrain placement in canvas
   // TODO: constrain scroll with blah
