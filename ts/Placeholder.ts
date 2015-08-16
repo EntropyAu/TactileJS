@@ -2,8 +2,6 @@ module Tactile {
 
   export class Placeholder {
 
-    el:HTMLElement;
-    drag:Drag;
     size:[number,number];
     scale:[number,number];
     outerSize:[number,number];
@@ -20,9 +18,7 @@ module Tactile {
     }
 
 
-    constructor(el:HTMLElement, drag:Drag, isOriginalEl:boolean=true) {
-      this.el = el;
-      this.drag = drag;
+    constructor(public el:HTMLElement, public drag:Drag, isOriginalEl:boolean=true) {
       this.isOriginalEl = isOriginalEl;
       this._originalStyles = getComputedStyle(el);
       this._updateDimensions();

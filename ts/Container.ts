@@ -27,8 +27,6 @@ module Tactile {
     }
 
 
-    el:HTMLElement;
-    drag:Drag;
     placeholder:Placeholder;
     helperSize:[number,number];
     helperScale:[number,number];
@@ -38,9 +36,7 @@ module Tactile {
     isSource:boolean;
 
 
-    constructor(el:HTMLElement, drag:Drag) {
-      this.el = el;
-      this.drag = drag;
+    constructor(public el:HTMLElement, public drag:Drag) {
       this.isSource = false;
 
       this.accepts = el.hasAttribute('data-drag-accepts')

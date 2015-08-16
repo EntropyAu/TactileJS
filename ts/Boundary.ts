@@ -14,23 +14,20 @@ module Tactile {
     }
 
 
-    el:HTMLElement;
-    drag:Drag;
-    tags:string[];
+    public tags:string[];
 
-    constructor(el:HTMLElement, drag:Drag) {
-      this.el = el;
-      this.drag = drag;
+
+    constructor(public el:HTMLElement, public drag:Drag) {
       this.tags = Attributes.getTags(el, 'data-drag-bounds', ['*']);
     }
 
 
-    constrains(tags:string[]):boolean {
+    public constrains(tags:string[]):boolean {
       return this.tags.indexOf('*') !== -1 || tags.some(t => this.tags.indexOf(t) !== -1);
     }
 
 
-    getConstrainedXY(xy:[number,number]):[number,number] {
+    public getConstrainedXY(xy:[number,number]):[number,number] {
       const gripOffset = this.drag.helper.gripOffset;
       const helperSize = this.drag.helper.size;
 

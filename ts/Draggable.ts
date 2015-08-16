@@ -36,9 +36,7 @@ module Tactile {
     }
 
 
-    el:HTMLElement;
     data:any;
-    drag:Drag;
     tags:string[];
     originalParentEl:HTMLElement;
     originalIndex:number;
@@ -48,9 +46,7 @@ module Tactile {
     originalOffset:[number,number];
 
 
-    constructor(el:HTMLElement, drag:Drag) {
-      this.el = el;
-      this.drag = drag;
+    constructor(public el:HTMLElement, public drag:Drag) {
       this.originalStyle = el.getAttribute('style');
       this.originalParentEl = el.parentElement;
       this.originalIndex = Dom.indexOf(el);

@@ -1,6 +1,6 @@
 module Tactile {
 
-  export class Canvas extends Tactile.Container {
+  export class Canvas extends Container {
 
     offset:[number,number] = [0,0];
     grid:[number,number] = null;
@@ -17,7 +17,7 @@ module Tactile {
     }
 
 
-    enter(xy:[number,number]):void {
+    public enter(xy:[number,number]):void {
       if (!this.placeholder) {
         this._insertPlaceholder();
         this.helperSize = this.placeholder.size;
@@ -28,7 +28,7 @@ module Tactile {
     }
 
 
-    move(xy:[number,number]):void {
+    public move(xy:[number,number]):void {
       const gripOffset = this.drag.helper.gripOffset;
       const helperSize = this.drag.helper.size;
 
@@ -41,9 +41,7 @@ module Tactile {
       tl[1] = Maths.coerce(tl[1], rect.top, rect.bottom - helperSize[1]);
 
       // return the coerced values, restoring the helper grip offset
-      tl = [tl[0] - gripOffset[0],
-            tl[1] - gripOffset[1]];
-
+      tl = [tl[0] - gripOffset[0], tl[1] - gripOffset[1]];
 
       const scrollOffset = this.drag.geometryCache.get(this.el, 'so', () => [this.el.scrollLeft, this.el.scrollTop]);
 
@@ -57,15 +55,14 @@ module Tactile {
                        Math.round(localOffset[1] / this.grid[1]) * this.grid[1]];
       }
 
-
       Dom.translate(this.placeholder.el, localOffset);
       this.offset = localOffset;
     }
 
 
-    leave() {
+    public leave() {
       if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
-        // TODO animate placeholder back to it's original position
+        // TODO: animate placeholder back to it's original position
         this.placeholder.setState("materialized");
       } else {
         this.placeholder.setState("hidden");
@@ -73,13 +70,13 @@ module Tactile {
     }
 
 
-    finalizePosition(el:HTMLElement):void {
+    public finalizePosition(el:HTMLElement):void {
       Dom.topLeft(el, this.offset);
       this.el.appendChild(el);
     }
 
 
-    dispose():void {
+    public dispose():void {
       if (this.placeholder) this.placeholder.dispose()
     }
 

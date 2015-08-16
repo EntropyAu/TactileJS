@@ -12,9 +12,6 @@ module Tactile {
       return null;
     }
 
-    el:HTMLElement;
-    drag:Drag;
-
     private _bounds:ClientRect = null;
     private _offset:[number,number] = null;
     private _velocity:[number,number] = [0,0];
@@ -25,9 +22,7 @@ module Tactile {
     private _lastUpdate:Date = null;
 
 
-    constructor(el:HTMLElement, drag:Drag) {
-      this.el = el;
-      this.drag = drag;
+    constructor(public el:HTMLElement, public drag:Drag) {
 
       // initialize directions
       const style = getComputedStyle(this.el);
@@ -69,7 +64,6 @@ module Tactile {
       };
 
       this._updateVelocity(xy);
-
 
       let currentUpdate = new Date();
       let elapsedTimeMs = this._lastUpdate !== null

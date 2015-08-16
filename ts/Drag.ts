@@ -4,14 +4,21 @@ module Tactile {
   // TODO: xxxxx - invalidate child measures when entering / exiting hierarchical
   // TODO: xxxxx - wrapped elements - delay updates while animation is in progress
   // TODO: xxxxx - constrain placement in canvas
+
+  // TODO: Fix scaled sortable calculations - local xy on move
+  // TODO: Fix non-velocity scaled helper
+  // TODO: Reapply boundary constraint on window scroll
   // TODO: cache scrollable containers
   // TODO: update source mode if enter-action is defined on target
+  // TODO: Add revert behaviour - "origin" (in addition to "last")
+  // TODO: Automatically detect scrollables using computedStyle
   // TODO: constrain scroll with blah
   // TODO: constrain scroll with max scroll (iOS does not enforce)
   // TODO: listen to dom mutation events
   // TODO: use pointer (not constrained) location for scrolling (scrolling can be prevented for large items)
   // TODO:  - scrolling should be constrained within boundary
-  // TODO: enable events to be registered manually
+  // TODO: enable events to be registered manually instead of globally
+
 
   export class Drag {
 
@@ -54,11 +61,12 @@ module Tactile {
       this.geometryCache = new Cache();
       this.containerCache = new Cache();
 
+      // TODO - would be great to have a more robust way of instantiating
+      // the source element
       this._updateTarget();
       this.source = this.target;
 
       this._onScrollOrWheelListener = this._onScrollOrWheel.bind(this);
-
       document.addEventListener('scroll', this._onScrollOrWheelListener, false);
       document.addEventListener('mousewheel', this._onScrollOrWheelListener, false);
       document.addEventListener('wheel', this._onScrollOrWheelListener, false);
@@ -218,7 +226,7 @@ module Tactile {
         newTarget = null;
       }
 
-      // if the current drag operation is Boundd, then the target container
+      // if the current drag operation is bounded, then the target container
       // must be a descendant of the Boundary element
       if (newTarget && this.boundary
                     && !Dom.isDescendant(this.boundary.el, newTarget.el)
@@ -244,7 +252,6 @@ module Tactile {
         // notify the container
         container.enter(this.xy);
 
-        // add the hover class to the container if configured
         if (this.options.containerHoverClass) {
           Polyfill.addClass(container.el, this.options.containerHoverClass);
         }
@@ -252,7 +259,7 @@ module Tactile {
         // if the container has specified a helper size (which is based
         // the geometry of it's placeholder) then resize the helper
         // to match the new container
-        if (container.helperSize && this.options.helperResize) {
+        if (this.options.helperResize && container.helperSize) {
           this.helper.setSizeAndScale(container.helperSize, container.helperScale);
         }
         return true;
@@ -270,7 +277,6 @@ module Tactile {
         // notify the container
         container.leave();
 
-        // remove the hover class to the container if configured
         if (this.options.containerHoverClass) {
           Polyfill.removeClass(container.el, this.options.containerHoverClass);
         }
@@ -348,7 +354,7 @@ module Tactile {
 
     private _raise(el:Element, eventName:string):CustomEvent {
       let eventData = {
-        item: this.draggable.el,
+        el: this.draggable.el,
         data: this.draggable.data,
         action: this.action,
         copy: this.copy,

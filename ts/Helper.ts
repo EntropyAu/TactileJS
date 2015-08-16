@@ -2,7 +2,6 @@ module Tactile {
   export class Helper {
 
     el:HTMLElement;
-    drag:Drag;
     xy:[number,number];
     gripXY:[number,number];
     gripRelative:[number,number];
@@ -11,8 +10,7 @@ module Tactile {
     scale:[number,number] = [1,1];
 
 
-    constructor(drag:Drag, draggable:Draggable) {
-      this.drag = drag;
+    constructor(public drag:Drag, draggable:Draggable) {
       this.xy = [0,0];
       this._initialize(draggable);
     }

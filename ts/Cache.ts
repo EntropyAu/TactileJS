@@ -13,9 +13,9 @@ module Tactile {
 
   export class Cache {
 
-    _id:string;
-    _els:HTMLElement[];
-    _cache:Map<HTMLElement,{[key:string]:any}>;
+    private _id:string;
+    private _els:HTMLElement[];
+    private _cache:Map<HTMLElement,{[key:string]:any}>;
 
     constructor() {
       if (_useMap) {
@@ -27,7 +27,7 @@ module Tactile {
     }
 
 
-    get(el:HTMLElement, key:string, fn?:Function):any {
+    public get(el:HTMLElement, key:string, fn?:Function):any {
       let elCache = this._getElementCache(el);
       if (elCache[key] !== undefined) {
         return elCache[key];
@@ -36,13 +36,13 @@ module Tactile {
       }
     }
 
-    set(el:HTMLElement, key:string, value:any):void {
+    public set(el:HTMLElement, key:string, value:any):void {
       let elCache = this._getElementCache(el);
       return elCache[key] = value;
     }
 
 
-    clear():void {
+    public clear():void {
       if (_useMap) {
         this._cache.clear();
       } else {
@@ -52,7 +52,7 @@ module Tactile {
     }
 
 
-    dispose():void {
+    public dispose():void {
       if (_useMap) {
         this._cache = null;
       } else {
@@ -62,7 +62,7 @@ module Tactile {
     }
 
 
-    getElements():HTMLElement[] {
+    public getElements():HTMLElement[] {
       if (_useMap) {
         let els:HTMLElement[] = [];
         let iterator = this._cache.keys();

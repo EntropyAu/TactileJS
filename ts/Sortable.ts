@@ -11,7 +11,6 @@ module Tactile {
     private _style: CSSStyleDeclaration = getComputedStyle(this.el);
     private _avoidDomMutations: boolean = true;
     private _mutObserver:MutationObserver;
-    private _ignoreMutObserver:boolean = false;
 
 
     constructor(el: HTMLElement, drag: Drag) {
@@ -32,7 +31,7 @@ module Tactile {
     }
 
 
-    enter(xy: [number, number]): void {
+    public enter(xy: [number, number]): void {
       if (!this.placeholder) {
         this.index = null;
         this._initializeChildAndSiblingEls();
@@ -47,12 +46,42 @@ module Tactile {
     }
 
 
-    move(xy: [number, number]): void {
+    public move(xy: [number, number]): void {
       this._updateIndex(xy);
     }
 
 
-    _updateIndex(xy: [number, number]): void {
+    public leave(): void {
+      if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+        this.placeholder.setState("materialized");
+      } else {
+        this.index = null;
+        this.placeholder.setState("hidden");
+        this._clearChildTranslations();
+        this._childGeometry.clear();
+        this._updatePlaceholderPosition();
+      }
+    }
+
+
+    public finalizePosition(el: HTMLElement): void {
+      this.el.insertBefore(el, this._siblingEls[this.index]);
+    }
+
+
+    public dispose(): void {
+      if (this.placeholder) this.placeholder.dispose()
+      if (this._mutObserver) {
+        this._mutObserver.disconnect();
+        this._mutObserver = null;
+      }
+
+      this._clearChildTranslations();
+      this._childGeometry.dispose();
+    }
+
+
+    private _updateIndex(xy: [number, number]): void {
       if (this._siblingEls.length === 0) {
         return this._setPlaceholderIndex(0);
       }
@@ -64,7 +93,7 @@ module Tactile {
     }
 
 
-    _updateIndexViaOffset(xy: [number, number]): void {
+    private _updateIndexViaOffset(xy: [number, number]): void {
       const bounds = this.drag.geometryCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
       const sl = this.drag.geometryCache.get(this.el, 'sl', () => this.el.scrollLeft);
       const st = this.drag.geometryCache.get(this.el, 'st', () => this.el.scrollTop);
@@ -92,7 +121,7 @@ module Tactile {
     }
 
 
-    _updateIndexViaSelectionApi(xy: [number, number]): void {
+    private _updateIndexViaSelectionApi(xy: [number, number]): void {
       const closestElement = Dom.elementFromPointViaSelection(xy);
       const closestElementParents = Dom.ancestors(closestElement, 'li');
       const closestSiblingEl = this._siblingEls.filter(el => closestElementParents.indexOf(el) !== -1)[0];
@@ -102,36 +131,6 @@ module Tactile {
         if (xy[0] > childBounds.left + childBounds.width / 2) newIndex++;
         this._setPlaceholderIndex(newIndex);
       }
-    }
-
-
-    leave(): void {
-      if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
-        this.placeholder.setState("materialized");
-      } else {
-        this.index = null;
-        this.placeholder.setState("hidden");
-        this._clearChildTranslations();
-        this._childGeometry.clear();
-        this._updatePlaceholderPosition();
-      }
-    }
-
-
-    finalizePosition(el: HTMLElement): void {
-      this.el.insertBefore(el, this._siblingEls[this.index]);
-    }
-
-
-    dispose(): void {
-      if (this.placeholder) this.placeholder.dispose()
-      if (this._mutObserver) {
-        this._mutObserver.disconnect();
-        this._mutObserver = null;
-      }
-
-      this._clearChildTranslations();
-      this._childGeometry.dispose();
     }
 
 

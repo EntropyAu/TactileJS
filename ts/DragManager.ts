@@ -1,9 +1,9 @@
 module Tactile {
   export class DragManager {
-    options: Options;
+    public options: Options;
+
     private _drags: any = {};
     private _pendingDrags: any = {};
-
     private _onPointerDownListener:EventListener;
     private _onPointerMoveListener:EventListener;
     private _onPointerUpListener:EventListener;
