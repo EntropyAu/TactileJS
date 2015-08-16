@@ -8,6 +8,7 @@
         "sourceMap": true
     },
     "files": [
+        "ts/interfaces/knockout.mapping.d.ts",
         "ts/interfaces/js-yaml.d.ts",
         "ts/interfaces/jquery.d.ts",
         "ts/interfaces/knockout.d.ts",

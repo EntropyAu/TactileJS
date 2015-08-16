@@ -45,12 +45,7 @@ module WorkshopPlanner {
       this.query.subscribe((nv) => nv !== '' && this.selectedTag(null));
 
       this.initialize();
-      let columns = this.load()
-      if (columns) {
-        for (var i = 1; i < columns.length; i++) {
-          this.columns.push({ name: columns[i].name, activities: ko.observableArray(columns[i].activities) });
-        }
-      } else {
+      if (!this.tryLoad()) {
         this.defaultColumns();
       }
       this.bindEventHandlers();
@@ -100,16 +95,20 @@ module WorkshopPlanner {
     }
 
     private save():void {
-      let jsonData:string = ko.toJSON(this);
-      console.log(jsonData);
-      localStorage.setItem('workshopViewModel', jsonData);
+      let jsonData:string = ko.mapping.toJS(this.columns)
+      let jsonString:string = JSON.stringify(jsonData);
+      localStorage.setItem('workshopColumns', jsonString);
     }
 
-    private load():any {
-      let jsonData:string = localStorage.getItem('workshopViewModel');
-      var jsonParsed = JSON.parse(jsonData);
-      console.log(jsonData)
-      return jsonParsed ? jsonParsed.columns : null;
+    private tryLoad():boolean {
+      let jsonString:string = localStorage.getItem('workshopColumns');
+      if (jsonString) {
+        let jsonData = JSON.parse(jsonString);
+        let asObservable = ko.mapping.fromJS(jsonData)
+        this.columns(asObservable())
+        return true;
+      }
+      return false;
     }
   }
 }

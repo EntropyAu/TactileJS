@@ -17,13 +17,7 @@ var WorkshopPlanner;
             this.selectedTag.subscribe(function (nv) { return nv !== null && _this.query(''); });
             this.query.subscribe(function (nv) { return nv !== '' && _this.selectedTag(null); });
             this.initialize();
-            var columns = this.load();
-            if (columns) {
-                for (var i = 1; i < columns.length; i++) {
-                    this.columns.push({ name: columns[i].name, activities: ko.observableArray(columns[i].activities) });
-                }
-            }
-            else {
+            if (!this.tryLoad()) {
                 this.defaultColumns();
             }
             this.bindEventHandlers();
@@ -67,15 +61,19 @@ var WorkshopPlanner;
             }
         };
         ViewModel.prototype.save = function () {
-            var jsonData = ko.toJSON(this);
-            console.log(jsonData);
-            localStorage.setItem('workshopViewModel', jsonData);
+            var jsonData = ko.mapping.toJS(this.columns);
+            var jsonString = JSON.stringify(jsonData);
+            localStorage.setItem('workshopColumns', jsonString);
         };
-        ViewModel.prototype.load = function () {
-            var jsonData = localStorage.getItem('workshopViewModel');
-            var jsonParsed = JSON.parse(jsonData);
-            console.log(jsonData);
-            return jsonParsed ? jsonParsed.columns : null;
+        ViewModel.prototype.tryLoad = function () {
+            var jsonString = localStorage.getItem('workshopColumns');
+            if (jsonString) {
+                var jsonData = JSON.parse(jsonString);
+                var asObservable = ko.mapping.fromJS(jsonData);
+                this.columns(asObservable());
+                return true;
+            }
+            return false;
         };
         return ViewModel;
     })();
