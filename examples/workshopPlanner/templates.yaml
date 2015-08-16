@@ -7,6 +7,8 @@ templates:
     tags:
       - Introduction
       - Beginning
+    category: Start
+
   -
     name: Ice Breaker
     shortDescription: Getting comfortable sharing ideas
@@ -15,6 +17,8 @@ templates:
     tags:
       - Introduction
       - Beginning
+    category: Start
+
   -
     name: What is an Inception?
     shortDescription: Introducting to what will happen over the next few days and weeks
@@ -23,12 +27,15 @@ templates:
     tags:
       - Introduction
       - Beginning
+    category: Start
+
   -
     name: Showcase
     shortDescription: Share the outcomes with your stakeholders
     longDescription: The showcase is an opportunity to present your work to your stakeholders and product owner. It is an informal presentation that encourages open feedback and discussion. It encourages transparency and visibility of the project status.
     duration: 60
     tags:
+
   -
     name: Retrospective
     shortDescription: Get feedback from your team
@@ -36,6 +43,7 @@ templates:
     duration: 30
     tags:
       - Feedback
+
   -
     name: Futurespective
     shortDescription: What could go wrong? What could go right?
@@ -44,6 +52,8 @@ templates:
     tags:
       - Alignment
       - Beginning
+    category: Start
+
   -
     name: Expert Review
     shortDescription: Evaluation of an existing product
@@ -51,6 +61,8 @@ templates:
     duration: 120
     tags:
       - Analysis
+    category: Discover
+
   -
     name: Competitor Review
     shortDescription: Comparing the competitor options
@@ -59,6 +71,8 @@ templates:
     tags:
       - Analysis
       - Business Context
+    category: Discover
+
   -
     name: Contextual Enquiry
     shortDescription: Go and see users in their natural context and understand
@@ -66,6 +80,7 @@ templates:
     duration: 120
     tags:
       - User Research
+    category: Discover
   -
     name: Diary Studies Set up
     shortDescription: Planning, briefing participants
@@ -73,6 +88,8 @@ templates:
     duration: 60
     tags:
       - User Research
+    category: Discover
+
   -
     name: Diary Studies Analysis
     shortDescription: De-briefing participants, reviewing diaries and findings
@@ -80,6 +97,7 @@ templates:
     duration: 120
     tags:
       - User Research
+    category: Discover
   -
     name: Anecdote Circles
     shortDescription: Get users or customers to share stories of real experiences
@@ -87,6 +105,7 @@ templates:
     duration: 180
     tags:
       - User Research
+    category: Discover
   -
     name: Scope
     shortDescription: Setting boundaries around your product
@@ -95,6 +114,7 @@ templates:
     tags:
       - Alignment
       - Scoping
+    category: Start
   -
     name: Objectives Statements
     shortDescription: Alignment of organisation, team and project objectives
@@ -102,6 +122,7 @@ templates:
     duration: 30
     tags:
       - Alignment
+    category: Start
   -
     name: Persona Definition
     shortDescription: Creating models of your target users
@@ -110,22 +131,27 @@ templates:
     tags:
       - User Research
       - Analysis
+    category: Discover
   -
     name: Empathy Maps
     shortDescription: Light-weight substitute for personas
     longDescription: When no customer research or data exists, empathy mapping can be used to create a view of typical users. This is based on best guesses about users. Key assumptions should be noted.
     duration: 120
+    imageName: Empathy-map.png
     tags:
       - User Research
       - Analysis
+    category: Discover
   -
     name: User Journey Mapping
     shortDescription: Mapping customer touch-points and experiences across channels
     longDescription: 'User journeys map the key touch-points that a customer has with a brand or product. They follow a typical sequential ''life-cycle'' that usually begins with a trigger that requires the user to take action. User journeys are modeled on real customers and should be based on user research.'
     duration: 120
+    imageName: User-journey-mapping.png
     tags:
       - User Research
       - Analysis
+    category: Discover
   -
     name: Affinity Mapping
     shortDescription: Organise and prioritise around a particular domain
@@ -137,17 +163,23 @@ templates:
     shortDescription: Express your product vision in a succinct and memorable statement
     longDescription: Designed to build team alignment and a shared understanding of the product value proposition. This short statement becomes a memorable way of sharing the product vision to any audience
     duration: 60
+    imageName: elevator-pitch.png
     tags:
       - Visioning
       - Alignment
       - Beginning
+    category: Start
   -
     name: Business Model Canvas
     shortDescription: Business case on a page
     longDescription: This light weight method allows your team to describe your business quickly and succinctly using key measures of value such as customers, infrastucture, revenue and resources.
     duration: 120
+    imageName: business-model-canvas.png
     tags:
-      - Value Proposition, Alignment, Business Context
+      - Value Proposition
+      - Alignment
+      - Business Context
+    category: Start
   -
     name: Problem Definition
     shortDescription: Defining problems that users face
@@ -158,6 +190,7 @@ templates:
       - Focus
       - Innovation
       - Product Strategy
+    category: Define
   -
     name: How Might We
     shortDescription: Collaborative Design Challenges
@@ -165,21 +198,26 @@ templates:
     duration: 60
     tags:
       - Ideation
+    category: Define
   -
     name: Collaborative Sketching
     shortDescription: Generating many ideas in a short time
     longDescription: Quickly generate ideas in collaboration with users and stakeholders - which helps include many perspectives, contexts, concerns. The multiple rounds provide people with a chance to steal, critique, validate really quickly.
     duration: 120
+    imageName: collaborative-sketching.jpg
     tags:
       - Ideation
+    category: Define
   -
     name: Prototyping
     shortDescription: Create a prototype of the product
     longDescription: 'Spending time to start creating a protoype at any level - whether it''s sketches or a html prototype'
     duration: 60
+    imageName: prototyping.jpg
     tags:
       - Design
       - Validation
+    category: Define
   -
     name: Logical Scope
     shortDescription: Setting boundaries around your product
@@ -188,6 +226,7 @@ templates:
     tags:
       - Scoping
       - Technical
+    category: Define
   -
     name: Technical Vision
     shortDescription: Visualise your architecture
@@ -195,6 +234,7 @@ templates:
     duration: 60
     tags:
       - Technical
+    category: Define
   -
     name: Organisational Context
     shortDescription: Prioritise your stakeholders and plan to engage them
@@ -204,6 +244,7 @@ templates:
       - Stakeholders
       - Business Context
       - Beginning
+    category: Start
   -
     name: Project Team Requirements
     shortDescription: Who do you need to do what?
@@ -220,6 +261,7 @@ templates:
     tags:
       - Stakeholders
       - Planning
+    category: Start
   -
     name: Stakeholder Agreement
     shortDescription: Manage the project dependencies with your service providers
@@ -241,46 +283,57 @@ templates:
     shortDescription: Developing the story backlog
     longDescription: 'A story is a concise description of a customer''s requirement on a card, used as a unit of project work that can be tracked. It serves as a placeholder for a collaborative conversation between the customer and the team.'
     duration: 60
+    imageName: storymapping.png
     tags:
       - Analysis
       - Requirements
       - Planning
+    category: Define
   -
     name: Trade off Sliders
     shortDescription: How to cope with competing priorities
     longDescription: Trade off sliders are a really quick way to frame competing priorities within the context of time, budget and other negotiable constraints. They are a simple tool to help project stakeholders identify what is most important. This activity should be done early in the project planning stage.
     duration: 30
+    imageName: tradeoffsliders.png
     tags:
       - Alignment
       - Planning
       - Beginning
+    category: Start
   -
     name: Cross Functional Requirements
     shortDescription: Beyond functional features
     longDescription: Identify, understand, at a high leve, the requirements which specify criteria that can be used to judge the operation of a system, beyond features and functions. Separate sessions may be required to delve into topics like security.
     duration: 120
+    imageName: crossfunctionalrequirements.png
     tags:
       - Analysis
       - Requirements
+    category: Define
   -
     name: Estimation
     shortDescription: Sizing your stories
     longDescription: Estimates of story sizes help with prioritisation, planning and decision making. Estimated work can be traded in and out of scope for other work of similar size.
     duration: 120
+    imageName: estimation.png
     tags:
       - Planning
+    category: Define
   -
     name: Prioritisation
     shortDescription: Delivering value faster
     longDescription: Figuring out what things to deliver first - in collaboration with stakeholders and customer research.
     duration: 60
+    imageName: prioritisation.png
     tags:
       - Planning
+    category: Define
   -
     name: Raids
     shortDescription: Risks, Assumptions, Issues, Dependencies
     longDescription: Create a RAID log at the start of each project so you can track anything impacting the team, now or in the future.
     duration: 60
+    imageName: raids.png
     tags:
       - Planning
       - Risks
@@ -289,6 +342,7 @@ templates:
     shortDescription: 'How to determine your team''s delivery speed'
     longDescription: This is a measure of the number of units of work the team can deilver in each interval or work iteration.
     duration: 60
+    imageName: velocity.png
     tags:
       - Planning
   -
@@ -296,6 +350,7 @@ templates:
     shortDescription: Planning to deliver, not delivering to a plan
     longDescription: Agree on iteration intervals, and agree on a structured release plan.
     duration: 60
+    imageName: releaseplan.png
     tags:
       - Planning
   -
@@ -307,6 +362,7 @@ templates:
       - Alignment
       - Focus
       - Business Context
+    category: Start
   -
     name: Focussing Statement
     shortDescription: Understand where you are heading in the following two weeks and what you aim to achieve
@@ -315,13 +371,16 @@ templates:
     tags:
       - Alignment
       - Focus
+    category: Start
   -
     name: Hopes and Fears
     shortDescription: Understand with the group the factors that may positively or negatively affect the project
     longDescription: Understand with the group the factors that may positively or negatively affect the project
     duration: 60
+    imageName: hopesandfears.png
     tags:
       - Alignment
+    category: Start
   -
     name: Anchors and Engines
     shortDescription: What will help you and what will hold you back?
@@ -329,6 +388,7 @@ templates:
     duration: 60
     tags:
       - Alignment
+    category: Discover
   -
     name: Competitive Landscape
     shortDescription: Product SWOT analysis
@@ -337,13 +397,16 @@ templates:
     tags:
       - Business Context
       - product
+    category: Discover
   -
     name: User Review
     shortDescription: Map out the users interacting with the system
     longDescription: Understand the variety of individuals interacting with the current system in order to better define which user groups to explore further
     duration: 60
+    imageName: user-review.png
     tags:
       - Users
+    category: Discover
   -
     name: Common user tasks
     shortDescription: Derive a list of common user tasks for a particular user type
@@ -351,13 +414,16 @@ templates:
     duration: 60
     tags:
       - Users
+    category: Discover
   -
     name: Pains & Gains
     shortDescription: Understand the challenges faced in using the product and ways to delight users in the process
     longDescription: Understand the challenges faced in using the product and ways to delight users in the process
     duration: 60
+    imageName: pains-gains.png
     tags:
       - Users
+    category: Discover
   -
     name: User Interviews
     shortDescription: Conducting user research with individuals to gain insight
@@ -365,6 +431,7 @@ templates:
     duration: 120
     tags:
       - User Research
+    category: Discover
   -
     name: Weighted Shortest Job First
     shortDescription: A method of prioritisation
@@ -373,6 +440,7 @@ templates:
     tags:
       - Prioritisation
       - Planning
+    category: Define
   -
     name: Ethnographic Research
     shortDescription: User research through immersion and cultural understanding
@@ -381,25 +449,30 @@ templates:
     tags:
       - User Research
       - Innovation
+    category: Discover
   -
     name: Opportunity Canvas
     shortDescription: Business case on a page
     longDescription: This light weight method allows your team to describe your business quickly and succinctly using key measures of value such as customers, infrastucture, revenue and resources.
     duration: 180
+    imageName: opportunity-canvas.png
     tags:
       - Planning
       - Value Proposition
       - Business Context
       - Innovation
       - Product strategy
+    category: Start
   -
     name: Ritual Dissent
     shortDescription: Quickly identify weak points of an idea or solution
     longDescription: Invite the project team and stakeholders to tear apart proposed ideas and solutions - to identify all issues, failings and create resiliant products
     duration: 60
+    imageName: ritual-dissent.jpg
     tags:
       - Critique
       - Validation
+    category: Define
   -
     name: User Testing
     shortDescription: 'Understand users'' behaviour with a particular task or product'
@@ -408,6 +481,7 @@ templates:
     tags:
       - User research
       - Validation
+    category: Define
   -
     name: Jobs to be Done
     shortDescription: 'Understanding what Jobs we''re solving for customers'
@@ -417,6 +491,7 @@ templates:
       - User research
       - product strategy
       - innovation
+    category: Discover
   -
     name: Card Sorting
     shortDescription: 'Understand users'' views of an information architecture'
@@ -424,6 +499,7 @@ templates:
     duration: 120
     tags:
       - User Research
+    category: Define
   -
     name: Introduction to UX activities
     shortDescription: Explaining what UX is, what the activities are
@@ -432,6 +508,7 @@ templates:
     tags:
       - Introduction
       - Beginning
+    category: Start
   -
     name: Introduction to Agile
     shortDescription: Explaining what Agile is, how it works
@@ -440,6 +517,7 @@ templates:
     tags:
       - Introduction
       - Beginning
+    category: Start
   -
     name: Demo of Existing System
     shortDescription: Have a guided tour through the existing product
@@ -447,6 +525,7 @@ templates:
     duration: 120
     tags:
       - Product
+    category: Discover
   -
     name: Lean Canvas
     shortDescription: Lean business case on a page
@@ -456,6 +535,7 @@ templates:
       - product
       - innovation
       - business context
+    category: Start
   -
     name: Product Owner Introduction
     shortDescription: Introducing the team and the product owner
@@ -464,34 +544,36 @@ templates:
     tags:
       - Business Context
       - Introduction
+    category: Start
   -
     name: Project Governance
     shortDescription:
     longDescription:
     duration: 120
     tags:
-      - planning
+      - Planning
   -
     name: Parking Lot
     shortDescription: Ensure nothing falls between the cracks
     longDescription: 'Take down things that come up throughout the workshop that should be addressed separately - and go through them later and ensure there''s actions to address the items'
     duration: 30
     tags:
-      - planning
+      - Planning
   -
     name: Service Blueprint
     shortDescription: Mapping current service as-is
     longDescription: Map out the services provided to customers as they are now, as well as the employee context and systems.
     duration: 120
     tags:
-      - product
+      - Product
+    category: Discover
   -
     name: Technical Spike
     shortDescription: Experimenting with a particular technical stream
     longDescription: The tech team uses this time to experiment with a particular architecture, language, tech stack to understand the complexity and difficulty of working in that medium
     duration: 480
     tags:
-      - technical
+      - Technical
   -
     name: Customer Touch points
     shortDescription:
@@ -499,14 +581,16 @@ templates:
     duration: 120
     tags:
       - Users
+    category: Discover
   -
     name: Warm-up Exercise
     shortDescription:
     longDescription:
     duration: 30
     tags:
-      - introduction
-      - beginning
+      - Introduction
+      - Beginning
+    category: Start
   -
     name: Test Strategy
     shortDescription: Plan your approach to testing
@@ -514,12 +598,12 @@ templates:
     duration: 120
     tags:
       - Planning
-      - technical
+      - Technical
   -
     name: Path to Production
     shortDescription:
     longDescription:
     duration: 120
     tags:
-      - planning
-      - technical
+      - Planning
+      - Technical

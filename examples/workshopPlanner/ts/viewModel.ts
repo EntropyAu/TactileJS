@@ -5,12 +5,15 @@ module WorkshopPlanner {
     shortDescription:string;
     tags:string[];
     duration:string;
+    category:string;
+    imageName:string;
   }
 
   interface Activity {
     name:string;
     shortDescription:string;
     duration:string;
+    category:string;
   }
 
   interface Column {
@@ -33,7 +36,7 @@ module WorkshopPlanner {
       this.filteredTemplates = <KnockoutComputed<Template[]>>ko.pureComputed(this.search.bind(this));
       this.tags = <KnockoutComputed<string[]>>ko.pureComputed(function() {
         let tagHash:any = {};
-        this.templates().forEach((template) => (template.tags || []).forEach((t) => tagHash[t] = true));
+        this.templates().forEach((template) => template.category && (tagHash[template.category] = true));
         return Object.keys(tagHash);
       }.bind(this));
 
@@ -41,7 +44,14 @@ module WorkshopPlanner {
       this.query.subscribe((nv) => nv !== '' && this.selectedTag(null));
 
       this.initialize();
-      this.defaultColumns();
+      let columns = this.load()
+      if (columns) {
+        for (var i = 1; i < columns.length; i++) {
+          this.columns.push({ name: columns[i].name, activities: ko.observableArray(columns[i].activities) });
+        }
+      } else {
+        this.defaultColumns();
+      }
       this.bindEventHandlers();
     }
 
@@ -82,7 +92,7 @@ module WorkshopPlanner {
 
     private search():Template[] {
       if (this.selectedTag()) {
-        return this.templates().filter((t) => t.tags && t.tags.indexOf(this.selectedTag()) !== -1);
+        return this.templates().filter((t) => t.category && t.category.indexOf(this.selectedTag()) !== -1);
       } else {
         return this.templates().filter((t) => t.name && t.name.toLowerCase().indexOf(this.query().toLowerCase()) !== -1);
       }
@@ -90,14 +100,15 @@ module WorkshopPlanner {
 
     private save():void {
       let jsonData:string = ko.toJSON(this);
-      localStorage.setItem('workshopViewModel', JSON.stringify(jsonData));
       console.log(jsonData);
+      localStorage.setItem('workshopViewModel', jsonData);
     }
 
-    private load():void {
+    private load():any {
       let jsonData:string = localStorage.getItem('workshopViewModel');
       var jsonParsed = JSON.parse(jsonData);
-      this.columns(jsonParsed.columns);
+      console.log(jsonData)
+      return jsonParsed ? jsonParsed.columns : null;
     }
   }
 }

@@ -11,13 +11,21 @@ var WorkshopPlanner;
             this.filteredTemplates = ko.pureComputed(this.search.bind(this));
             this.tags = ko.pureComputed(function () {
                 var tagHash = {};
-                this.templates().forEach(function (template) { return (template.tags || []).forEach(function (t) { return tagHash[t] = true; }); });
+                this.templates().forEach(function (template) { return template.category && (tagHash[template.category] = true); });
                 return Object.keys(tagHash);
             }.bind(this));
             this.selectedTag.subscribe(function (nv) { return nv !== null && _this.query(''); });
             this.query.subscribe(function (nv) { return nv !== '' && _this.selectedTag(null); });
             this.initialize();
-            this.defaultColumns();
+            var columns = this.load();
+            if (columns) {
+                for (var i = 1; i < columns.length; i++) {
+                    this.columns.push({ name: columns[i].name, activities: ko.observableArray(columns[i].activities) });
+                }
+            }
+            else {
+                this.defaultColumns();
+            }
             this.bindEventHandlers();
         }
         ViewModel.prototype.initialize = function () {
@@ -52,7 +60,7 @@ var WorkshopPlanner;
         ViewModel.prototype.search = function () {
             var _this = this;
             if (this.selectedTag()) {
-                return this.templates().filter(function (t) { return t.tags && t.tags.indexOf(_this.selectedTag()) !== -1; });
+                return this.templates().filter(function (t) { return t.category && t.category.indexOf(_this.selectedTag()) !== -1; });
             }
             else {
                 return this.templates().filter(function (t) { return t.name && t.name.toLowerCase().indexOf(_this.query().toLowerCase()) !== -1; });
@@ -60,13 +68,14 @@ var WorkshopPlanner;
         };
         ViewModel.prototype.save = function () {
             var jsonData = ko.toJSON(this);
-            localStorage.setItem('workshopViewModel', JSON.stringify(jsonData));
             console.log(jsonData);
+            localStorage.setItem('workshopViewModel', jsonData);
         };
         ViewModel.prototype.load = function () {
             var jsonData = localStorage.getItem('workshopViewModel');
             var jsonParsed = JSON.parse(jsonData);
-            this.columns(jsonParsed.columns);
+            console.log(jsonData);
+            return jsonParsed ? jsonParsed.columns : null;
         };
         return ViewModel;
     })();
