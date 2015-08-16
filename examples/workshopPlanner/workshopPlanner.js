@@ -46,6 +46,7 @@ var WorkshopPlanner;
             if (targetColumn && targetColumn.activities) {
                 targetColumn.activities.splice(eventDetails.targetIndex, 0, $.extend({}, activityOrTemplate));
             }
+            this.save();
             e.returnValue = false;
         };
         ViewModel.prototype.search = function () {
@@ -56,6 +57,16 @@ var WorkshopPlanner;
             else {
                 return this.templates().filter(function (t) { return t.name && t.name.toLowerCase().indexOf(_this.query().toLowerCase()) !== -1; });
             }
+        };
+        ViewModel.prototype.save = function () {
+            var jsonData = ko.toJSON(this);
+            localStorage.setItem('workshopViewModel', JSON.stringify(jsonData));
+            console.log(jsonData);
+        };
+        ViewModel.prototype.load = function () {
+            var jsonData = localStorage.getItem('workshopViewModel');
+            var jsonParsed = JSON.parse(jsonData);
+            this.columns(jsonParsed.columns);
         };
         return ViewModel;
     })();

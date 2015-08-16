@@ -76,6 +76,7 @@ module WorkshopPlanner {
       if (targetColumn && targetColumn.activities) {
         targetColumn.activities.splice(eventDetails.targetIndex, 0, $.extend({}, activityOrTemplate));
       }
+      this.save();
       e.returnValue = false;
     }
 
@@ -85,6 +86,18 @@ module WorkshopPlanner {
       } else {
         return this.templates().filter((t) => t.name && t.name.toLowerCase().indexOf(this.query().toLowerCase()) !== -1);
       }
+    }
+
+    private save():void {
+      let jsonData:string = ko.toJSON(this);
+      localStorage.setItem('workshopViewModel', JSON.stringify(jsonData));
+      console.log(jsonData);
+    }
+
+    private load():void {
+      let jsonData:string = localStorage.getItem('workshopViewModel');
+      var jsonParsed = JSON.parse(jsonData);
+      this.columns(jsonParsed.columns);
     }
   }
 }
