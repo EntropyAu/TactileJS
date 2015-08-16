@@ -21,7 +21,6 @@ module Tactile {
 
 
   export class Drag {
-
     xy:[number,number];
     xyEl:HTMLElement;
 

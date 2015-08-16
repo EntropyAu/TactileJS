@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "noImplicitAny": false,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "out": "workshopPlanner.js",
+        "sourceMap": true
+    },
+    "files": [
+        "ts/interfaces/knockout.d.ts",
+        "ts/viewModel.ts",
+        "ts/workshopPlanner.ts"
+    ]
+}

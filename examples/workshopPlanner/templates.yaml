@@ -1,0 +1,21 @@
+templates:
+ - name: Stakeholder Mapping
+   imageUrl:
+   shortDescription: Stakeholder mapping eercise
+   fullDescription: Stakeholder mapping eercise involves blah blahh
+   duration: 10-30
+   tags:
+     - business
+     - innovation
+
+ - name: aervkajerhvk
+   description: aervkaerhvaer
+   tags:
+     - business
+     - innovation
+
+ - name:
+   description:
+   tags:
+     - business
+     - innovation
