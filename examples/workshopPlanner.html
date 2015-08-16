@@ -79,6 +79,11 @@
               data-drag-tag='activity'
               data-bind="foreach:activities">
               <li class="ui card">
+                <!-- ko if:$data.imageName -->
+                <div class="image">
+                  <img data-bind="attr: { src: './workshopPlanner/assets/' + $data.imageName }" />
+                </div>
+                <!-- /ko -->
                 <div class="content">
                   <h4 class="header" data-bind="text: name"></h4>
                   <p class="description" data-bind="text: shortDescription"></p>

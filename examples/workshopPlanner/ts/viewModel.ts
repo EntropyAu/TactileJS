@@ -14,6 +14,7 @@ module WorkshopPlanner {
     shortDescription:string;
     duration:string;
     category:string;
+    imageName:string;
   }
 
   interface Column {
