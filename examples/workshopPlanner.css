@@ -4,6 +4,10 @@
   max-width: 240px !important;
 }
 
+.card .image img {
+  max-height: 100px;
+}
+
 .day-header {
   flex-grow: 0;
   -webkit-flex-grow: 0;
@@ -24,7 +28,7 @@
 }
 
 .layout-activities {
-  width: 300px;
+  width: 280px;
   flex-grow: 0;
   flex-shrink: 0;
   -webkit-flex-grow: 0;

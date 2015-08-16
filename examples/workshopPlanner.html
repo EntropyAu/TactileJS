@@ -6,6 +6,7 @@
   <script type="text/javascript" src="./vendor/knockout.mapping/knockout.mapping.js"></script>
   <script type="text/javascript" src="./vendor/js-yaml/js-yaml.min.js"></script>
   <script type="text/javascript" src="./vendor/jquery/jquery.js"></script>
+  <script type="text/javascript" src="../semantic/dist/semantic.js"></script>
   <link rel="stylesheet" type="text/css" href="vendor/semantic-ui/semantic-ui.min.css">
   <link rel="stylesheet" type="text/css" href="workshopPlanner.css">
   <link rel="stylesheet" type="text/css" href="../css/core.css">
@@ -15,10 +16,8 @@
   <div class="ui fixed inverted menu">
     <div class="ui container">
       <div href="#" class="header item">
-
+        Workshop Planner
       </div>
-      <span class="item active">Workshop Planner</span>
-      <a class="item" href="kitchenSink.html">Kitchen Sink</a>
     </div>
   </div>
 
@@ -71,9 +70,21 @@
           data-bind="foreach:columns">
         <li class="day">
           <header class="day-header">
-            <span style="float:right"><i class="remove icon"></i></span>
+            <div class="ui text menu" style="float:right">
+              <div class="ui right dropdown simple item">
+                More
+                <i class="dropdown icon"></i>
+                <ol class="menu">
+                  <li class="item">Duplicate</li>
+                  <li class="item">Delete</li>
+                </ol>
+              </div>
+            </div>
             <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
             <h2 data-bind="text:name"></h2>
+
+
+
           </header>
           <ol class="day-activities"
               data-drag-scrollable
