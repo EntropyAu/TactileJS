@@ -1,26 +1,5 @@
 module WorkshopPlanner {
 
-  interface Template {
-    name:string;
-    shortDescription:string;
-    tags:string[];
-    duration:string;
-    category:string;
-    imageName:string;
-  }
-
-  interface Activity {
-    name:string;
-    shortDescription:string;
-    duration:string;
-    category:string;
-    imageName:string;
-  }
-
-  interface Column {
-    name: string;
-    activities: KnockoutObservableArray<Activity>;
-  }
 
   export class ViewModel {
     query: KnockoutObservable<string> = ko.observable('');

@@ -12,6 +12,10 @@
         "ts/interfaces/js-yaml.d.ts",
         "ts/interfaces/jquery.d.ts",
         "ts/interfaces/knockout.d.ts",
+
+        "ts/Activity.ts",
+        "ts/Column.ts",
+        "ts/Template.ts",
         "ts/viewModel.ts",
         "ts/workshopPlanner.ts"
     ]
