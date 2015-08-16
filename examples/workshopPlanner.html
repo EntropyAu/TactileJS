@@ -11,6 +11,7 @@
   <link rel="stylesheet" type="text/css" href="workshopPlanner.css">
   <link rel="stylesheet" type="text/css" href="../css/core.css">
   <link rel="stylesheet" type="text/css" href="../css/default.css">
+  <title>Workshop Planner</title>
 </head>
 <body>
   <div class="ui fixed inverted menu">
@@ -23,17 +24,20 @@
 
   <div class="layout">
     <div class="layout-activities" data-drag-scrollable>
-      <h2>Activities</h2>
-      <div class="ui search" style="margin-bottom:20px">
+      <div class="ui search small" style="margin-bottom:10px">
         <div class="ui icon input fluid">
-          <input class="prompt" type="text" placeholder="Search..." data-bind="textInput: query">
+          <input class="prompt" type="text" placeholder="Search activities..." data-bind="textInput: query">
           <i class="search icon"></i>
         </div>
       </div>
-      <div class="blue ui buttons fluid" data-bind="foreach: tags()">
-        <button class="ui button" data-bind="text: $data,
-                                             click: function() { $parent.selectedTag($data); },
-                                             css: { active: $parent.selectedTag() === $data }"></button>
+      <div class="ui buttons tiny fluid"
+           data-bind="foreach: tags()"
+           style="margin-bottom:10px;">
+        <button class="ui button grey"
+                data-bind="text: $data,
+                           click: function() { $parent.selectedTag($data); },
+                           css: { active: $parent.selectedTag() === $data,
+                                  basic: $parent.selectedTag() !== $data }"></button>
       </div>
       <ol data-drag-sortable
           data-drag-tag="activity"
@@ -66,14 +70,13 @@
           data-drag-sortable="horizontal"
           data-drag-tag="day"
           data-drag-scrollable
-          data-drag-bounds="day"
-          data-bind="foreach:columns">
+          data-drag-bounds="day">
+        <!-- ko foreach:columns -->
         <li class="day">
           <header class="day-header">
-            <div class="ui text menu" style="float:right">
+            <div class="ui text menu" style="float:right; margin: 0;">
               <div class="ui right dropdown simple item">
-                More
-                <i class="dropdown icon"></i>
+                <i class="sidebar icon"></i>
                 <ol class="menu">
                   <li class="item">Duplicate</li>
                   <li class="item">Delete</li>
@@ -81,7 +84,11 @@
               </div>
             </div>
             <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
-            <h2 data-bind="text:name"></h2>
+            <div class="ui transparent input huge" style="float:left">
+              <input type="text"
+                     placeholder="Day"
+                     data-bind="textInput:name">
+            </div>
 
 
 
@@ -107,6 +114,12 @@
                 </div>
               </li>
           </ol>
+        </li>
+        <!-- /ko -->
+        <li class="day-new">
+          <button class="circular ui icon button massive">
+            <i class="plus icon"></i>
+          </button>
         </li>
       </ol>
     </div>
