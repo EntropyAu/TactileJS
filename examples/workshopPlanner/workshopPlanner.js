@@ -17,6 +17,8 @@ var WorkshopPlanner;
             this.selectedTag.subscribe(function (nv) { return nv !== null && _this.query(''); });
             this.query.subscribe(function (nv) { return nv !== '' && _this.selectedTag(null); });
             this.initialize();
+            this.defaultColumns();
+            this.bindEventHandlers();
         }
         ViewModel.prototype.initialize = function () {
             var self = this;
@@ -24,6 +26,27 @@ var WorkshopPlanner;
                 self.templates(jsyaml.load(data).templates);
             }
             $.ajax('./workshopPlanner/templates.yaml', { dataType: "text", success: onSuccess });
+        };
+        ViewModel.prototype.defaultColumns = function () {
+            for (var i = 0; i < 10; i++) {
+                this.columns.push({ name: "Day " + (i + 1), activities: ko.observableArray([]) });
+            }
+        };
+        ViewModel.prototype.bindEventHandlers = function () {
+            document.addEventListener('drop', this.onDragDrop.bind(this));
+        };
+        ViewModel.prototype.onDragDrop = function (e) {
+            var eventDetails = e.detail;
+            var activityOrTemplate = ko.contextFor(eventDetails.el)['$data'];
+            var sourceColumn = ko.contextFor(eventDetails.sourceEl)['$data'];
+            if (sourceColumn && sourceColumn.activities) {
+                sourceColumn.activities.remove(activityOrTemplate);
+            }
+            var targetColumn = ko.contextFor(eventDetails.targetEl)['$data'];
+            if (targetColumn && targetColumn.activities) {
+                targetColumn.activities.splice(eventDetails.targetIndex, 0, $.extend({}, activityOrTemplate));
+            }
+            e.returnValue = false;
         };
         ViewModel.prototype.search = function () {
             var _this = this;

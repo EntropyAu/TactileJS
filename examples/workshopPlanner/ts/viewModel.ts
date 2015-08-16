@@ -15,7 +15,7 @@ module WorkshopPlanner {
 
   interface Column {
     name: string;
-    activities: Activity[];
+    activities: KnockoutObservableArray<Activity>;
   }
 
   export class ViewModel {
@@ -41,6 +41,8 @@ module WorkshopPlanner {
       this.query.subscribe((nv) => nv !== '' && this.selectedTag(null));
 
       this.initialize();
+      this.defaultColumns();
+      this.bindEventHandlers();
     }
 
     private initialize() {
@@ -49,6 +51,32 @@ module WorkshopPlanner {
         self.templates(<Template[]>jsyaml.load(data).templates);
       }
       $.ajax('./workshopPlanner/templates.yaml', { dataType:"text", success: onSuccess });
+    }
+
+    private defaultColumns() {
+      for (let i = 0; i < 10; i++) {
+        this.columns.push({ name: "Day " + (i + 1), activities: ko.observableArray([]) });
+      }
+    }
+
+    private bindEventHandlers() {
+      document.addEventListener('drop', this.onDragDrop.bind(this));
+    }
+
+    private onDragDrop(e:CustomEvent) {
+      let eventDetails = e.detail;
+      let activityOrTemplate = <Activity|Template>ko.contextFor(eventDetails.el)['$data'];
+
+      let sourceColumn = <Column>ko.contextFor(eventDetails.sourceEl)['$data'];
+      if (sourceColumn && sourceColumn.activities) {
+        sourceColumn.activities.remove(activityOrTemplate);
+      }
+
+      let targetColumn = <Column>ko.contextFor(eventDetails.targetEl)['$data'];
+      if (targetColumn && targetColumn.activities) {
+        targetColumn.activities.splice(eventDetails.targetIndex, 0, $.extend({}, activityOrTemplate));
+      }
+      e.returnValue = false;
     }
 
     private search():Template[] {

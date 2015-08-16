@@ -66,6 +66,7 @@ module Tactile {
 
 
     dispose():void {
+      if (!this.el) return;
       Animation.stop(this.el);
       if (this.isOriginalEl) {
         this.el.removeAttribute('data-drag-placeholder');

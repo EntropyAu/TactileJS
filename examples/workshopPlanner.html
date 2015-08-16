@@ -60,61 +60,29 @@
           data-drag-sortable="horizontal"
           data-drag-tag="day"
           data-drag-scrollable
-          data-drag-bounds="day">
+          data-drag-bounds="day"
+          data-bind="foreach:columns">
         <li class="day">
           <header class="day-header">
             <span style="float:right"><i class="remove icon"></i></span>
             <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
-            <h2>Day 1</h2>
+            <h2 data-bind="text:name"></h2>
           </header>
           <ol class="day-activities"
               data-drag-scrollable
               data-drag-sortable
-              data-drag-tag='activity'>
-          </ol>
-        </li><li class="day">
-          <header class="day-header">
-            <span style="float:right"><i class="remove icon"></i></span>
-            <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
-            <h2>Day 2</h2>
-          </header>
-          <ol class="day-activities"
-              data-drag-scrollable
-              data-drag-sortable
-              data-drag-tag='activity'>
-          </ol>
-        </li><li class="day">
-          <header class="day-header">
-            <span style="float:right"><i class="remove icon"></i></span>
-            <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
-            <h2>Day 3</h2>
-          </header>
-          <ol class="day-activities"
-              data-drag-scrollable
-              data-drag-sortable
-              data-drag-tag='activity'>
-          </ol>
-        </li><li class="day">
-          <header class="day-header">
-            <span style="float:right"><i class="remove icon"></i></span>
-            <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
-            <h2>Day 5</h2>
-          </header>
-          <ol class="day-activities"
-              data-drag-scrollable
-              data-drag-sortable
-              data-drag-tag='activity'>
-          </ol>
-        </li><li class="day">
-          <header class="day-header">
-            <span style="float:right"><i class="remove icon"></i></span>
-            <span style="float:right" data-drag-handle><i class="resize horizontal icon"></i></span>
-            <h2>Day 6</h2>
-          </header>
-          <ol class="day-activities"
-              data-drag-scrollable
-              data-drag-sortable
-              data-drag-tag='activity'>
+              data-drag-tag='activity'
+              data-bind="foreach:activities">
+              <li class="ui card">
+                <div class="content">
+                  <h4 class="header" data-bind="text: name"></h4>
+                  <p class="description" data-bind="text: shortDescription"></p>
+                </div>
+                <div class="extra content">
+                  <i class="clock icon"></i>
+                  <span class="duration" data-bind="text: duration"></span>
+                </div>
+              </li>
           </ol>
         </li>
       </ol>

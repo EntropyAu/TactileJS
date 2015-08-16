@@ -936,6 +936,8 @@ var Tactile;
             this.helper.dispose();
             this.geometryCache.dispose();
             this.containerCache.dispose();
+            this.target && this.target.dispose();
+            this.source && this.source.dispose();
             document.removeEventListener('scroll', this._onScrollOrWheelListener, false);
             document.removeEventListener('mousewheel', this._onScrollOrWheelListener, false);
             document.removeEventListener('wheel', this._onScrollOrWheelListener, false);
@@ -1080,19 +1082,23 @@ var Tactile;
         };
         Drag.prototype._raise = function (el, eventName) {
             var eventData = {
-                el: this.draggable.el,
-                data: this.draggable.data,
-                action: this.action,
-                copy: this.copy,
-                helperEl: this.helper.el,
-                helperXY: this.helper.xy,
-                boundaryEl: this.boundary ? this.boundary.el : null,
-                sourceEl: this.draggable.originalParentEl,
-                sourceIndex: this.draggable.originalIndex,
-                sourceOffset: this.draggable.originalOffset,
-                targetEl: this.target ? this.target.el : null,
-                targetIndex: this.target ? this.target['index'] : null,
-                targetOffset: this.target ? this.target['offset'] : null
+                bubbles: true,
+                cancelable: true,
+                detail: {
+                    el: this.draggable.el,
+                    data: this.draggable.data,
+                    action: this.action,
+                    copy: this.copy,
+                    helperEl: this.helper.el,
+                    helperXY: this.helper.xy,
+                    boundaryEl: this.boundary ? this.boundary.el : null,
+                    sourceEl: this.draggable.originalParentEl,
+                    sourceIndex: this.draggable.originalIndex,
+                    sourceOffset: this.draggable.originalOffset,
+                    targetEl: this.target ? this.target.el : null,
+                    targetIndex: this.target ? this.target['index'] : null,
+                    targetOffset: this.target ? this.target['offset'] : null
+                }
             };
             return Tactile.Events.raise(el, eventName, eventData);
         };
@@ -1541,6 +1547,8 @@ var Tactile;
             this.state = state;
         };
         Placeholder.prototype.dispose = function () {
+            if (!this.el)
+                return;
             Tactile.Animation.stop(this.el);
             if (this.isOriginalEl) {
                 this.el.removeAttribute('data-drag-placeholder');

@@ -130,6 +130,8 @@ module Tactile {
       this.helper.dispose();
       this.geometryCache.dispose();
       this.containerCache.dispose();
+      this.target && this.target.dispose();
+      this.source && this.source.dispose();
 
       document.removeEventListener('scroll', this._onScrollOrWheelListener, false);
       document.removeEventListener('mousewheel', this._onScrollOrWheelListener, false);
@@ -353,19 +355,23 @@ module Tactile {
 
     private _raise(el:Element, eventName:string):CustomEvent {
       let eventData = {
-        el: this.draggable.el,
-        data: this.draggable.data,
-        action: this.action,
-        copy: this.copy,
-        helperEl: this.helper.el,
-        helperXY: this.helper.xy,
-        boundaryEl: this.boundary ? this.boundary.el : null,
-        sourceEl: this.draggable.originalParentEl,
-        sourceIndex: this.draggable.originalIndex,
-        sourceOffset: this.draggable.originalOffset,
-        targetEl: this.target ? this.target.el : null,
-        targetIndex: this.target ? this.target['index'] : null,
-        targetOffset: this.target ? this.target['offset'] : null
+        bubbles: true,
+        cancelable: true,
+        detail: {
+          el: this.draggable.el,
+          data: this.draggable.data,
+          action: this.action,
+          copy: this.copy,
+          helperEl: this.helper.el,
+          helperXY: this.helper.xy,
+          boundaryEl: this.boundary ? this.boundary.el : null,
+          sourceEl: this.draggable.originalParentEl,
+          sourceIndex: this.draggable.originalIndex,
+          sourceOffset: this.draggable.originalOffset,
+          targetEl: this.target ? this.target.el : null,
+          targetIndex: this.target ? this.target['index'] : null,
+          targetOffset: this.target ? this.target['offset'] : null
+        }
       };
       return Events.raise(el, eventName, eventData);
     }
