@@ -8,6 +8,8 @@
         "sourceMap": true
     },
     "files": [
+        "ts/interfaces/js-yaml.d.ts",
+        "ts/interfaces/jquery.d.ts",
         "ts/interfaces/knockout.d.ts",
         "ts/viewModel.ts",
         "ts/workshopPlanner.ts"
