@@ -6,16 +6,16 @@ templates:
    duration: 10-30
    tags:
      - business
-     - innovation
 
  - name: aervkajerhvk
-   description: aervkaerhvaer
+   shortDescription: aervkaerhvaer
    tags:
      - business
-     - innovation
+   duration: 10-30
 
- - name:
-   description:
+ - name: third one
+   shortDescription:
    tags:
      - business
      - innovation
+   duration: 10-30
