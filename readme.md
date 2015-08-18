@@ -10,7 +10,8 @@ tsc -w
 Compile & watch Workshop Planner Example
 
 cd examples/workshopPlanner
-tsc -w
-open workshopPlanner.html
+tsc -w &
+python -m SimpleHTTPServer
+open http://localhost:4567/workshopPlanner.html
 
 (this should be moved to it's own repo at some point)
