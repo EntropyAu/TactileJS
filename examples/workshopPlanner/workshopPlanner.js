@@ -27,7 +27,7 @@ var WorkshopPlanner;
             function onSuccess(data) {
                 self.templates(jsyaml.load(data).templates);
             }
-            $.ajax('./workshopPlanner/templates.yaml', { dataType: "text", success: onSuccess });
+            $.ajax('./templates.yaml', { dataType: "text", success: onSuccess });
         };
         ViewModel.prototype.defaultColumns = function () {
             for (var i = 0; i < 10; i++) {

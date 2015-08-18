@@ -35,7 +35,7 @@ module WorkshopPlanner {
       function onSuccess(data:any) {
         self.templates(<Template[]>jsyaml.load(data).templates);
       }
-      $.ajax('./workshopPlanner/templates.yaml', { dataType:"text", success: onSuccess });
+      $.ajax('./templates.yaml', { dataType:"text", success: onSuccess });
     }
 
     private defaultColumns() {
