@@ -137,7 +137,7 @@ templates:
     shortDescription: Light-weight substitute for personas
     longDescription: When no customer research or data exists, empathy mapping can be used to create a view of typical users. This is based on best guesses about users. Key assumptions should be noted.
     duration: 120
-    imageName: Empathy-map.png
+    imageName: Empathy-map.jpg
     tags:
       - User Research
       - Analysis
@@ -147,7 +147,7 @@ templates:
     shortDescription: Mapping customer touch-points and experiences across channels
     longDescription: 'User journeys map the key touch-points that a customer has with a brand or product. They follow a typical sequential ''life-cycle'' that usually begins with a trigger that requires the user to take action. User journeys are modeled on real customers and should be based on user research.'
     duration: 120
-    imageName: User-journey-mapping.png
+    imageName: User-journey-mapping.jpg
     tags:
       - User Research
       - Analysis
@@ -163,7 +163,7 @@ templates:
     shortDescription: Express your product vision in a succinct and memorable statement
     longDescription: Designed to build team alignment and a shared understanding of the product value proposition. This short statement becomes a memorable way of sharing the product vision to any audience
     duration: 60
-    imageName: elevator-pitch.png
+    imageName: elevator-pitch.jpg
     tags:
       - Visioning
       - Alignment
@@ -174,7 +174,7 @@ templates:
     shortDescription: Business case on a page
     longDescription: This light weight method allows your team to describe your business quickly and succinctly using key measures of value such as customers, infrastucture, revenue and resources.
     duration: 120
-    imageName: business-model-canvas.png
+    imageName: business-model-canvas.jpg
     tags:
       - Value Proposition
       - Alignment
@@ -283,7 +283,7 @@ templates:
     shortDescription: Developing the story backlog
     longDescription: 'A story is a concise description of a customer''s requirement on a card, used as a unit of project work that can be tracked. It serves as a placeholder for a collaborative conversation between the customer and the team.'
     duration: 60
-    imageName: storymapping.png
+    imageName: storymapping.jpg
     tags:
       - Analysis
       - Requirements
@@ -294,7 +294,7 @@ templates:
     shortDescription: How to cope with competing priorities
     longDescription: Trade off sliders are a really quick way to frame competing priorities within the context of time, budget and other negotiable constraints. They are a simple tool to help project stakeholders identify what is most important. This activity should be done early in the project planning stage.
     duration: 30
-    imageName: tradeoffsliders.png
+    imageName: tradeoffsliders.jpg
     tags:
       - Alignment
       - Planning
@@ -305,7 +305,7 @@ templates:
     shortDescription: Beyond functional features
     longDescription: Identify, understand, at a high leve, the requirements which specify criteria that can be used to judge the operation of a system, beyond features and functions. Separate sessions may be required to delve into topics like security.
     duration: 120
-    imageName: crossfunctionalrequirements.png
+    imageName: crossfunctionalrequirements.jpg
     tags:
       - Analysis
       - Requirements
@@ -315,7 +315,7 @@ templates:
     shortDescription: Sizing your stories
     longDescription: Estimates of story sizes help with prioritisation, planning and decision making. Estimated work can be traded in and out of scope for other work of similar size.
     duration: 120
-    imageName: estimation.png
+    imageName: estimation.jpg
     tags:
       - Planning
     category: Define
@@ -324,7 +324,7 @@ templates:
     shortDescription: Delivering value faster
     longDescription: Figuring out what things to deliver first - in collaboration with stakeholders and customer research.
     duration: 60
-    imageName: prioritisation.png
+    imageName: prioritisation.jpg
     tags:
       - Planning
     category: Define
@@ -333,7 +333,7 @@ templates:
     shortDescription: Risks, Assumptions, Issues, Dependencies
     longDescription: Create a RAID log at the start of each project so you can track anything impacting the team, now or in the future.
     duration: 60
-    imageName: raids.png
+    imageName: raids.jpg
     tags:
       - Planning
       - Risks
@@ -342,7 +342,7 @@ templates:
     shortDescription: 'How to determine your team''s delivery speed'
     longDescription: This is a measure of the number of units of work the team can deilver in each interval or work iteration.
     duration: 60
-    imageName: velocity.png
+    imageName: velocity.jpg
     tags:
       - Planning
   -
@@ -350,7 +350,7 @@ templates:
     shortDescription: Planning to deliver, not delivering to a plan
     longDescription: Agree on iteration intervals, and agree on a structured release plan.
     duration: 60
-    imageName: releaseplan.png
+    imageName: releaseplan.jpg
     tags:
       - Planning
   -
@@ -377,7 +377,7 @@ templates:
     shortDescription: Understand with the group the factors that may positively or negatively affect the project
     longDescription: Understand with the group the factors that may positively or negatively affect the project
     duration: 60
-    imageName: hopesandfears.png
+    imageName: hopesandfears.jpg
     tags:
       - Alignment
     category: Start
@@ -403,7 +403,7 @@ templates:
     shortDescription: Map out the users interacting with the system
     longDescription: Understand the variety of individuals interacting with the current system in order to better define which user groups to explore further
     duration: 60
-    imageName: user-review.png
+    imageName: user-review.jpg
     tags:
       - Users
     category: Discover
@@ -420,7 +420,7 @@ templates:
     shortDescription: Understand the challenges faced in using the product and ways to delight users in the process
     longDescription: Understand the challenges faced in using the product and ways to delight users in the process
     duration: 60
-    imageName: pains-gains.png
+    imageName: pains-gains.jpg
     tags:
       - Users
     category: Discover
@@ -455,7 +455,7 @@ templates:
     shortDescription: Business case on a page
     longDescription: This light weight method allows your team to describe your business quickly and succinctly using key measures of value such as customers, infrastucture, revenue and resources.
     duration: 180
-    imageName: opportunity-canvas.png
+    imageName: opportunity-canvas.jpg
     tags:
       - Planning
       - Value Proposition
