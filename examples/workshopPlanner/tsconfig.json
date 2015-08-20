@@ -18,7 +18,7 @@
 
         "ts/Activity.ts",
         "ts/Column.ts",
-        "ts/Template.ts",
+        "ts/ActivityTemplate.ts",
         "ts/viewModel.ts",
         "ts/workshopPlanner.ts"
     ]

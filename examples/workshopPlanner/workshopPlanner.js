@@ -35,11 +35,24 @@ var WorkshopPlanner;
             this.bindEventHandlers();
         }
         ViewModel.prototype.initialize = function () {
-            var self = this;
+            this.loadTemplatesFromLocal(this.templates);
+            this.loadTemplatesFromGoogleSheets(this.templates);
+        };
+        ViewModel.prototype.loadTemplatesFromLocal = function (templates) {
             function onSuccess(data) {
-                self.templates(jsyaml.load(data).templates);
+                templates(jsyaml.load(data).templates);
             }
             $.ajax('./templates.yaml', { dataType: "text", success: onSuccess });
+        };
+        ViewModel.prototype.loadTemplatesFromGoogleSheets = function (templates) {
+            var public_spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1Ax95IyMyL42FF7YHA1NgBLUkiTDcZjrMbCmxlOyRZ2U/pubhtml';
+            function showInfo(data, tabletop) {
+                templates(data.Sheet1.all());
+            }
+            var tabletop = Tabletop.init({ key: public_spreadsheet_url,
+                callback: showInfo,
+                simpleSheet: false,
+                parseNumbers: true });
         };
         ViewModel.prototype.defaultColumns = function () {
             for (var i = 0; i < 10; i++) {

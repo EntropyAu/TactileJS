@@ -1,7 +1,5 @@
 module WorkshopPlanner {
-
   export class ViewModel {
-
     query: KnockoutObservable<string> = ko.observable('');
     templates: KnockoutObservableArray<Template> = ko.observableArray([]);
     selectedTag: KnockoutObservable<string> = ko.observable(null);
@@ -21,7 +19,6 @@ module WorkshopPlanner {
 
       this.selectedTag.subscribe((nv) => nv !== null && this.query(''));
       this.query.subscribe((nv) => nv !== '' && this.selectedTag(null));
-
       this.initialize();
       if (!this.tryLoad()) {
         this.defaultColumns();
@@ -30,11 +27,26 @@ module WorkshopPlanner {
     }
 
     private initialize() {
-      let self = this;
+      this.loadTemplatesFromLocal(this.templates);
+      this.loadTemplatesFromGoogleSheets(this.templates);
+    }
+
+    private loadTemplatesFromLocal(templates):void {
       function onSuccess(data:any) {
-        self.templates(<Template[]>jsyaml.load(data).templates);
+        templates(<Template[]>jsyaml.load(data).templates);
       }
       $.ajax('./templates.yaml', { dataType:"text", success: onSuccess });
+    }
+
+    private loadTemplatesFromGoogleSheets(templates):void {
+      var public_spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1Ax95IyMyL42FF7YHA1NgBLUkiTDcZjrMbCmxlOyRZ2U/pubhtml'
+      function showInfo(data, tabletop) {
+        templates(<Template[]>data.Sheet1.all());
+      }
+      var tabletop = Tabletop.init( { key: public_spreadsheet_url,
+                                      callback: showInfo,
+                                      simpleSheet: false,
+                                      parseNumbers: true } )
     }
 
     private defaultColumns() {
