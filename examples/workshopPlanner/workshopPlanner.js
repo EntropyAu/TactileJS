@@ -113,7 +113,8 @@ var WorkshopPlanner;
             this.query = ko.observable('');
             this.templates = ko.observableArray([]);
             this.selectedTag = ko.observable(null);
-            this.openActivityOrTemplate = ko.observable(null);
+            this.openActivity = ko.observable(null);
+            this.editedActivity = ko.observable(null);
             this.workshop = ko.observable(null);
             window['viewModel'] = this;
             this.filteredTemplates = ko.pureComputed(this.search.bind(this));
@@ -130,6 +131,12 @@ var WorkshopPlanner;
             this.bindEventHandlers();
             ko.watch(this.workshop, { depth: -1 }, function () { return _this.save(); });
         }
+        ViewModel.prototype.doOpenActivity = function (activity) {
+            this.openActivity(activity);
+        };
+        ViewModel.prototype.doEditActivity = function () {
+            this.editedActivity(new WorkshopPlanner.Activity(this.openActivity().toJS()));
+        };
         ViewModel.prototype.initialize = function () {
             this.loadTemplatesFromLocal(this.templates);
             this.loadTemplatesFromGoogleSheets(this.templates);

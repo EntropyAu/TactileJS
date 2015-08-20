@@ -5,7 +5,8 @@ module WorkshopPlanner {
     selectedTag: KnockoutObservable<string> = ko.observable(null);
     filteredTemplates: KnockoutComputed<ActivityTemplate[]>;
     tags: KnockoutComputed<string[]>;
-    openActivityOrTemplate: KnockoutObservable<ActivityTemplate> = ko.observable(null);
+    openActivity: KnockoutObservable<Activity> = ko.observable(null);
+    editedActivity: KnockoutObservable<Activity> = ko.observable(null);
     workshop: KnockoutObservable<Workshop> = ko.observable(null);
 
     constructor() {
@@ -24,6 +25,14 @@ module WorkshopPlanner {
       this.bindEventHandlers();
 
       ko.watch(this.workshop, { depth: -1 }, () => this.save());
+    }
+
+    public doOpenActivity(activity:Activity):void {
+      this.openActivity(activity)
+    }
+
+    public doEditActivity():void {
+      this.editedActivity(new Activity(this.openActivity().toJS()));
     }
 
     private initialize() {
