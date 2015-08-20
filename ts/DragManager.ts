@@ -98,7 +98,6 @@ module Tactile {
 
     private _onPointerUp(e:MouseEvent|TouchEvent) {
       for (let pointer of Events.normalizePointerEvent(e)) {
-        console.log(pointer.id)
         if (this._drags[pointer.id]) {
           this.endDrag(pointer.id);
           Events.cancel(e);
@@ -120,7 +119,6 @@ module Tactile {
 
 
     scheduleDrag(draggableEl:HTMLElement, dragId:number, xy:[number,number]):void {
-      console.log("scheduleDrag")
       let onPickUpTimeout = function() { this.startScheduledDrag(dragId); }.bind(this);
       this._pendingDrags[dragId] = {
         id: dragId,
@@ -132,7 +130,6 @@ module Tactile {
 
 
     startScheduledDrag(dragId:number) {
-      console.log("startScheduledDrag")
       let pendingDrag = this._pendingDrags[dragId];
       clearTimeout(pendingDrag.timerId);
       this.startDrag(pendingDrag.el, pendingDrag.id, pendingDrag.xy, pendingDrag.xyEl);
@@ -141,7 +138,6 @@ module Tactile {
 
 
     cancelScheduledDrag(dragId:number) {
-      console.log("cancelScheduledDrag")
       let pendingDrag = this._pendingDrags[dragId];
       clearTimeout(pendingDrag.timerId);
       delete this._pendingDrags[pendingDrag.id];
@@ -149,7 +145,6 @@ module Tactile {
 
 
     startDrag(draggableEl:HTMLElement, dragId:number, xy:[number,number], xyEl:HTMLElement):Drag {
-      console.log("startDrag", arguments)
       Dom.clearSelection();
       document.body.setAttribute('data-drag-in-progress', '');
       this._bindDraggingEvents();

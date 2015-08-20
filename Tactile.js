@@ -1246,7 +1246,6 @@ var Tactile;
         DragManager.prototype._onPointerUp = function (e) {
             for (var _i = 0, _a = Tactile.Events.normalizePointerEvent(e); _i < _a.length; _i++) {
                 var pointer = _a[_i];
-                console.log(pointer.id);
                 if (this._drags[pointer.id]) {
                     this.endDrag(pointer.id);
                     Tactile.Events.cancel(e);
@@ -1264,7 +1263,6 @@ var Tactile;
             }
         };
         DragManager.prototype.scheduleDrag = function (draggableEl, dragId, xy) {
-            console.log("scheduleDrag");
             var onPickUpTimeout = function () { this.startScheduledDrag(dragId); }.bind(this);
             this._pendingDrags[dragId] = {
                 id: dragId,
@@ -1274,20 +1272,17 @@ var Tactile;
             };
         };
         DragManager.prototype.startScheduledDrag = function (dragId) {
-            console.log("startScheduledDrag");
             var pendingDrag = this._pendingDrags[dragId];
             clearTimeout(pendingDrag.timerId);
             this.startDrag(pendingDrag.el, pendingDrag.id, pendingDrag.xy, pendingDrag.xyEl);
             delete this._pendingDrags[dragId];
         };
         DragManager.prototype.cancelScheduledDrag = function (dragId) {
-            console.log("cancelScheduledDrag");
             var pendingDrag = this._pendingDrags[dragId];
             clearTimeout(pendingDrag.timerId);
             delete this._pendingDrags[pendingDrag.id];
         };
         DragManager.prototype.startDrag = function (draggableEl, dragId, xy, xyEl) {
-            console.log("startDrag", arguments);
             Tactile.Dom.clearSelection();
             document.body.setAttribute('data-drag-in-progress', '');
             this._bindDraggingEvents();
