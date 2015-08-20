@@ -49,7 +49,7 @@ var WorkshopPlanner;
                     this[prop](data[prop]);
             }
             var activities = [];
-            for (var _i = 0, _a = data.activities; _i < _a.length; _i++) {
+            for (var _i = 0, _a = data.activities || []; _i < _a.length; _i++) {
                 var activity = _a[_i];
                 activities.push(new WorkshopPlanner.Activity(activity));
             }
@@ -83,7 +83,7 @@ var WorkshopPlanner;
                     this[prop](data[prop]);
             }
             var days = [];
-            for (var _i = 0, _a = data.days; _i < _a.length; _i++) {
+            for (var _i = 0, _a = data.days || []; _i < _a.length; _i++) {
                 var day = _a[_i];
                 days.push(new WorkshopPlanner.Day(day));
             }

@@ -9,7 +9,7 @@ module WorkshopPlanner {
           this[prop](data[prop]);
       }
       let days = [];
-      for (let day of data.days) days.push(new Day(day))
+      for (let day of data.days || []) days.push(new Day(day))
       this.days(days);
     }
 

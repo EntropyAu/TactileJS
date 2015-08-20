@@ -9,7 +9,7 @@ module WorkshopPlanner {
           this[prop](data[prop]);
       }
       let activities = [];
-      for (let activity of data.activities) activities.push(new Activity(activity))
+      for (let activity of data.activities || []) activities.push(new Activity(activity))
       this.activities(activities);
     }
 
