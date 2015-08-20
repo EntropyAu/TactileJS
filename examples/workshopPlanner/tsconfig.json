@@ -16,9 +16,13 @@
         "ts/bindings/SemanticModal.ts",
         "ts/bindings/Marked.ts",
 
-        "ts/Activity.ts",
-        "ts/Column.ts",
         "ts/ActivityTemplate.ts",
+
+        "ts/models/Activity.ts",
+        "ts/models/Column.ts",
+        "ts/models/Day.ts",
+        "ts/models/Workshop.ts",
+
         "ts/viewModel.ts",
         "ts/workshopPlanner.ts"
     ]

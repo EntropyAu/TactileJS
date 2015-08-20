@@ -74,8 +74,6 @@
       </section>
 
 
-
-
       <ol data-drag-sortable
           data-drag-tag="activity"
           data-drag-accepts="none"
@@ -101,6 +99,7 @@
     </div>
 
 
+    <!-- ko with:workshop -->
 
     <div class="layout-plan">
       <ol class="days-list"
@@ -108,7 +107,7 @@
           data-drag-tag="day"
           data-drag-scrollable
           data-drag-bounds="day">
-        <!-- ko foreach:columns -->
+        <!-- ko foreach:days -->
         <li class="day">
           <header class="day-header">
             <div class="ui text menu" style="float:right; margin: 0;">
@@ -160,6 +159,8 @@
         </li>
       </ol>
     </div>
+
+    <!-- /ko -->
   </div>
 
   <script type="text/javascript" src="workshopPlanner.js"></script>

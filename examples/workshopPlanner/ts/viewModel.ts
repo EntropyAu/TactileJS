@@ -1,28 +1,26 @@
 module WorkshopPlanner {
   export class ViewModel {
     query: KnockoutObservable<string> = ko.observable('');
-    templates: KnockoutObservableArray<Template> = ko.observableArray([]);
+    templates: KnockoutObservableArray<ActivityTemplate> = ko.observableArray([]);
     selectedTag: KnockoutObservable<string> = ko.observable(null);
-    filteredTemplates: KnockoutComputed<Template[]>;
+    filteredTemplates: KnockoutComputed<ActivityTemplate[]>;
     tags: KnockoutComputed<string[]>;
-    openActivityOrTemplate: KnockoutObservable<Template> = ko.observable(null);
-    columns: KnockoutObservableArray<Column> = ko.observableArray([])
+    openActivityOrTemplate: KnockoutObservable<ActivityTemplate> = ko.observable(null);
+    workshop: KnockoutObservable<Workshop> = ko.observable(null);
 
     constructor() {
       window['viewModel'] = this;
-      this.filteredTemplates = <KnockoutComputed<Template[]>>ko.pureComputed(this.search.bind(this));
+      this.filteredTemplates = <KnockoutComputed<ActivityTemplate[]>>ko.pureComputed(this.search.bind(this));
       this.tags = <KnockoutComputed<string[]>>ko.pureComputed(function() {
         let tagHash:any = {};
-        this.templates().forEach((template) => template.category && (tagHash[template.category] = true));
+        this.templates().forEach((ActivityTemplate) => ActivityTemplate.category && (tagHash[ActivityTemplate.category] = true));
         return Object.keys(tagHash);
       }.bind(this));
 
       this.selectedTag.subscribe((nv) => nv !== null && this.query(''));
       this.query.subscribe((nv) => nv !== '' && this.selectedTag(null));
       this.initialize();
-      if (!this.tryLoad()) {
-        this.defaultColumns();
-      }
+      if (!this.tryLoad()) this.defaultWorkshop();
       this.bindEventHandlers();
     }
 
@@ -33,7 +31,7 @@ module WorkshopPlanner {
 
     private loadTemplatesFromLocal(templates):void {
       function onSuccess(data:any) {
-        templates(<Template[]>jsyaml.load(data).templates);
+        templates(<ActivityTemplate[]>jsyaml.load(data).templates);
       }
       $.ajax('./templates.yaml', { dataType:"text", success: onSuccess });
     }
@@ -41,7 +39,7 @@ module WorkshopPlanner {
     private loadTemplatesFromGoogleSheets(templates):void {
       var public_spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1Ax95IyMyL42FF7YHA1NgBLUkiTDcZjrMbCmxlOyRZ2U/pubhtml'
       function showInfo(data, tabletop) {
-        templates(<Template[]>data.Sheet1.all());
+        templates(<ActivityTemplate[]>data.Sheet1.all());
       }
       var tabletop = Tabletop.init( { key: public_spreadsheet_url,
                                       callback: showInfo,
@@ -49,10 +47,10 @@ module WorkshopPlanner {
                                       parseNumbers: true } )
     }
 
-    private defaultColumns() {
-      for (let i = 0; i < 10; i++) {
-        this.columns.push({ name: "Day " + (i + 1), activities: ko.observableArray([]) });
-      }
+    private defaultWorkshop() {
+      this.workshop(new Workshop({ name: "My Workshop" }));
+      for (let i = 0; i < 10; i++)
+        this.workshop().days.push(new Day({ name: "Day " + (i + 1) }));
     }
 
     private bindEventHandlers() {
@@ -61,22 +59,23 @@ module WorkshopPlanner {
 
     private onDragDrop(e:CustomEvent) {
       let eventDetails = e.detail;
-      let activityOrTemplate = <Activity|Template>ko.contextFor(eventDetails.el)['$data'];
-
-      let sourceColumn = <Column>ko.contextFor(eventDetails.sourceEl)['$data'];
-      if (sourceColumn && sourceColumn.activities) {
-        sourceColumn.activities.remove(activityOrTemplate);
-      }
-
-      let targetColumn = <Column>ko.contextFor(eventDetails.targetEl)['$data'];
-      if (targetColumn && targetColumn.activities) {
-        targetColumn.activities.splice(eventDetails.targetIndex, 0, $.extend({}, activityOrTemplate));
+      let context = ko.contextFor(eventDetails.el)['$data'];
+      if (context instanceof Activity) {
+        let activity = <Activity>context;
+        let sourceColumn = <Day>ko.contextFor(eventDetails.sourceEl)['$data'];
+        let targetColumn = <Day>ko.contextFor(eventDetails.targetEl)['$data'];
+        if (sourceColumn) sourceColumn.activities.remove(activity);
+        if (targetColumn) targetColumn.activities.splice(eventDetails.targetIndex, 0, activity);
+      } else {
+        let activityTemplate = <ActivityTemplate>context;
+        let targetColumn = <Day>ko.contextFor(eventDetails.targetEl)['$data'];
+        if (targetColumn) targetColumn.activities.splice(eventDetails.targetIndex, 0, new Activity(activityTemplate));
       }
       this.save();
       e.returnValue = false;
     }
 
-    private search():Template[] {
+    private search():ActivityTemplate[] {
       if (this.selectedTag()) {
         return this.templates().filter((t) => t.category && t.category.indexOf(this.selectedTag()) !== -1);
       } else {
@@ -85,17 +84,17 @@ module WorkshopPlanner {
     }
 
     private save():void {
-      let jsonData:string = ko.mapping.toJS(this.columns)
-      let jsonString:string = JSON.stringify(jsonData);
-      localStorage.setItem('workshopColumns', jsonString);
+      let workshopData = this.workshop().toJS();
+      let workshopJson = JSON.stringify(workshopData);
+      localStorage.setItem('workshop', workshopJson);
     }
 
     private tryLoad():boolean {
-      let jsonString:string = localStorage.getItem('workshopColumns');
+      let jsonString:string = localStorage.getItem('workshop');
       if (jsonString) {
-        let jsonData = JSON.parse(jsonString);
-        let asObservable = ko.mapping.fromJS(jsonData)
-        this.columns(asObservable())
+        let workshopData = JSON.parse(jsonString);
+        let workshop = new Workshop(workshopData);
+        this.workshop(workshop)
         return true;
       }
       return false;

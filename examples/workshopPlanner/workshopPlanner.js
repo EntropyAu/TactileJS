@@ -11,6 +11,102 @@ ko.bindingHandlers.marked = {
 };
 var WorkshopPlanner;
 (function (WorkshopPlanner) {
+    var Activity = (function () {
+        function Activity(data) {
+            this.name = ko.observable("");
+            this.shortDescription = ko.observable("");
+            this.description = ko.observable("");
+            this.tags = ko.observableArray([]);
+            this.duration = ko.observable("");
+            this.category = ko.observable("");
+            this.imageName = ko.observable("");
+            this.notes = ko.observable("");
+            for (var prop in data) {
+                if (ko.isObservable(this[prop])) {
+                    this[prop](data[prop]);
+                }
+            }
+        }
+        Activity.prototype.toJS = function () {
+            var result = {};
+            for (var prop in this)
+                if (ko.isObservable(this[prop]))
+                    result[prop] = ko.unwrap(this[prop]);
+            return result;
+        };
+        return Activity;
+    })();
+    WorkshopPlanner.Activity = Activity;
+})(WorkshopPlanner || (WorkshopPlanner = {}));
+var WorkshopPlanner;
+(function (WorkshopPlanner) {
+    var Day = (function () {
+        function Day(data) {
+            this.name = ko.observable("");
+            this.activities = ko.observableArray([]);
+            for (var prop in data) {
+                if (ko.isObservable(this[prop]) && prop !== 'activities')
+                    this[prop](data[prop]);
+            }
+            var activities = [];
+            for (var _i = 0, _a = data.activities; _i < _a.length; _i++) {
+                var activity = _a[_i];
+                activities.push(new WorkshopPlanner.Activity(activity));
+            }
+            this.activities(activities);
+        }
+        Day.prototype.toJS = function () {
+            var result = {};
+            for (var prop in this) {
+                if (ko.isObservable(this[prop]) && prop !== 'activities')
+                    result[prop] = ko.unwrap(this[prop]);
+            }
+            result.activities = [];
+            for (var _i = 0, _a = this.activities(); _i < _a.length; _i++) {
+                var activity = _a[_i];
+                result.activities.push(activity.toJS());
+            }
+            return result;
+        };
+        return Day;
+    })();
+    WorkshopPlanner.Day = Day;
+})(WorkshopPlanner || (WorkshopPlanner = {}));
+var WorkshopPlanner;
+(function (WorkshopPlanner) {
+    var Workshop = (function () {
+        function Workshop(data) {
+            this.name = ko.observable("");
+            this.days = ko.observableArray([]);
+            for (var prop in data) {
+                if (ko.isObservable(this[prop]) && prop !== 'days')
+                    this[prop](data[prop]);
+            }
+            var days = [];
+            for (var _i = 0, _a = data.days; _i < _a.length; _i++) {
+                var day = _a[_i];
+                days.push(new WorkshopPlanner.Day(day));
+            }
+            this.days(days);
+        }
+        Workshop.prototype.toJS = function () {
+            var result = {};
+            for (var prop in this)
+                if (ko.isObservable(this[prop]) && prop !== 'days')
+                    result[prop] = ko.unwrap(this[prop]);
+            result.days = [];
+            for (var _i = 0, _a = this.days(); _i < _a.length; _i++) {
+                var day = _a[_i];
+                result.days.push(day.toJS());
+            }
+            return result;
+        };
+        return Workshop;
+    })();
+    WorkshopPlanner.Workshop = Workshop;
+})(WorkshopPlanner || (WorkshopPlanner = {}));
+var WorkshopPlanner;
+(function (WorkshopPlanner) {
     var ViewModel = (function () {
         function ViewModel() {
             var _this = this;
@@ -18,20 +114,19 @@ var WorkshopPlanner;
             this.templates = ko.observableArray([]);
             this.selectedTag = ko.observable(null);
             this.openActivityOrTemplate = ko.observable(null);
-            this.columns = ko.observableArray([]);
+            this.workshop = ko.observable(null);
             window['viewModel'] = this;
             this.filteredTemplates = ko.pureComputed(this.search.bind(this));
             this.tags = ko.pureComputed(function () {
                 var tagHash = {};
-                this.templates().forEach(function (template) { return template.category && (tagHash[template.category] = true); });
+                this.templates().forEach(function (ActivityTemplate) { return ActivityTemplate.category && (tagHash[ActivityTemplate.category] = true); });
                 return Object.keys(tagHash);
             }.bind(this));
             this.selectedTag.subscribe(function (nv) { return nv !== null && _this.query(''); });
             this.query.subscribe(function (nv) { return nv !== '' && _this.selectedTag(null); });
             this.initialize();
-            if (!this.tryLoad()) {
-                this.defaultColumns();
-            }
+            if (!this.tryLoad())
+                this.defaultWorkshop();
             this.bindEventHandlers();
         }
         ViewModel.prototype.initialize = function () {
@@ -54,24 +149,31 @@ var WorkshopPlanner;
                 simpleSheet: false,
                 parseNumbers: true });
         };
-        ViewModel.prototype.defaultColumns = function () {
-            for (var i = 0; i < 10; i++) {
-                this.columns.push({ name: "Day " + (i + 1), activities: ko.observableArray([]) });
-            }
+        ViewModel.prototype.defaultWorkshop = function () {
+            this.workshop(new WorkshopPlanner.Workshop({ name: "My Workshop" }));
+            for (var i = 0; i < 10; i++)
+                this.workshop().days.push(new WorkshopPlanner.Day({ name: "Day " + (i + 1) }));
         };
         ViewModel.prototype.bindEventHandlers = function () {
             document.addEventListener('drop', this.onDragDrop.bind(this));
         };
         ViewModel.prototype.onDragDrop = function (e) {
             var eventDetails = e.detail;
-            var activityOrTemplate = ko.contextFor(eventDetails.el)['$data'];
-            var sourceColumn = ko.contextFor(eventDetails.sourceEl)['$data'];
-            if (sourceColumn && sourceColumn.activities) {
-                sourceColumn.activities.remove(activityOrTemplate);
+            var context = ko.contextFor(eventDetails.el)['$data'];
+            if (context instanceof WorkshopPlanner.Activity) {
+                var activity = context;
+                var sourceColumn = ko.contextFor(eventDetails.sourceEl)['$data'];
+                var targetColumn = ko.contextFor(eventDetails.targetEl)['$data'];
+                if (sourceColumn)
+                    sourceColumn.activities.remove(activity);
+                if (targetColumn)
+                    targetColumn.activities.splice(eventDetails.targetIndex, 0, activity);
             }
-            var targetColumn = ko.contextFor(eventDetails.targetEl)['$data'];
-            if (targetColumn && targetColumn.activities) {
-                targetColumn.activities.splice(eventDetails.targetIndex, 0, $.extend({}, activityOrTemplate));
+            else {
+                var activityTemplate = context;
+                var targetColumn = ko.contextFor(eventDetails.targetEl)['$data'];
+                if (targetColumn)
+                    targetColumn.activities.splice(eventDetails.targetIndex, 0, new WorkshopPlanner.Activity(activityTemplate));
             }
             this.save();
             e.returnValue = false;
@@ -86,16 +188,16 @@ var WorkshopPlanner;
             }
         };
         ViewModel.prototype.save = function () {
-            var jsonData = ko.mapping.toJS(this.columns);
-            var jsonString = JSON.stringify(jsonData);
-            localStorage.setItem('workshopColumns', jsonString);
+            var workshopData = this.workshop().toJS();
+            var workshopJson = JSON.stringify(workshopData);
+            localStorage.setItem('workshop', workshopJson);
         };
         ViewModel.prototype.tryLoad = function () {
-            var jsonString = localStorage.getItem('workshopColumns');
+            var jsonString = localStorage.getItem('workshop');
             if (jsonString) {
-                var jsonData = JSON.parse(jsonString);
-                var asObservable = ko.mapping.fromJS(jsonData);
-                this.columns(asObservable());
+                var workshopData = JSON.parse(jsonString);
+                var workshop = new WorkshopPlanner.Workshop(workshopData);
+                this.workshop(workshop);
                 return true;
             }
             return false;
