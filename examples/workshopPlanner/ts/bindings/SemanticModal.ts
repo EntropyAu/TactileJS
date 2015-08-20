@@ -7,7 +7,8 @@ interface JQuery {
 }
 
 ko.bindingHandlers.semanticModal = {
-  update: function(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-    $(element).modal('show');
+  init: function(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+    // wait one tick to allow time for the dialog contents to be bound
+    setTimeout(() => $(element).modal('show'), 0);
   }
 }

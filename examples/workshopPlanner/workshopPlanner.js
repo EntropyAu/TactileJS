@@ -1,6 +1,12 @@
 ko.bindingHandlers.semanticModal = {
+    init: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+        setTimeout(function () { return $(element).modal('show'); }, 0);
+    }
+};
+ko.bindingHandlers.marked = {
     update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-        $(element).modal('show');
+        var markdown = ko.unwrap(valueAccessor());
+        element.innerHTML = markdown ? marked(markdown) : '';
     }
 };
 var WorkshopPlanner;
