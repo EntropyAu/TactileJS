@@ -32,8 +32,8 @@ if ! type node >/dev/null 2>&1 ; then
   brew install node
 fi
 
-if ! npm list -g tsc >/dev/null 2>&1 ; then
-   echo "** I can't find tsc. Installing it via npm. **"
+if ! type tsc >/dev/null 2>&1 ; then
+   echo "** I can't find tsc on the path. Installing it via npm. **"
    npm install -g tsc
 fi
 
