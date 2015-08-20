@@ -8,7 +8,6 @@ module WorkshopPlanner {
     filteredTemplates: KnockoutComputed<Template[]>;
     tags: KnockoutComputed<string[]>;
     openActivityOrTemplate: KnockoutObservable<Template> = ko.observable(null);
-
     columns: KnockoutObservableArray<Column> = ko.observableArray([])
 
     constructor() {
