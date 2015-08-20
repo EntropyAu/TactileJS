@@ -22,11 +22,13 @@ module Tactile {
 
     private _bindEvents() {
       window.addEventListener(Events.pointerDownEvent, this._onPointerDownListener, true);
+      window.addEventListener(Events.pointerUpEvent, this._onPointerUpListener, true);
     }
 
 
     private _unbindEvents() {
       window.removeEventListener(Events.pointerDownEvent, this._onPointerDownListener, true);
+      window.removeEventListener(Events.pointerUpEvent, this._onPointerUpListener, true);
     }
 
 
@@ -96,6 +98,7 @@ module Tactile {
 
     private _onPointerUp(e:MouseEvent|TouchEvent) {
       for (let pointer of Events.normalizePointerEvent(e)) {
+        console.log(pointer.id)
         if (this._drags[pointer.id]) {
           this.endDrag(pointer.id);
           Events.cancel(e);
@@ -116,22 +119,42 @@ module Tactile {
     }
 
 
+    scheduleDrag(draggableEl:HTMLElement, dragId:number, xy:[number,number]):void {
+      console.log("scheduleDrag")
+      let onPickUpTimeout = function() { this.startScheduledDrag(dragId); }.bind(this);
+      this._pendingDrags[dragId] = {
+        id: dragId,
+        el: draggableEl,
+        xy: xy,
+        timerId: setTimeout(onPickUpTimeout, this.options.pickUpDelay)
+      };
+    }
+
+
+    startScheduledDrag(dragId:number) {
+      console.log("startScheduledDrag")
+      let pendingDrag = this._pendingDrags[dragId];
+      clearTimeout(pendingDrag.timerId);
+      this.startDrag(pendingDrag.el, pendingDrag.id, pendingDrag.xy, pendingDrag.xyEl);
+      delete this._pendingDrags[dragId];
+    }
+
+
+    cancelScheduledDrag(dragId:number) {
+      console.log("cancelScheduledDrag")
+      let pendingDrag = this._pendingDrags[dragId];
+      clearTimeout(pendingDrag.timerId);
+      delete this._pendingDrags[pendingDrag.id];
+    }
+
+
     startDrag(draggableEl:HTMLElement, dragId:number, xy:[number,number], xyEl:HTMLElement):Drag {
+      console.log("startDrag", arguments)
       Dom.clearSelection();
       document.body.setAttribute('data-drag-in-progress', '');
       this._bindDraggingEvents();
       if (xyEl) this._bindDraggingEventsForTarget(xyEl);
       return this._drags[dragId] = new Drag(draggableEl, xy, xyEl, this.options);
-    }
-
-
-    scheduleDrag(draggableEl:HTMLElement, dragId:number, xy:[number,number]):void {
-      let onPickUpTimeout = function() { this.startScheduledDrag(dragId); }.bind(this);
-      this._pendingDrags[dragId] = {
-        el: draggableEl,
-        xy: xy,
-        timerId: setTimeout(onPickUpTimeout, this.options.pickUpDelay)
-      };
     }
 
 
@@ -144,22 +167,6 @@ module Tactile {
         this._unbindDraggingEvents();
         this._unbindDraggingEventsForTarget(drag.draggable.el);
       }
-    }
-
-
-
-    startScheduledDrag(dragId:number) {
-      let pendingDrag = this._pendingDrags[dragId];
-      clearTimeout(pendingDrag.timerId);
-      this.startDrag(pendingDrag.el, pendingDrag.id, pendingDrag.xy, pendingDrag.xyEl);
-      delete this._pendingDrags[pendingDrag.id];
-    }
-
-
-    cancelScheduledDrag(dragId:number) {
-      let pendingDrag = this._pendingDrags[dragId];
-      clearTimeout(pendingDrag.timerId);
-      delete this._pendingDrags[pendingDrag.id];
     }
   };
 
