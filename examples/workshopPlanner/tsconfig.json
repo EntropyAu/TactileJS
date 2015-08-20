@@ -12,6 +12,11 @@
         "ts/interfaces/js-yaml.d.ts",
         "ts/interfaces/jquery.d.ts",
         "ts/interfaces/knockout.d.ts",
+        "ts/interfaces/marked.d.ts",
+        "ts/interfaces/medium-editor.d.ts",
+        "ts/interfaces/me-markdown.d.ts",
+        "ts/interfaces/tabletop.d.ts",
+        "ts/interfaces/ko-reactor.d.ts",
 
         "ts/bindings/SemanticModal.ts",
         "ts/bindings/MediumEditorMarkdown.ts",
@@ -20,7 +25,6 @@
         "ts/ActivityTemplate.ts",
 
         "ts/models/Activity.ts",
-        "ts/models/Column.ts",
         "ts/models/Day.ts",
         "ts/models/Workshop.ts",
 
