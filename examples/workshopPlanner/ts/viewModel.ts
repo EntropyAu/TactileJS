@@ -22,6 +22,8 @@ module WorkshopPlanner {
       this.initialize();
       if (!this.tryLoad()) this.defaultWorkshop();
       this.bindEventHandlers();
+
+      ko.watch(this.workshop, { depth: -1 }, () => this.save());
     }
 
     private initialize() {
@@ -71,7 +73,6 @@ module WorkshopPlanner {
         let targetColumn = <Day>ko.contextFor(eventDetails.targetEl)['$data'];
         if (targetColumn) targetColumn.activities.splice(eventDetails.targetIndex, 0, new Activity(activityTemplate));
       }
-      this.save();
       e.returnValue = false;
     }
 

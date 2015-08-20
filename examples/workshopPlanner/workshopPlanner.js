@@ -128,6 +128,7 @@ var WorkshopPlanner;
             if (!this.tryLoad())
                 this.defaultWorkshop();
             this.bindEventHandlers();
+            ko.watch(this.workshop, { depth: -1 }, function () { return _this.save(); });
         }
         ViewModel.prototype.initialize = function () {
             this.loadTemplatesFromLocal(this.templates);
@@ -175,7 +176,6 @@ var WorkshopPlanner;
                 if (targetColumn)
                     targetColumn.activities.splice(eventDetails.targetIndex, 0, new WorkshopPlanner.Activity(activityTemplate));
             }
-            this.save();
             e.returnValue = false;
         };
         ViewModel.prototype.search = function () {
