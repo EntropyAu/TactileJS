@@ -6,7 +6,7 @@
   <script type="text/javascript" src="../vendor/velocity/velocity.min.js"></script>
   <script type="text/javascript" src="../vendor/js-yaml/js-yaml.min.js"></script>
   <script type="text/javascript" src="../vendor/jquery/jquery.js"></script>
-  <script type="text/javascript" src="../../semantic/dist/semantic.js"></script>
+  <script type="text/javascript" src="../vendor/semantic-ui/semantic-ui.min.js"></script>
   <link rel="stylesheet" type="text/css" href="../vendor/semantic-ui/semantic-ui.min.css">
   <link rel="stylesheet" type="text/css" href="workshopPlanner.css">
   <link rel="stylesheet" type="text/css" href="../../css/core.css">
@@ -39,12 +39,41 @@
                            css: { active: $parent.selectedTag() === $data,
                                   basic: $parent.selectedTag() !== $data }"></button>
       </div>
+
+
+
+
+      <section data-bind="with: openActivityOrTemplate">
+        <div class="ui modal" data-bind="semanticModal">
+          <i class="close icon"></i>
+          <div class="header" data-bind="text: name"></div>
+          <div class="image content">
+            <div class="ui medium image">
+              <img src="/images/avatar/large/chris.jpg">
+            </div>
+            <div class="description">
+              <div class="ui header" data-bind="text: shortDescription"></div>
+              <p>We've grabbed the following image from the <a href="https://www.gravatar.com" target="_blank">gravatar</a> image associated with your registered e-mail address.</p>
+              <p>Is it okay to use this photo?</p>
+            </div>
+          </div>
+          <div class="actions">
+            <div class="ui black deny button">Nope</div>
+            <div class="ui positive right labeled icon button">Yep, that's me<i class="checkmark icon"></i></div>
+          </div>
+        </div>
+      </section>
+
+
+
+
       <ol data-drag-sortable
           data-drag-tag="activity"
           data-drag-accepts="none"
           data-drag-leave-action="copy"
           data-bind="foreach: filteredTemplates()">
-        <li class="ui card">
+        <li class="ui card"
+            data-bind="click: function() { $parent.openActivityOrTemplate($data); }">
           <!-- ko if:$data.imageName -->
           <div class="image">
             <img data-bind="attr: { src: './assets/' + $data.imageName }" />

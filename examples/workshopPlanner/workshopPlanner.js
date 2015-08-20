@@ -1,3 +1,8 @@
+ko.bindingHandlers.semanticModal = {
+    update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+        $(element).modal('show');
+    }
+};
 var WorkshopPlanner;
 (function (WorkshopPlanner) {
     var ViewModel = (function () {
@@ -6,6 +11,7 @@ var WorkshopPlanner;
             this.query = ko.observable('');
             this.templates = ko.observableArray([]);
             this.selectedTag = ko.observable(null);
+            this.openActivityOrTemplate = ko.observable(null);
             this.columns = ko.observableArray([]);
             window['viewModel'] = this;
             this.filteredTemplates = ko.pureComputed(this.search.bind(this));

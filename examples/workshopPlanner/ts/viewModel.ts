@@ -1,13 +1,13 @@
 module WorkshopPlanner {
 
-
   export class ViewModel {
+
     query: KnockoutObservable<string> = ko.observable('');
     templates: KnockoutObservableArray<Template> = ko.observableArray([]);
     selectedTag: KnockoutObservable<string> = ko.observable(null);
-
     filteredTemplates: KnockoutComputed<Template[]>;
     tags: KnockoutComputed<string[]>;
+    openActivityOrTemplate: KnockoutObservable<Template> = ko.observable(null);
 
     columns: KnockoutObservableArray<Column> = ko.observableArray([])
 

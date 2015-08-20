@@ -13,6 +13,8 @@
         "ts/interfaces/jquery.d.ts",
         "ts/interfaces/knockout.d.ts",
 
+        "ts/bindings/SemanticModal.ts",
+
         "ts/Activity.ts",
         "ts/Column.ts",
         "ts/Template.ts",
