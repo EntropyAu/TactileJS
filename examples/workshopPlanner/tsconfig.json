@@ -14,6 +14,7 @@
         "ts/interfaces/knockout.d.ts",
 
         "ts/bindings/SemanticModal.ts",
+        "ts/bindings/MediumEditorMarkdown.ts",
         "ts/bindings/Marked.ts",
 
         "ts/ActivityTemplate.ts",

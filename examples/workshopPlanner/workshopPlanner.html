@@ -8,19 +8,22 @@
   <script type="text/javascript" src="../vendor/jquery/jquery.js"></script>
   <script type="text/javascript" src="../vendor/semantic-ui/semantic-ui.min.js"></script>
   <script type="text/javascript" src="../vendor/marked/marked.min.js"></script>
+  <script type="text/javascript" src="../vendor/to-markdown/to-markdown.min.js"></script>
+  <script type="text/javascript" src="../vendor/medium-editor/js/medium-editor.js"></script>
+  <script type="text/javascript" src="../vendor/medium-editor-markdown/me-markdown.no-deps.js"></script>
   <script type="text/javascript" src="../vendor/tabletop/Tabletop.js"></script>
   <link rel="stylesheet" type="text/css" href="../vendor/semantic-ui/semantic-ui.min.css">
+  <link rel="stylesheet" type="text/css" href="../vendor/medium-editor/css/medium-editor.min.css">
+  <link rel="stylesheet" type="text/css" href="../vendor/medium-editor/css/themes/default.min.css">
   <link rel="stylesheet" type="text/css" href="workshopPlanner.css">
   <link rel="stylesheet" type="text/css" href="../../css/core.css">
   <link rel="stylesheet" type="text/css" href="../../css/default.css">
-  <title>Workshop Planner</title>
+  <title>Diana's Awesome Workshop Planner</title>
 </head>
 <body>
   <div class="ui fixed inverted menu">
     <div class="ui container">
-      <div href="#" class="header item">
-        Workshop Planner
-      </div>
+      <div class="header item">Workshop Planner</div>
     </div>
   </div>
 
@@ -48,7 +51,10 @@
       <section data-bind="with: openActivity">
         <div class="ui modal" data-bind="semanticModal">
           <i class="close icon"></i>
-          <div class="header" data-bind="text: name"></div>
+          <div class="header">
+            <button class="ui button circular icon big" style="float:right"><i class="icon write"></i></button>
+            <h1 data-bind="text: name"></h1>
+          </div>
           <div class="content">
             <div class="description">
               <div class="ui header" data-bind="text: shortDescription"></div>
@@ -61,14 +67,12 @@
               <div data-bind="marked: howToRun"></div>
               <!-- /ko -->
               <h3>Notes</h3>
-              <div class="ui fluid input">
-                <textarea data-bind="textInput:notes"></textarea>
-              </div>
+              <div data-bind="mediumEditorMarkdown:notes"></div>
             </div>
           </div>
           <div class="actions">
-            <div class="ui black deny button">Nope</div>
-            <div class="ui positive right labeled icon button">Yep, that's me<i class="checkmark icon"></i></div>
+            <div class="ui black button">Remove</div>
+            <div class="ui positive icon button">Close</div>
           </div>
         </div>
       </section>

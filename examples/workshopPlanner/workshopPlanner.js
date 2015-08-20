@@ -3,6 +3,21 @@ ko.bindingHandlers.semanticModal = {
         setTimeout(function () { return $(element).modal('show'); }, 0);
     }
 };
+ko.bindingHandlers.mediumEditorMarkdown = {
+    init: function (element, valueAccessor, allBindingsAccessor) {
+        var value = valueAccessor();
+        var options = allBindingsAccessor().editorOptions || {};
+        var markdown = ko.unwrap(value);
+        $(element).html(marked(markdown));
+        var editor = new MediumEditor(element, {
+            buttons: ['bold', 'italic', 'underline', 'quote', 'anchor', 'orderedlist', 'unorderedlist', 'outdent', 'indent'],
+            buttonLabels: false,
+            placeholder: options.initialText,
+            extensions: { markdown: new MeMarkdown(function (markdown) { return value(markdown); }) }
+        });
+        ko.utils.domNodeDisposal.addDisposeCallback(element, function () { return editor.deactivate(); });
+    }
+};
 ko.bindingHandlers.marked = {
     update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
         var markdown = ko.unwrap(valueAccessor());
