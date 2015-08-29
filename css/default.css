@@ -2,7 +2,8 @@
   opacity: 0.5;
 }
 
-li, ol li {
+ol[data-drag-sortable] li,
+ol[data-drag-canvas] li {
   list-style: none;
   overfow: hidden;
   background: #f2f3f5;

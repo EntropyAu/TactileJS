@@ -32,7 +32,7 @@ module Tactile {
       if (elCache[key] !== undefined) {
         return elCache[key];
       } else {
-        return fn ? elCache[key] = fn() : null;
+        return fn ? elCache[key] = fn() : undefined;
       }
     }
 
@@ -75,6 +75,15 @@ module Tactile {
       } else {
         return this._els;
       }
+    }
+
+
+    public forEach(key:string, fn:(value:any, el?:HTMLElement) => void)
+    {
+      this.getElements().forEach(function(el) {
+        let value = this.get(el, key);
+        if (value !== undefined) fn(value, el);
+      }.bind(this));
     }
 
 

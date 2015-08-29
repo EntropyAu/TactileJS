@@ -6,7 +6,7 @@ module WorkshopPlanner {
     filteredTemplates: KnockoutComputed<ActivityTemplate[]>;
     tags: KnockoutComputed<string[]>;
     openActivity: KnockoutObservable<Activity> = ko.observable(null);
-    editedActivity: KnockoutObservable<Activity> = ko.observable(null);
+    editingActivity: KnockoutObservable<Activity> = ko.observable(null);
     workshop: KnockoutObservable<Workshop> = ko.observable(null);
 
     constructor() {
@@ -28,11 +28,17 @@ module WorkshopPlanner {
     }
 
     public doOpenActivity(activity:Activity):void {
+      this.editingActivity(null);
       this.openActivity(activity)
     }
 
     public doEditActivity():void {
-      this.editedActivity(new Activity(this.openActivity().toJS()));
+      this.editingActivity(new Activity(this.openActivity().toJS()));
+    }
+
+    public doSaveActivity():void {
+      this.openActivity().apply(this.editingActivity().toJS());
+      this.editingActivity(null);
     }
 
     private initialize() {
@@ -65,7 +71,17 @@ module WorkshopPlanner {
     }
 
     private bindEventHandlers() {
-      document.addEventListener('drop', this.onDragDrop.bind(this));
+      document.addEventListener('tactile:dragstart', this.onDragStart.bind(this));
+      document.addEventListener('tactile:dragend', this.onDragEnd.bind(this));
+      document.addEventListener('tactile:drop', this.onDragDrop.bind(this));
+    }
+
+    private onDragStart(e:CustomEvent) {
+      $(document.body).addClass("show-activity-bin");
+    }
+
+    private onDragEnd(e:CustomEvent) {
+      $(document.body).removeClass("show-activity-bin");
     }
 
     private onDragDrop(e:CustomEvent) {

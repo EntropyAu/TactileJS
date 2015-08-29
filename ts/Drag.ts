@@ -4,61 +4,55 @@ module Tactile {
   // TODO: xxxxx - invalidate child measures when entering / exiting hierarchical
   // TODO: xxxxx - wrapped elements - delay updates while animation is in progress
   // TODO: xxxxx - constrain placement in canvas
+  // TODO: xxxxx - - scrolling should be constrained within boundary
+  // TODO: xxxxx - Reapply boundary constraint on window scroll
 
   // TODO: Fix scaled sortable calculations - local xy on move
   // TODO: Fix non-velocity scaled helper
-  // TODO: Reapply boundary constraint on window scroll
-  // TODO: cache scrollable containers
   // TODO: update source mode if enter-action is defined on target
   // TODO: Add revert behaviour - "origin" (in addition to "last")
-  // TODO: Automatically detect scrollables using computedStyle
+  // TODO: listen to dom mutation events
   // TODO: constrain scroll with blah
   // TODO: constrain scroll with max scroll (iOS does not enforce)
-  // TODO: listen to dom mutation events
   // TODO: use pointer (not constrained) location for scrolling (scrolling can be prevented for large items)
-  // TODO:  - scrolling should be constrained within boundary
   // TODO: enable events to be registered manually instead of globally
+  // TODO: confirm all references to style are via computed
+  // TODO: convert helper state to enum
+  // TODO: convert placeholder state to enum
+  // TODO: allow copy into same container (eg. hold ctrl)
 
 
   export class Drag {
-    xy:[number,number];
-    xyEl:HTMLElement;
+    xyEl: HTMLElement;
+    draggable: Draggable = null;
+    helper: Helper = null;
+    source: Container = null;
+    target: Container = null;
+    boundary: Boundary = null;
+    action: DragAction = DragAction.Move;
+    geometryCache: Cache = new Cache();
+    containerCache: Cache = new Cache();
 
-    draggable:Draggable;
-    helper:Helper;
-    source:Container = null;
-    target:Container = null;
-    boundary:Boundary;
-    action:string;
-    copy:boolean;
-    options:Options;
-    geometryCache:Cache;
-    containerCache:Cache;
-
-    private _xyChanged:boolean = false;
-    private _hasScrolled:boolean = false;
-    private _scroller:Scrollable;
-    private _lastXyEl:HTMLElement;
-    private _afRequestId:number = null;
-    private _onScrollOrWheelListener:EventListener;
-    private _dragEnded:boolean = false;
+    private _xyChanged: boolean = false;
+    private _hasScrolled: boolean = false;
+    private _scroller: Scrollable;
+    private _lastXyEl: HTMLElement;
+    private _afRequestId: number = null;
+    private _onScrollOrWheelListener: EventListener;
+    private _dragEnded: boolean = false;
 
 
-    constructor(draggableEl:HTMLElement,
-                xy:[number,number],
-                xyEl:HTMLElement,
-                options:Options) {
-      this.options = options;
-      this.xy = xy;
+    constructor(
+      draggableEl: HTMLElement,
+      public xy: [number, number],
+      xyEl: HTMLElement,
+      public options: Options) {
+
       this.xyEl = xyEl || Dom.elementFromPoint(this.xy);
 
       this.draggable = new Draggable(draggableEl, this);
       this.helper = new Helper(this, this.draggable);
       this.boundary = Boundary.closestForDraggable(this, this.draggable);
-      this.copy = false;
-
-      this.geometryCache = new Cache();
-      this.containerCache = new Cache();
 
       // TODO - would be great to have a more robust way of instantiating
       // the source element
@@ -66,28 +60,25 @@ module Tactile {
       this.source = this.target;
 
       this._onScrollOrWheelListener = this._onScrollOrWheel.bind(this);
-      document.addEventListener('scroll', this._onScrollOrWheelListener, false);
-      document.addEventListener('mousewheel', this._onScrollOrWheelListener, false);
-      document.addEventListener('wheel', this._onScrollOrWheelListener, false);
+      this._bindScrollEvents();
 
       this._raise(this.draggable.el, 'dragstart')
     }
 
 
-    move(xy:[number,number], xyEl:HTMLElement):void {
+    move(xy: [number, number], xyEl: HTMLElement): void {
       if (this._dragEnded) return;
-      if (!this._afRequestId) this._afRequestId = Polyfill.requestAnimationFrame(this._tick.bind(this));
       this.xy = xy;
       this.xyEl = xyEl;
       this._xyChanged = true;
+      this._scheduleTick();
     }
 
 
-    cancel(debugElements:boolean = false):void {
+    cancel(debugElements: boolean = false): void {
       this._dragEnded = true;
-      if (this._afRequestId) {
-        Polyfill.cancelAnimationFrame(this._afRequestId);
-      }
+      this._raise(this.draggable.el, 'dragend');
+      this._cancelTick();
       if (!debugElements) {
         this.draggable.finalizeRevert();
         this.dispose();
@@ -95,15 +86,15 @@ module Tactile {
     }
 
 
-    drop():void {
+    drop(): void {
       this._dragEnded = true;
       this._scroller = null;
-      if (this._afRequestId) Polyfill.cancelAnimationFrame(this._afRequestId);
       this._tick();
+      this._cancelTick();
       if (!this._raise(this.draggable.el, "begindrop").defaultPrevented) {
         switch (this.action) {
-          case "move":
-          case "copy":
+          case DragAction.Move:
+          case DragAction.Copy:
             if (this.target.placeholder) {
               this.helper.animateToElementAndPutDown(
                 this.target.placeholder.el,
@@ -112,10 +103,10 @@ module Tactile {
               this._finalizeAction();
             }
             break;
-          case "delete":
+          case DragAction.Delete:
             this.helper.animateDelete(this._finalizeAction.bind(this));
             break;
-          case "revert":
+          case DragAction.Revert:
             this._finalizeAction();
         }
       } else {
@@ -126,26 +117,52 @@ module Tactile {
 
 
     dispose() {
-      this.containerCache.getElements().forEach((t:HTMLElement) => this.containerCache.get(t, 'container').dispose());
+      this.containerCache.forEach('container', function(value:any) { value.dispose() });
       this.helper.dispose();
       this.geometryCache.dispose();
       this.containerCache.dispose();
       this.target && this.target.dispose();
       this.source && this.source.dispose();
+      this._unbindScrollEvents();
+    }
 
+
+    private _bindScrollEvents() {
+      document.addEventListener('scroll', this._onScrollOrWheelListener, false);
+      document.addEventListener('mousewheel', this._onScrollOrWheelListener, false);
+      document.addEventListener('wheel', this._onScrollOrWheelListener, false);
+    }
+
+
+    private _unbindScrollEvents() {
       document.removeEventListener('scroll', this._onScrollOrWheelListener, false);
       document.removeEventListener('mousewheel', this._onScrollOrWheelListener, false);
       document.removeEventListener('wheel', this._onScrollOrWheelListener, false);
     }
 
 
-    private _onScrollOrWheel():void {
+    private _onScrollOrWheel(): void {
       this._hasScrolled = true;
       this.geometryCache.clear();
+      this._scheduleTick();
     }
 
 
-    private _tick():void {
+    private _scheduleTick(): void {
+      if (!this._afRequestId) {
+        this._afRequestId = Polyfill.requestAnimationFrame(this._tick.bind(this));
+      }
+    }
+
+    private _cancelTick(): void {
+      if (this._afRequestId) {
+        Polyfill.cancelAnimationFrame(this._afRequestId);
+        this._afRequestId = null;
+      }
+    }
+
+
+    private _tick(): void {
       this._afRequestId = null;
 
       if (this._xyChanged || this._hasScrolled) {
@@ -170,7 +187,7 @@ module Tactile {
         // (as there is no value in scrolling a sibling container that cannot accept the
         // currently dragged element)
         if (this.xyEl != this._lastXyEl && this.target && !this._dragEnded) {
-          this._scroller = Scrollable.closestReadyScrollable(this.target.el, this, this.xy);
+          this._scroller = Scrollable.closestScrollableScrollable(this, this.xy, this.target.el);
         }
 
         // update the position of the fixed helper element
@@ -183,7 +200,7 @@ module Tactile {
 
       if (this._scroller) {
         // trigger the scroller to scroll another step
-        if (this._scroller.step(this.xy)) {
+        if (this._scroller.continueScroll(this.xy)) {
           // scrollable has moved
           this._onScrollOrWheel();
         } else {
@@ -192,9 +209,9 @@ module Tactile {
         };
 
         // schedule the next update. If the scrollable has reached it's scroll
-        // extend, we still schedule another update which will be used to update
+        // extent, we still schedule another update which will be used to update
         // the target and placeholder positions
-        this._afRequestId = Polyfill.requestAnimationFrame(this._tick.bind(this));
+        this._scheduleTick()
 
       } else {
 
@@ -216,26 +233,26 @@ module Tactile {
 
 
 
-    private _updateTarget():void {
+    private _updateTarget(): void {
       const oldTarget = this.target;
 
       let newTarget = Container.closestAcceptingTarget(this.xyEl, this.draggable);
 
       // if the source container leave action is delete,
       // then the drop target cannot be another container
-      if (this.source && this.source.leaveAction === "delete" && newTarget !== this.source) {
+      if (this.source && this.source.leaveAction === DragAction.Delete && newTarget !== this.source) {
         newTarget = null;
       }
 
       // if the current drag operation is bounded, then the target container
       // must be a descendant of the Boundary element
       if (newTarget && this.boundary
-                    && !Dom.isDescendant(this.boundary.el, newTarget.el)
-                    && this.boundary.el !== newTarget.el) return;
+        && !Dom.isDescendant(this.boundary.el, newTarget.el)
+        && this.boundary.el !== newTarget.el) return;
 
       if (newTarget === oldTarget) return;
 
-      if ((newTarget || this.options.revertBehaviour !== 'last') || (this.source && this.source.leaveAction === "delete")) {
+      if ((newTarget || this.options.revertBehaviour !== "last") || (this.source && this.source.leaveAction === DragAction.Delete)) {
         if (oldTarget === null || this._tryLeaveTarget(oldTarget)) {
           if (newTarget !== null) this._tryEnterTarget(newTarget);
         }
@@ -244,7 +261,7 @@ module Tactile {
     }
 
 
-    private _tryEnterTarget(container:Container):boolean {
+    private _tryEnterTarget(container: Container): boolean {
       // raise the dragenter event. If one of the event's listeners
       // calls preventDefault() then don't proceed
       if (!this._raise(container.el, 'dragenter').defaultPrevented) {
@@ -252,10 +269,6 @@ module Tactile {
 
         // notify the container
         container.enter(this.xy);
-
-        if (this.options.containerHoverClass) {
-          Polyfill.addClass(container.el, this.options.containerHoverClass);
-        }
 
         // if the container has specified a helper size (which is based
         // the geometry of it's placeholder) then resize the helper
@@ -271,16 +284,13 @@ module Tactile {
     }
 
 
-    private _tryLeaveTarget(container:Container):boolean {
+    private _tryLeaveTarget(container: Container): boolean {
       if (!this._raise(container.el, 'dragleave').defaultPrevented) {
         this.target = null;
 
         // notify the container
         container.leave();
 
-        if (this.options.containerHoverClass) {
-          Polyfill.removeClass(container.el, this.options.containerHoverClass);
-        }
         return true;
       } else {
         // leaving the target was prevented by an event listener
@@ -289,8 +299,9 @@ module Tactile {
     }
 
 
-    private _finalizeAction():void {
+    private _finalizeAction(): void {
       this._raise(this.draggable.el, 'enddrop');
+      this._raise(this.draggable.el, 'dragend');
 
       if (this._raise(this.draggable.el, 'drop').returnValue !== false) {
         // if the drop event listeners return true then update the DOM
@@ -300,13 +311,12 @@ module Tactile {
         // react.js, angular or knockout to process the drag actions without
         // interference from tactile.js)
         switch (this.action) {
-          case "move": this.draggable.finalizeMove(this.target); break;
-          case "copy": this.draggable.finalizeCopy(this.target); break;
-          case "delete": this.draggable.finalizeDelete(); break;
-          case "revert": this.draggable.finalizeRevert(); break;
+          case DragAction.Move: this.draggable.finalizeMove(this.target); break;
+          case DragAction.Copy: this.draggable.finalizeCopy(this.target); break;
+          case DragAction.Delete: this.draggable.finalizeDelete(); break;
+          case DragAction.Revert: this.draggable.finalizeRevert(); break;
         }
       };
-      this._raise(this.draggable.el, 'dragend');
       this.dispose();
     }
 
@@ -330,38 +340,35 @@ module Tactile {
     //   | copy   | delete | = | delete | true   |
     //   | delete | *      | = | delete | false  |
     //   '---------------------------------------'
-    private _computeAction(source:Container, target:Container):[string, boolean] {
-      if (source === target) return ["move", false];
-      let [action, copy] = ["move", false];
-      const leave = this.source ? this.source.leaveAction : "move";
-      const enter = this.target ? this.target.enterAction : "revert";
-      if (leave === "copy" || enter === "copy") {
-        action = "copy";
-        copy = true;
+    private _computeAction(source: Container, target: Container): DragAction {
+      if (source === target) return DragAction.Move;
+      let action = DragAction.Move;
+      const leave = this.source ? this.source.leaveAction : DragAction.Move;
+      const enter = this.target ? this.target.enterAction : DragAction.Revert;
+      if (leave === DragAction.Copy || enter === DragAction.Copy) {
+        action = DragAction.Copy;
       }
-      if (enter === "revert") action = "revert";
-      if (leave === "delete" || enter === "delete") action = "delete";
-      return [action, copy];
+      if (enter === DragAction.Revert) action = DragAction.Revert;
+      if (leave === DragAction.Delete || enter === DragAction.Delete) action = DragAction.Delete;
+      return action;
     }
 
 
-    private _setAction(actionCopy:[string, boolean]):void {
-      if (this.action === actionCopy[0]) return;
-      this.helper.setAction(actionCopy[0]);
-      this.action = actionCopy[0];
-      this.copy = actionCopy[1];
+    private _setAction(action: DragAction): void {
+      if (this.action === action) return;
+      this.helper.setAction(action);
+      this.action = action;
     }
 
 
-    private _raise(el:Element, eventName:string):CustomEvent {
+    private _raise(el: Element, eventName: string): CustomEvent {
       let eventData = {
         bubbles: true,
         cancelable: true,
         detail: {
           el: this.draggable.el,
           data: this.draggable.data,
-          action: this.action,
-          copy: this.copy,
+          action: DragAction[this.action].toLowerCase(),
           helperEl: this.helper.el,
           helperXY: this.helper.xy,
           boundaryEl: this.boundary ? this.boundary.el : null,
@@ -373,7 +380,7 @@ module Tactile {
           targetOffset: this.target ? this.target['offset'] : null
         }
       };
-      return Events.raise(el, eventName, eventData);
+      return Events.raise(el, 'tactile:' + eventName, eventData);
     }
   }
 }

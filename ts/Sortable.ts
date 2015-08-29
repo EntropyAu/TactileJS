@@ -52,14 +52,15 @@ module Tactile {
 
 
     public leave(): void {
-      if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+      if (this.leaveAction === DragAction.Copy && this.placeholder.isOriginalEl) {
         this.placeholder.setState("materialized");
       } else {
         this.index = null;
-        this.placeholder.setState("hidden");
-        this._clearChildTranslations();
-        this._childGeometry.clear();
-        this._updatePlaceholderPosition();
+        this._updatePlaceholderPosition(function () {
+          this.placeholder.setState("hidden");
+          this._clearChildTranslations();
+          this._childGeometry.clear();
+        }.bind(this));
       }
     }
 
@@ -135,21 +136,20 @@ module Tactile {
 
 
     private _initializeDirection(): void {
-      this._direction = this.el.getAttribute('data-drag-sortable') || "vertical";
-      this._directionProperties = this._direction === "vertical"
+      this._direction = Attributes.get(this.el, "data-drag-sortable", "vertical");
+      this._directionProperties = this._direction === "horizontal"
         ? {
-          index: 1,
-          translate: 'translateY',
-          paddingStart: 'paddingTop',
-          layoutOffset: 'offsetTop',
-          outerDimension: 'outerHeight'
-        }
-        : {
           index: 0,
           translate: 'translateX',
           paddingStart: 'paddingLeft',
           layoutOffset: 'offsetLeft',
           outerDimension: 'outerWidth'
+        } : {
+          index: 1,
+          translate: 'translateY',
+          paddingStart: 'paddingTop',
+          layoutOffset: 'offsetTop',
+          outerDimension: 'outerHeight'
         };
 
       // the simple layout algorithm that uses transform:translate() rather than
@@ -191,11 +191,11 @@ module Tactile {
     }
 
 
-    private _updatePlaceholderPosition(): void {
+    private _updatePlaceholderPosition(complete?:() => void): void {
       if (this._avoidDomMutations) {
-        this._updateChildTranslations();
+        this._updateChildTranslations(complete);
       } else {
-        this._updatePlaceholderIndex();
+        this._updatePlaceholderIndex(complete);
       }
     }
 
@@ -216,13 +216,13 @@ module Tactile {
     // reposition the placeholder at the new index position
     // this method is slower than using translations as it mutates the dom
     // and triggers a layout pass, however it supports all sortable directions
-    private _updatePlaceholderIndex(): void {
+    private _updatePlaceholderIndex(complete?: () => void): void {
       let domMutation = () => this.el.insertBefore(this.placeholder.el, this._siblingEls[this.index]);
-      Animation.animateDomMutation(this.el, domMutation, { animationOptions: this.drag.options.reorderAnimation });
+      Animation.animateDomMutation(this.el, domMutation, { animationOptions: this.drag.options.reorderAnimation }, complete);
     }
 
 
-    private _updateChildTranslations(): void {
+    private _updateChildTranslations(complete?:() => void): void {
       let offset: number = 0;
       let placeholderOffset: number = null;
 
@@ -247,7 +247,7 @@ module Tactile {
       const translate = this._directionProperties.translate;
 
       let props = { [translate]: function(i) { return elValues[i]; } };
-      Animation.set(els, props, this.drag.options.reorderAnimation);
+      Animation.set(els, props, this.drag.options.reorderAnimation, complete);
 
 
       if (placeholderOffset === null) placeholderOffset = offset;

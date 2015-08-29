@@ -32,7 +32,7 @@ module Tactile.Events {
   }
 
 
-  interface NormalizedPointerEvent {
+  export interface NormalizedPointerEvent {
     id: number;
     target: HTMLElement;
     xy: [number,number];

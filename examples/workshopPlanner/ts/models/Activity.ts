@@ -10,11 +10,13 @@ module WorkshopPlanner {
     notes:KnockoutObservable<string>            = ko.observable<string>("");
 
     constructor(data:any) {
-      for (let prop in data) {
-        if (ko.isObservable(this[prop])) {
+      this.apply(data);
+    }
+
+    apply(data:any) {
+      for (let prop in data)
+        if (ko.isObservable(this[prop]))
           this[prop](data[prop]);
-        }
-      }
     }
 
     public toJS():any {

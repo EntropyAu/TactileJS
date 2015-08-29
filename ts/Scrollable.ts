@@ -1,33 +1,65 @@
 module Tactile {
 
+  export enum Direction {
+    Neither,
+    Horizontal,
+    Vertical,
+    Both
+  }
+
   export class Scrollable {
 
-    static closestReadyScrollable(el:HTMLElement, drag:Drag, xy:[number,number]):Scrollable {
-      var scrollEls = Dom.ancestors(el || document.body, '[data-drag-scrollable]');
-      for (let scrollEl of scrollEls) {
-        // TODO cache scrollable elements
-        let scrollable = new Scrollable(scrollEl, drag);
-        if (scrollable.canScroll(xy)) return scrollable;
+    private static _overflowScrollValues = /^(auto|scroll)$/;
+
+    private static _detectScrollableDirection(el:HTMLElement):Direction {
+      const style = getComputedStyle(el);
+      return ([Direction.Neither,
+               Direction.Horizontal,
+               Direction.Vertical,
+               Direction.Both])[
+        (this._overflowScrollValues.test(style.overflowX) ? 1 : 0) +
+        (this._overflowScrollValues.test(style.overflowY) ? 2 : 0)
+      ];
+    }
+
+
+    private static _getScrollableDirection(drag:Drag, el:HTMLElement):Direction {
+      let directionText = Attributes.get(el, "data-drag-scrollable", Direction[Direction.Both], null);
+      let direction:Direction = Direction[Text.toProperCase(directionText)];
+      if (direction === undefined && drag.options.scrollAutoDetect) {
+        return drag.containerCache.get(el, "scrollDirection", () => this._detectScrollableDirection(el))
+      } else {
+        return direction || Direction.Neither;
+      }
+    }
+
+
+    public static closestScrollableScrollable(drag:Drag, xy:[number,number], xyEl:HTMLElement) {
+      let cursorEl:HTMLElement = xyEl;
+      while (cursorEl !== null) {
+        if (this._getScrollableDirection(drag, cursorEl) != Direction.Neither) {
+          let scrollable = drag.containerCache.get(cursorEl, "Scrollable", () => new Scrollable(cursorEl, drag));
+          if (scrollable.canScroll(xy)) {
+            return scrollable;
+          }
+        }
+        cursorEl = cursorEl.parentElement;
       }
       return null;
     }
 
+
     private _bounds:ClientRect = null;
     private _offset:[number,number] = null;
     private _velocity:[number,number] = [0,0];
-    private _hEnabled:boolean = false;
-    private _vEnabled:boolean = false;
-    private _hSensitivity:number = 0;
-    private _vSensitivity:number = 0;
+    private _direction:Direction = Direction.Neither;
+    private _sensitivity:[number,number] = [0,0];
     private _lastUpdate:Date = null;
 
 
     constructor(public el:HTMLElement, public drag:Drag) {
-
       // initialize directions
-      const style = getComputedStyle(this.el);
-      this._hEnabled = style.overflowX === 'auto' || style.overflowX === 'scroll';
-      this._vEnabled = style.overflowY === 'auto' || style.overflowY === 'scroll';
+      this._direction = Scrollable._getScrollableDirection(drag, this.el);
 
       // initialize bounds
       if (this.el.tagName === 'BODY') {
@@ -43,8 +75,10 @@ module Tactile {
       const percent = sensitivity.toString().indexOf('%') !== -1
                     ? parseInt(sensitivity.toString(), 10) / 100
                     : null;
-      this._hSensitivity = Math.min(percent ? percent * this._bounds.width  : parseInt(sensitivity.toString(), 10), this._bounds.width / 3);
-      this._vSensitivity = Math.min(percent ? percent * this._bounds.height : parseInt(sensitivity.toString(), 10), this._bounds.height / 3);
+      this._sensitivity = [
+        Math.min(percent ? percent * this._bounds.width  : parseInt(sensitivity.toString(), 10), this._bounds.width / 3),
+        Math.min(percent ? percent * this._bounds.height : parseInt(sensitivity.toString(), 10), this._bounds.height / 3)
+      ]
     }
 
 
@@ -54,7 +88,7 @@ module Tactile {
     }
 
 
-    step(xy:[number,number]) {
+    continueScroll(xy:[number,number]) {
 
       // if this is the first movement of the scrollable, record the current
       // scroll position. We keep track of this separately to allow for
@@ -86,13 +120,13 @@ module Tactile {
 
       let v:[number,number] = [0,0];
       if (Geometry.rectContains(b, xy)) {
-        if (this._hEnabled) {
-          if (xy[0] > b.right - this._hSensitivity && Dom.canScrollRight(this.el)) v[0] = Maths.scale(xy[0], [b.right-this._hSensitivity, b.right], [0, +maxV]);
-          if (xy[0] < b.left + this._hSensitivity && Dom.canScrollLeft(this.el)) v[0] = Maths.scale(xy[0], [b.left+this._hSensitivity, b.left], [0, -maxV]);
+        if (this._direction === Direction.Horizontal || this._direction === Direction.Both) {
+          if (xy[0] > b.right - this._sensitivity[0] && Dom.canScrollRight(this.el)) v[0] = Maths.scale(xy[0], [b.right-this._sensitivity[0], b.right], [0, +maxV]);
+          if (xy[0] < b.left + this._sensitivity[0] && Dom.canScrollLeft(this.el)) v[0] = Maths.scale(xy[0], [b.left+this._sensitivity[0], b.left], [0, -maxV]);
         }
-        if (this._vEnabled) {
-          if (xy[1] > b.bottom - this._vSensitivity && Dom.canScrollDown(this.el)) v[1] = Maths.scale(xy[1], [b.bottom-this._vSensitivity, b.bottom], [0, +maxV]);
-          if (xy[1] < b.top + this._vSensitivity && Dom.canScrollUp(this.el)) v[1] = Maths.scale(xy[1], [b.top+this._vSensitivity, b.top], [0, -maxV]);
+        if (this._direction === Direction.Vertical || this._direction === Direction.Both) {
+          if (xy[1] > b.bottom - this._sensitivity[1] && Dom.canScrollDown(this.el)) v[1] = Maths.scale(xy[1], [b.bottom-this._sensitivity[1], b.bottom], [0, +maxV]);
+          if (xy[1] < b.top + this._sensitivity[1] && Dom.canScrollUp(this.el)) v[1] = Maths.scale(xy[1], [b.top+this._sensitivity[1], b.top], [0, -maxV]);
         }
       }
       this._velocity = v;

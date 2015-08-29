@@ -1,0 +1,46 @@
+{
+  "name": "tactile",
+  "description": "",
+  "main": [
+    "tactile.js",
+    "tactile.css"
+  ],
+  "typescript": {
+    "definition": "<targetDeclaration>"
+  },
+  "dependencies": {
+    "velocity": "*"
+  },
+  "devDependencies": { },
+  "moduleType": [
+    "amd",
+    "es6",
+    "globals"
+  ],
+  "keywords": [
+    "drag-and-drop",
+    "dnd",
+    "drag",
+    "draggable",
+    "drop",
+    "droppable",
+    "sortable",
+    "velocity"
+  ],
+  "authors": [{
+    "name": "Brad Ward",
+    "email": "brad@groupmap.com>",
+    "web": "http://github.com/entropyau"
+  }],
+  "license": "MIT",
+  "ignore": [
+    "!/bower.json",
+    "LICENSE",
+    "*.md"
+  ],
+  "repository" :
+  {
+    "type" : "git",
+    "url" : "http://github.com/entropyau/velocity.git"
+  }
+}

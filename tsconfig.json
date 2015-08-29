@@ -5,7 +5,9 @@
         "removeComments": true,
         "preserveConstEnums": true,
         "out": "Tactile.js",
-        "sourceMap": true
+        "sourceMap": true,
+        "declaration": true,
+        "target": "es5"
     },
     "files": [
         "ts/interfaces/Map.ts",
@@ -18,6 +20,7 @@
         "ts/lib/Maths.ts",
         "ts/lib/Geometry.ts",
         "ts/lib/Polyfill.ts",
+        "ts/lib/Text.ts",
         "ts/lib/Vector.ts",
 
         "ts/Container.ts",
@@ -25,6 +28,7 @@
         "ts/Cache.ts",
         "ts/Canvas.ts",
         "ts/Drag.ts",
+        "ts/DragAction.ts",
         "ts/Draggable.ts",
         "ts/DragManager.ts",
         "ts/Droppable.ts",

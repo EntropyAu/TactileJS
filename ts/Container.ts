@@ -31,8 +31,8 @@ module Tactile {
     helperSize:[number,number];
     helperScale:[number,number];
     accepts:string[];
-    leaveAction:string;
-    enterAction:string;
+    leaveAction:DragAction;
+    enterAction:DragAction;
     isSource:boolean;
 
 
@@ -43,8 +43,8 @@ module Tactile {
                    ? Attributes.getTags(el, 'data-drag-accepts')
                    : Attributes.getTags(el, 'data-drag-tag');
 
-      this.leaveAction = Attributes.get(el, 'data-drag-leave-action', 'move');
-      this.enterAction = Attributes.get(el, 'data-drag-enter-action', 'move');
+      this.leaveAction = DragAction[Text.toProperCase(Attributes.get(el, 'data-drag-leave-action', 'move'))];
+      this.enterAction = DragAction[Text.toProperCase(Attributes.get(el, 'data-drag-enter-action', 'move'))];
     }
 
 

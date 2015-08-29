@@ -10,12 +10,20 @@ ko.bindingHandlers.mediumEditorMarkdown = {
         var markdown = ko.unwrap(value);
         $(element).html(marked(markdown));
         var editor = new MediumEditor(element, {
-            buttons: ['bold', 'italic', 'underline', 'quote', 'anchor', 'orderedlist', 'unorderedlist', 'outdent', 'indent'],
+            buttons: ['bold',
+                'italic',
+                'underline',
+                'quote',
+                'anchor',
+                'unorderedlist',
+                'orderedlist',
+                'outdent',
+                'indent'],
             buttonLabels: false,
             placeholder: options.initialText,
             extensions: { markdown: new MeMarkdown(function (markdown) { return value(markdown); }) }
         });
-        ko.utils.domNodeDisposal.addDisposeCallback(element, function () { return editor.deactivate(); });
+        ko.utils.domNodeDisposal.addDisposeCallback(element, function () { return editor.destroy(); });
     }
 };
 ko.bindingHandlers.marked = {
@@ -36,12 +44,13 @@ var WorkshopPlanner;
             this.category = ko.observable("");
             this.imageName = ko.observable("");
             this.notes = ko.observable("");
-            for (var prop in data) {
-                if (ko.isObservable(this[prop])) {
-                    this[prop](data[prop]);
-                }
-            }
+            this.apply(data);
         }
+        Activity.prototype.apply = function (data) {
+            for (var prop in data)
+                if (ko.isObservable(this[prop]))
+                    this[prop](data[prop]);
+        };
         Activity.prototype.toJS = function () {
             var result = {};
             for (var prop in this)
@@ -129,7 +138,7 @@ var WorkshopPlanner;
             this.templates = ko.observableArray([]);
             this.selectedTag = ko.observable(null);
             this.openActivity = ko.observable(null);
-            this.editedActivity = ko.observable(null);
+            this.editingActivity = ko.observable(null);
             this.workshop = ko.observable(null);
             window['viewModel'] = this;
             this.filteredTemplates = ko.pureComputed(this.search.bind(this));
@@ -147,10 +156,15 @@ var WorkshopPlanner;
             ko.watch(this.workshop, { depth: -1 }, function () { return _this.save(); });
         }
         ViewModel.prototype.doOpenActivity = function (activity) {
+            this.editingActivity(null);
             this.openActivity(activity);
         };
         ViewModel.prototype.doEditActivity = function () {
-            this.editedActivity(new WorkshopPlanner.Activity(this.openActivity().toJS()));
+            this.editingActivity(new WorkshopPlanner.Activity(this.openActivity().toJS()));
+        };
+        ViewModel.prototype.doSaveActivity = function () {
+            this.openActivity().apply(this.editingActivity().toJS());
+            this.editingActivity(null);
         };
         ViewModel.prototype.initialize = function () {
             this.loadTemplatesFromLocal(this.templates);
@@ -178,7 +192,15 @@ var WorkshopPlanner;
                 this.workshop().days.push(new WorkshopPlanner.Day({ name: "Day " + (i + 1) }));
         };
         ViewModel.prototype.bindEventHandlers = function () {
-            document.addEventListener('drop', this.onDragDrop.bind(this));
+            document.addEventListener('tactile:dragstart', this.onDragStart.bind(this));
+            document.addEventListener('tactile:dragend', this.onDragEnd.bind(this));
+            document.addEventListener('tactile:drop', this.onDragDrop.bind(this));
+        };
+        ViewModel.prototype.onDragStart = function (e) {
+            $(document.body).addClass("show-activity-bin");
+        };
+        ViewModel.prototype.onDragEnd = function (e) {
+            $(document.body).removeClass("show-activity-bin");
         };
         ViewModel.prototype.onDragDrop = function (e) {
             var eventDetails = e.detail;

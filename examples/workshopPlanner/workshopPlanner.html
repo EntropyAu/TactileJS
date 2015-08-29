@@ -27,79 +27,96 @@
     </div>
   </div>
 
+  <section data-bind="with: openActivity()">
+    <div class="ui modal" data-bind="semanticModal">
+      <!-- ko with: $root.editingActivity() || $root.openActivity() -->
+      <i class="close icon"></i>
+      <div class="header">
+        <!-- ko ifnot:$root.editingActivity() -->
+        <button class="ui button circular icon big"
+                style="float:right"
+                data-bind="click: function() { $root.doEditActivity() }"><i class="icon write"></i></button>
+        <!-- /ko -->
+        <!-- ko if:$root.editingActivity() -->
+        <button class="ui button big"
+                style="float:right"
+                data-bind="click: function() { $root.doSaveActivity() }">Save</button>
+        <!-- /ko -->
+        <h1 class="ui header" data-bind="text: name"></h1>
+      </div>
+      <div class="content">
+        <div class="description">
+          <div class="ui header" data-bind="text: shortDescription"></div>
+          <!-- ko if:$data.description -->
+          <h3>Description</h3>
+          <div data-bind="marked: description"></div>
+          <!-- /ko -->
+          <!-- ko if:$data.howToRun -->
+          <h3 class="ui header">How to Run</h3>
+          <div data-bind="marked: howToRun"></div>
+          <!-- /ko -->
+          <h3 class="ui header">Notes</h3>
+          <div data-bind="mediumEditorMarkdown:notes" class="medium-editor-field"></div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="ui red button">Remove</div>
+      </div>
+      <!-- /ko -->
+    </div>
+  </section>
+
+
   <div class="layout">
     <div class="layout-activities" data-drag-scrollable>
-      <div class="ui search small" style="margin-bottom:10px">
-        <div class="ui icon input fluid">
-          <input class="prompt" type="text" placeholder="Search activities..." data-bind="textInput: query">
-          <i class="search icon"></i>
-        </div>
-      </div>
-      <div class="ui buttons tiny fluid"
-           data-bind="foreach: tags()"
-           style="margin-bottom:10px;">
-        <button class="ui button grey"
-                data-bind="text: $data,
-                           click: function() { $parent.selectedTag($data); },
-                           css: { active: $parent.selectedTag() === $data,
-                                  basic: $parent.selectedTag() !== $data }"></button>
-      </div>
-
-
-
-
-      <section data-bind="with: openActivity">
-        <div class="ui modal" data-bind="semanticModal">
-          <i class="close icon"></i>
-          <div class="header">
-            <button class="ui button circular icon big" style="float:right"><i class="icon write"></i></button>
-            <h1 data-bind="text: name"></h1>
-          </div>
-          <div class="content">
-            <div class="description">
-              <div class="ui header" data-bind="text: shortDescription"></div>
-              <!-- ko if:$data.description -->
-              <h3>Description</h3>
-              <div data-bind="marked: description"></div>
-              <!-- /ko -->
-              <!-- ko if:$data.howToRun -->
-              <h3>How to Run</h3>
-              <div data-bind="marked: howToRun"></div>
-              <!-- /ko -->
-              <h3>Notes</h3>
-              <div data-bind="mediumEditorMarkdown:notes"></div>
-            </div>
-          </div>
-          <div class="actions">
-            <div class="ui black button">Remove</div>
-            <div class="ui positive icon button">Close</div>
-          </div>
-        </div>
+      <section class="activity-bin"
+               data-drag-droppable
+               data-drag-accepts="activity"
+               data-drag-enter-action="delete"
+               style="text-align: center">
+        <i class="trash outline icon huge"></i>
+        <h3 class="ui header">Drop here to remove</h3>
       </section>
+      <section class="templates">
+        <div class="ui search small" style="margin-bottom:10px">
+          <div class="ui icon input fluid">
+            <input class="prompt" type="text" placeholder="Search activities..." data-bind="textInput: query">
+            <i class="search icon"></i>
+          </div>
+        </div>
+        <div class="ui buttons tiny fluid"
+             data-bind="foreach: tags()"
+             style="margin-bottom:10px;">
+          <button class="ui button grey"
+                  data-bind="text: $data,
+                             click: function() { $parent.selectedTag($data); },
+                             css: { active: $parent.selectedTag() === $data,
+                                    basic: $parent.selectedTag() !== $data }"></button>
+        </div>
 
 
-      <ol data-drag-sortable
-          data-drag-tag="activity"
-          data-drag-accepts="none"
-          data-drag-leave-action="copy"
-          data-bind="foreach: filteredTemplates()">
-        <li class="ui card" data-bind="click: function() { $parent.openActivity($data); }">
-          <!-- ko if:$data.imageName -->
-          <div class="image">
-            <img data-bind="attr: { src: './assets/' + $data.imageName }" />
-          </div>
-          <!-- /ko -->
-          <div class="content">
-            <h4 class="header" data-bind="text: name"></h4>
-            <p class="description" data-bind="text: shortDescription"></p>
-          </div>
-          <div class="extra content">
-            <i class="clock icon"></i>
-            <span class="duration" data-bind="text: duration"></span> mins
-          </div>
-        </li>
-      </ol>
-
+        <ol data-drag-sortable
+            data-drag-tag="activity-template"
+            data-drag-accepts="none"
+            data-drag-leave-action="copy"
+            data-bind="foreach: filteredTemplates()">
+          <li class="ui card" data-bind="click: function() { $root.doOpenActivity($data); }">
+            <!-- ko if:$data.imageName -->
+            <div class="image">
+              <img data-bind="attr: { src: './assets/' + $data.imageName }" />
+            </div>
+            <!-- /ko -->
+            <div class="content">
+              <h4 class="header" data-bind="text: name"></h4>
+              <p class="description" data-bind="text: shortDescription"></p>
+            </div>
+            <div class="extra content">
+              <i class="clock icon"></i>
+              <span class="duration" data-bind="text: duration"></span> mins
+            </div>
+          </li>
+        </ol>
+      </section>
     </div>
 
 
@@ -137,8 +154,9 @@
               data-drag-scrollable
               data-drag-sortable
               data-drag-tag='activity'
+              data-drag-accepts='activity activity-template'
               data-bind="foreach:activities">
-              <li class="ui card" data-bind="click: function() { $root.openActivity($data); }">
+              <li class="ui card" data-bind="click: function() { $root.doOpenActivity($data); }">
                 <!-- ko if:$data.imageName -->
                 <div class="image">
                   <img data-bind="attr: { src: './workshopPlanner/assets/' + $data.imageName }" />

@@ -1,13 +1,13 @@
 <html>
 <head>
   <script type="text/javascript" src="../../Tactile.js"></script>
-  <script type="text/javascript" src="../vendor/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="../vendor/velocity/velocity.js"></script>
   <link rel="stylesheet" type="text/css" href="../vendor/semantic-ui/semantic-ui.min.css">
   <link rel="stylesheet" type="text/css" href="kitchenSink.css">
   <link rel="stylesheet" type="text/css" href="../../css/core.css">
   <link rel="stylesheet" type="text/css" href="../../css/default.css">
 </head>
-<body data-drag-scrollable>
+<body>
   <div class="ui fixed inverted menu">
     <div class="ui container">
       <div href="#" class="header item">
@@ -67,15 +67,13 @@
 
           <h3>Sortable</h3>
           <ol data-drag-sortable
-              data-drag-scrollable
               data-drag-accepts="*"
               style="max-height:200px"
               class="vertical"><script type="text/javascript">items(40)</script></ol>
 
           <h3>Horizontal Sortable</h3>
           <ol data-drag-sortable="horizontal"
-              data-drag-scrollable
-              data-drag-accepts="*"
+                            data-drag-accepts="*"
               class="horizontal"><script type="text/javascript">items(10)</script></ol>
 
 
@@ -88,8 +86,7 @@
 
           <h3>Sortable with Padding</h3>
           <ol data-drag-sortable
-              data-drag-scrollable
-              data-drag-accepts="*"
+                            data-drag-accepts="*"
               class="vertical"
               style="padding:40px"><script type="text/javascript">items(10)</script></ol>
 
@@ -109,15 +106,13 @@
           <h3>Sortable with Bounds</h3>
           <ol data-drag-sortable
               data-drag-bounds
-              data-drag-scrollable
-              data-drag-accepts="*"
+                            data-drag-accepts="*"
               class="vertical"><script type="text/javascript">items(10)</script></ol>
 
           <h3>Sortable with Borders</h3>
           <ol data-drag-sortable
               data-drag-bounds
-              data-drag-scrollable
-              data-drag-accepts="*"
+                            data-drag-accepts="*"
               class="vertical with-borders">
             <li class="with-borders">Item 1</li>
             <li class="with-borders">Item 2</li>
@@ -162,40 +157,34 @@
           <span>Hello there
             <ol data-drag-sortable="wrap"
                 data-drag-accepts="*"
-                data-drag-scrollable
-                style="display: inline-block"><script type="text/javascript">items(2)</script></ol>this is inline
+                                style="display: inline-block"><script type="text/javascript">items(2)</script></ol>this is inline
           </span>
           <h5>Left Aligned</h5>
           <ol data-drag-sortable="wrap"
           data-drag-accepts="*"
-              data-drag-scrollable
-              style="text-align: left"><script type="text/javascript">items(8)</script></ol>
+                            style="text-align: left"><script type="text/javascript">items(8)</script></ol>
 
           <h5>Center Aligned</h5>
           <ol data-drag-sortable="wrap"
               data-drag-accepts="*"
-              data-drag-scrollable
-              style="text-align: center"><script type="text/javascript">items(8)</script></ol>
+                            style="text-align: center"><script type="text/javascript">items(8)</script></ol>
 
           <h5>Right Aligned</h5>
           <ol data-drag-sortable="wrap"
               data-drag-accepts="*"
-              data-drag-scrollable
-              style="text-align: right"><script type="text/javascript">items(8)</script></ol>
+                            style="text-align: right"><script type="text/javascript">items(8)</script></ol>
 
 
 
           <h3>Disabled Sortable</h3>
           <ol data-drag-sortable
-              data-drag-scrollable
-              data-drag-disabled
+                            data-drag-disabled
               class="vertical"><script type="text/javascript">items(5)</script></ol>
 
 
           <h3>Disabled Sortable Items</h3>
           <ol data-drag-sortable
-              data-drag-scrollable
-              class="vertical">
+                            class="vertical">
             <li>Item 1
             <li data-drag-disabled>Item 2
             <li>Item 3
@@ -248,8 +237,7 @@
 
           <h3>Large Collection Performance</h3>
           <ol data-drag-sortable
-              data-drag-scrollable
-              data-drag-accepts="*"
+                            data-drag-accepts="*"
               style="max-height:250px; overflow:auto">
             <script type="text/javascript">items(250)</script>
           </ol>

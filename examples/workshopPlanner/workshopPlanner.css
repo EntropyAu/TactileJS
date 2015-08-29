@@ -45,6 +45,24 @@
   overflow: scroll;
 }
 
+.activity-bin {
+  display: none;
+  position: absolute;
+  background-color: #EEE;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+}
+
+.show-activity-bin .activity-bin {
+  display: block;
+  opacity: 0.75;
+  z-index: 2;
+}
+.show-activity-bin .templates {
+}
+
 .days-list {
   overflow: scroll;
   margin: 10px;
@@ -78,4 +96,15 @@
 }
 .ui.card:last-child {
   margin-bottom: 14px;
+}
+
+
+.medium-editor-field {
+  margin: -8px;
+  padding: 8px;
+  background: #f9f9f9;
+  border-left: 3px solid #CCC;
+}
+.medium-editor-field.medium-editor-placeholder:after {
+  padding: 6px;
 }

@@ -4,6 +4,7 @@ module Tactile {
 
     offset:[number,number] = [0,0];
     grid:[number,number] = null;
+    domain:[number,number] = null;
 
     constructor(el:HTMLElement, drag:Drag) {
       super(el, drag);
@@ -61,7 +62,7 @@ module Tactile {
 
 
     public leave() {
-      if (this.leaveAction === "copy" && this.placeholder.isOriginalEl) {
+      if (this.leaveAction === DragAction.Copy && this.placeholder.isOriginalEl) {
         // TODO: animate placeholder back to it's original position
         this.placeholder.setState("materialized");
       } else {

@@ -11,11 +11,19 @@ ko.bindingHandlers.mediumEditorMarkdown = {
     $(element).html(marked(markdown));
 
     var editor = new MediumEditor(element, {
-      buttons: ['bold', 'italic', 'underline', 'quote', 'anchor', 'orderedlist', 'unorderedlist', 'outdent', 'indent'],
+      buttons: ['bold',
+                'italic',
+                'underline',
+                'quote',
+                'anchor',
+                'unorderedlist',
+                'orderedlist',
+                'outdent',
+                'indent'],
       buttonLabels: false,
       placeholder: options.initialText,
       extensions: { markdown: new MeMarkdown((markdown) => value(markdown)) }
     });
-    ko.utils.domNodeDisposal.addDisposeCallback(element, () => editor.deactivate());
+    ko.utils.domNodeDisposal.addDisposeCallback(element, () => editor.destroy());
   }
 };

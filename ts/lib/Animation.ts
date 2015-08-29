@@ -4,7 +4,7 @@ module Tactile.Animation {
     els:HTMLElement|HTMLElement[],
     target:any,
     options:AnimationOptions = { duration: 0 },
-    complete:Function = null) {
+    complete?: () => void) {
 
     if (window['Velocity']) {
       let velocityOptions = {
@@ -38,7 +38,7 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
   }
 }
 
-  export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any):void {
+  export function animateDomMutation(el:HTMLElement, mutationFunction:Function, options:any, complete?: () => void):void {
     const startIndex = options.startIndex || 0;
     const endIndex   = Math.min(options.endIndex || el.children.length + 1,
                                 startIndex + options.elementLimit || Number.MAX_VALUE);
@@ -53,7 +53,8 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
       el,
       startIndex,
       endIndex,
-      options.animationOptions);
+      options.animationOptions,
+      complete);
   }
 
   export function animateDomMutationLayoutSize(el:HTMLElement, mutationFunction:Function, options:any):void {
@@ -90,7 +91,8 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
     el:HTMLElement,
     startIndex:number,
     endIndex:number,
-    animationOptions:any) {
+    animationOptions:any,
+    complete?: () => void) {
 
     let els:HTMLElement[] = [];
     let elOffsets:[number,number][] = [];
@@ -115,7 +117,7 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
     }, {
       duration: animationOptions.duration,
       easing: animationOptions.easing
-    });
+    }, complete);
   }
 
 

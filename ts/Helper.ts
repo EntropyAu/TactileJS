@@ -78,11 +78,11 @@ module Tactile {
     }
 
 
-    setAction(action:string):void {
+    setAction(action:DragAction):void {
       let opacity = 1;
       switch (action) {
-        case "revert": opacity = 0.50; break;
-        case "delete": opacity = 0.25; break;
+        case DragAction.Revert: opacity = 0.50; break;
+        case DragAction.Delete: opacity = 0.25; break;
       }
       Animation.set(this.el, { opacity }, { duration: 200 });
     }
@@ -128,7 +128,7 @@ module Tactile {
     }
 
 
-    animateToElementAndPutDown(el:HTMLElement, complete:Function):void {
+    animateToElementAndPutDown(el:HTMLElement, complete?:() => void):void {
       Animation.stop(this.el);
 
       const rect = el.getBoundingClientRect();
@@ -147,7 +147,7 @@ module Tactile {
     }
 
 
-    animateDelete(complete:Function):void {
+    animateDelete(complete?:() => void):void {
       Animation.stop(this.el);
       Animation.set(this.el, {
         opacity: 0,
