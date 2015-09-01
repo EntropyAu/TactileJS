@@ -32,12 +32,12 @@ module Tactile {
 
 
     public enter(xy: [number, number]): void {
+      this.index = null;
       if (!this.placeholder) {
-        this.index = null;
         this._initializeChildAndSiblingEls();
         this._initializePlaceholder();
-        this._updatePlaceholderPosition();
       }
+      this._updatePlaceholderPosition(false);
       this.placeholder.setState("ghost");
       this.helperSize = this.placeholder.size;
       this.helperScale = this.placeholder.scale;
@@ -56,7 +56,7 @@ module Tactile {
         this.placeholder.setState("materialized");
       } else {
         this.index = null;
-        this._updatePlaceholderPosition(function () {
+        this._updatePlaceholderPosition(true, function () {
           this.placeholder.setState("hidden");
           this._clearChildTranslations();
           this._childGeometry.clear();
@@ -191,9 +191,9 @@ module Tactile {
     }
 
 
-    private _updatePlaceholderPosition(complete?:() => void): void {
+    private _updatePlaceholderPosition(animate = true, complete?:() => void): void {
       if (this._avoidDomMutations) {
-        this._updateChildTranslations(complete);
+        this._updateChildTranslations(animate, complete);
       } else {
         this._updatePlaceholderIndex(complete);
       }
@@ -222,10 +222,9 @@ module Tactile {
     }
 
 
-    private _updateChildTranslations(complete?:() => void): void {
+    private _updateChildTranslations(animate = true, complete?:() => void): void {
       let offset: number = 0;
       let placeholderOffset: number = null;
-
       let els = []
       let elValues = [];
 
@@ -247,8 +246,7 @@ module Tactile {
       const translate = this._directionProperties.translate;
 
       let props = { [translate]: function(i) { return elValues[i]; } };
-      Animation.set(els, props, this.drag.options.reorderAnimation, complete);
-
+      Animation.set(els, props, animate ? this.drag.options.reorderAnimation : { duration: 0 }, complete);
 
       if (placeholderOffset === null) placeholderOffset = offset;
       let placeholderGeometry = this._getChildGeometry(this.placeholder.el);
@@ -257,6 +255,9 @@ module Tactile {
         // teleport the placeholder into it's new position (no animation)
         Dom.transform(this.placeholder.el, { [translate]: newPlaceholderTranslation });
         placeholderGeometry.translation = newPlaceholderTranslation;
+      }
+      if (els.length === 0 || !animate) {
+        complete && complete();
       }
     }
 

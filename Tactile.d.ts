@@ -408,10 +408,10 @@ declare module Tactile {
         private _initializePlaceholder();
         private _initializeChildAndSiblingEls();
         private _setPlaceholderIndex(newIndex);
-        private _updatePlaceholderPosition(complete?);
+        private _updatePlaceholderPosition(animate?, complete?);
         private _getChildGeometry(el);
         private _updatePlaceholderIndex(complete?);
-        private _updateChildTranslations(complete?);
+        private _updateChildTranslations(animate?, complete?);
         private _clearChildTranslations();
     }
 }

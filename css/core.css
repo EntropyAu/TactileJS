@@ -152,6 +152,7 @@ ul[data-drag-canvas] > * {
   cursor:         grab;
 }
 
+body[data-drag-in-progress],
 body[data-drag-in-progress] * {
   cursor: move !important;
   cursor: -webkit-grabbing !important;

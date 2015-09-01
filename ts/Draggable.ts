@@ -7,6 +7,9 @@ module Tactile {
       el = Dom.closest(el, '[data-drag-handle],[data-drag-draggable],ol[data-drag-sortable] > li,ul[data-drag-canvas] > li');
       if (!el) return null;
 
+      // don't commence pickup of a data-drag-helper
+      if (el.hasAttribute('data-drag-helper')) return null;
+
       // if the pointer is over a handle element, ascend the DOM to find the
       // associated draggable item
       if (el.hasAttribute('data-drag-handle')) {

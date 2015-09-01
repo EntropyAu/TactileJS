@@ -1056,6 +1056,7 @@ var Tactile;
             }
         };
         Drag.prototype._tryLeaveTarget = function (container) {
+            console.log("_tryLeaveTarget");
             if (!this._raise(container.el, 'dragleave').defaultPrevented) {
                 this.target = null;
                 container.leave();
@@ -1165,6 +1166,8 @@ var Tactile;
         Draggable.closest = function (el) {
             el = Tactile.Dom.closest(el, '[data-drag-handle],[data-drag-draggable],ol[data-drag-sortable] > li,ul[data-drag-canvas] > li');
             if (!el)
+                return null;
+            if (el.hasAttribute('data-drag-helper'))
                 return null;
             if (el.hasAttribute('data-drag-handle')) {
                 el = Tactile.Dom.closest(el, '[data-drag-draggable],ol[data-drag-sortable] > li,ul[data-drag-canvas] > li');
@@ -1768,12 +1771,12 @@ var Tactile;
             this._childGeometry.clear();
         };
         Sortable.prototype.enter = function (xy) {
+            this.index = null;
             if (!this.placeholder) {
-                this.index = null;
                 this._initializeChildAndSiblingEls();
                 this._initializePlaceholder();
-                this._updatePlaceholderPosition();
             }
+            this._updatePlaceholderPosition(false);
             this.placeholder.setState("ghost");
             this.helperSize = this.placeholder.size;
             this.helperScale = this.placeholder.scale;
@@ -1789,7 +1792,7 @@ var Tactile;
             }
             else {
                 this.index = null;
-                this._updatePlaceholderPosition(function () {
+                this._updatePlaceholderPosition(true, function () {
                     this.placeholder.setState("hidden");
                     this._clearChildTranslations();
                     this._childGeometry.clear();
@@ -1900,9 +1903,10 @@ var Tactile;
                 this._updatePlaceholderPosition();
             }
         };
-        Sortable.prototype._updatePlaceholderPosition = function (complete) {
+        Sortable.prototype._updatePlaceholderPosition = function (animate, complete) {
+            if (animate === void 0) { animate = true; }
             if (this._avoidDomMutations) {
-                this._updateChildTranslations(complete);
+                this._updateChildTranslations(animate, complete);
             }
             else {
                 this._updatePlaceholderIndex(complete);
@@ -1924,7 +1928,8 @@ var Tactile;
             var domMutation = function () { return _this.el.insertBefore(_this.placeholder.el, _this._siblingEls[_this.index]); };
             Tactile.Animation.animateDomMutation(this.el, domMutation, { animationOptions: this.drag.options.reorderAnimation }, complete);
         };
-        Sortable.prototype._updateChildTranslations = function (complete) {
+        Sortable.prototype._updateChildTranslations = function (animate, complete) {
+            if (animate === void 0) { animate = true; }
             var offset = 0;
             var placeholderOffset = null;
             var els = [];
@@ -1945,7 +1950,7 @@ var Tactile;
             }.bind(this));
             var translate = this._directionProperties.translate;
             var props = (_a = {}, _a[translate] = function (i) { return elValues[i]; }, _a);
-            Tactile.Animation.set(els, props, this.drag.options.reorderAnimation, complete);
+            Tactile.Animation.set(els, props, animate ? this.drag.options.reorderAnimation : { duration: 0 }, complete);
             if (placeholderOffset === null)
                 placeholderOffset = offset;
             var placeholderGeometry = this._getChildGeometry(this.placeholder.el);
@@ -1953,6 +1958,9 @@ var Tactile;
             if (placeholderGeometry.translation !== newPlaceholderTranslation) {
                 Tactile.Dom.transform(this.placeholder.el, (_b = {}, _b[translate] = newPlaceholderTranslation, _b));
                 placeholderGeometry.translation = newPlaceholderTranslation;
+            }
+            if (els.length === 0 || !animate) {
+                complete && complete();
             }
             var _a, _b;
         };
