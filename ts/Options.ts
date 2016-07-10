@@ -31,7 +31,7 @@ module Tactile {
   export var defaults:Options = {
     cancel: 'input,textarea,a,button,select',
     helperResize: true,
-    helperCloneStyles: false,
+    helperCloneStyles: true,
     animation: true,
     revertBehaviour:  'last', // original, last
     pickUpAnimation:           { duration: 300, easing: 'ease-in-out' },

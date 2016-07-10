@@ -12,14 +12,14 @@ module Tactile {
   // TODO: update source mode if enter-action is defined on target
   // TODO: Add revert behaviour - "origin" (in addition to "last")
   // TODO: listen to dom mutation events
-  // TODO: constrain scroll with blah
   // TODO: constrain scroll with max scroll (iOS does not enforce)
-  // TODO: use pointer (not constrained) location for scrolling (scrolling can be prevented for large items)
+  // TODO: use pointer position (not constrained) location for scrolling (scrolling can be prevented for large items)
   // TODO: enable events to be registered manually instead of globally
   // TODO: confirm all references to style are via computed
   // TODO: convert helper state to enum
   // TODO: convert placeholder state to enum
   // TODO: allow copy into same container (eg. hold ctrl)
+  // TODO: allow multiple drag positions
 
 
   export class Drag {

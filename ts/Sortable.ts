@@ -10,7 +10,8 @@ module Tactile {
     private _childGeometry: Cache;
     private _style: CSSStyleDeclaration = getComputedStyle(this.el);
     private _avoidDomMutations: boolean = true;
-    private _mutObserver:MutationObserver;
+    private _mutObserver: MutationObserver;
+    private _entered: boolean = false;
 
 
     constructor(el: HTMLElement, drag: Drag) {
@@ -27,12 +28,14 @@ module Tactile {
     }
 
     private _onDomMutation(e):void {
+      // clear the geometry cache - something has changed
       this._childGeometry.clear();
     }
 
 
     public enter(xy: [number, number]): void {
       this.index = null;
+      this._entered =  true;
       if (!this.placeholder) {
         this._initializeChildAndSiblingEls();
         this._initializePlaceholder();
@@ -52,14 +55,17 @@ module Tactile {
 
 
     public leave(): void {
+      this._entered =  false;
       if (this.leaveAction === DragAction.Copy && this.placeholder.isOriginalEl) {
         this.placeholder.setState("materialized");
       } else {
         this.index = null;
         this._updatePlaceholderPosition(true, function () {
-          this.placeholder.setState("hidden");
-          this._clearChildTranslations();
-          this._childGeometry.clear();
+          if (!this._entered) {
+            this.placeholder.setState("hidden");
+            this._clearChildTranslations();
+            this._childGeometry.clear();
+          }
         }.bind(this));
       }
     }
@@ -71,7 +77,7 @@ module Tactile {
 
 
     public dispose(): void {
-      if (this.placeholder) this.placeholder.dispose()
+      this.placeholder && this.placeholder.dispose()
       if (this._mutObserver) {
         this._mutObserver.disconnect();
         this._mutObserver = null;
@@ -266,12 +272,10 @@ module Tactile {
       // synchronously clear the transform styles (rather than calling
       // velocity.js) to avoid flickering when the dom elements are reordered
       Animation.stop(this._siblingEls || []);
-      if (this._childEls) {
-        this._childEls.forEach(function(el) {
-          el.style.transform = '';
-          el.style.webkitTransform = '';
-        });
-      }
+      this._childEls && this._childEls.forEach(function(el) {
+        el.style.transform = '';
+        el.style.webkitTransform = '';
+      });
       // clear any cached animation values in Velocity.js
       Animation.clear(this._siblingEls || []);
     }

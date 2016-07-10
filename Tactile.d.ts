@@ -393,6 +393,7 @@ declare module Tactile {
         private _style;
         private _avoidDomMutations;
         private _mutObserver;
+        private _entered;
         constructor(el: HTMLElement, drag: Drag);
         private _initializeMutationListener();
         private _onDomMutation(e);

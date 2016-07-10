@@ -1,3 +1,8 @@
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var Tactile;
 (function (Tactile) {
     var Animation;
@@ -253,8 +258,8 @@ var Tactile;
         function copyComputedStyles(sourceEl, targetEl) {
             if (sourceEl && targetEl) {
                 targetEl.style.cssText = getComputedStyle(sourceEl).cssText;
-                var targetChildren = children(targetEl);
-                children(sourceEl).forEach(function (el, i) { return copyComputedStyles(el, targetChildren[i]); });
+                var targetChildren_1 = children(targetEl);
+                children(sourceEl).forEach(function (el, i) { return copyComputedStyles(el, targetChildren_1[i]); });
             }
         }
         Dom.copyComputedStyles = copyComputedStyles;
@@ -669,7 +674,7 @@ var Tactile;
         Container.prototype.finalizePosition = function (el) { };
         Container.prototype.dispose = function () { };
         return Container;
-    })();
+    }());
     Tactile.Container = Container;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -678,7 +683,7 @@ var Tactile;
     Tactile.defaults = {
         cancel: 'input,textarea,a,button,select',
         helperResize: true,
-        helperCloneStyles: false,
+        helperCloneStyles: true,
         animation: true,
         revertBehaviour: 'last',
         pickUpAnimation: { duration: 300, easing: 'ease-in-out' },
@@ -790,15 +795,9 @@ var Tactile;
             return elCache;
         };
         return Cache;
-    })();
+    }());
     Tactile.Cache = Cache;
 })(Tactile || (Tactile = {}));
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
 var Tactile;
 (function (Tactile) {
     var Canvas = (function (_super) {
@@ -871,7 +870,7 @@ var Tactile;
             this.placeholder.setState("hidden");
         };
         return Canvas;
-    })(Tactile.Container);
+    }(Tactile.Container));
     Tactile.Canvas = Canvas;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1056,7 +1055,6 @@ var Tactile;
             }
         };
         Drag.prototype._tryLeaveTarget = function (container) {
-            console.log("_tryLeaveTarget");
             if (!this._raise(container.el, 'dragleave').defaultPrevented) {
                 this.target = null;
                 container.leave();
@@ -1131,7 +1129,7 @@ var Tactile;
             return Tactile.Events.raise(el, 'tactile:' + eventName, eventData);
         };
         return Drag;
-    })();
+    }());
     Tactile.Drag = Drag;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1208,7 +1206,7 @@ var Tactile;
             this.originalParentEl.insertBefore(this.el, this.originalParentEl.children[this.originalIndex]);
         };
         return Draggable;
-    })();
+    }());
     Tactile.Draggable = Draggable;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1369,7 +1367,7 @@ var Tactile;
             }
         };
         return DragManager;
-    })();
+    }());
     Tactile.DragManager = DragManager;
     ;
     window['dragManager'] = new DragManager();
@@ -1391,7 +1389,7 @@ var Tactile;
             Tactile.Polyfill.remove(el);
         };
         return Droppable;
-    })(Tactile.Container);
+    }(Tactile.Container));
     Tactile.Droppable = Droppable;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1427,7 +1425,7 @@ var Tactile;
             return [tl[0] - gripOffset[0], tl[1] - gripOffset[1]];
         };
         return Boundary;
-    })();
+    }());
     Tactile.Boundary = Boundary;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1556,7 +1554,7 @@ var Tactile;
             }, this.drag.options.pickUpAnimation);
         };
         return Helper;
-    })();
+    }());
     Tactile.Helper = Helper;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1629,7 +1627,7 @@ var Tactile;
             }
         };
         return Placeholder;
-    })();
+    }());
     Tactile.Placeholder = Placeholder;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1746,7 +1744,7 @@ var Tactile;
         };
         Scrollable._overflowScrollValues = /^(auto|scroll)$/;
         return Scrollable;
-    })();
+    }());
     Tactile.Scrollable = Scrollable;
 })(Tactile || (Tactile = {}));
 var Tactile;
@@ -1757,6 +1755,7 @@ var Tactile;
             _super.call(this, el, drag);
             this._style = getComputedStyle(this.el);
             this._avoidDomMutations = true;
+            this._entered = false;
             this._childGeometry = new Tactile.Cache();
             this._initializeDirection();
             this._initializeMutationListener();
@@ -1772,6 +1771,7 @@ var Tactile;
         };
         Sortable.prototype.enter = function (xy) {
             this.index = null;
+            this._entered = true;
             if (!this.placeholder) {
                 this._initializeChildAndSiblingEls();
                 this._initializePlaceholder();
@@ -1787,15 +1787,18 @@ var Tactile;
             this._updateIndex(xy);
         };
         Sortable.prototype.leave = function () {
+            this._entered = false;
             if (this.leaveAction === Tactile.DragAction.Copy && this.placeholder.isOriginalEl) {
                 this.placeholder.setState("materialized");
             }
             else {
                 this.index = null;
                 this._updatePlaceholderPosition(true, function () {
-                    this.placeholder.setState("hidden");
-                    this._clearChildTranslations();
-                    this._childGeometry.clear();
+                    if (!this._entered) {
+                        this.placeholder.setState("hidden");
+                        this._clearChildTranslations();
+                        this._childGeometry.clear();
+                    }
                 }.bind(this));
             }
         };
@@ -1803,8 +1806,7 @@ var Tactile;
             this.el.insertBefore(el, this._siblingEls[this.index]);
         };
         Sortable.prototype.dispose = function () {
-            if (this.placeholder)
-                this.placeholder.dispose();
+            this.placeholder && this.placeholder.dispose();
             if (this._mutObserver) {
                 this._mutObserver.disconnect();
                 this._mutObserver = null;
@@ -1966,16 +1968,14 @@ var Tactile;
         };
         Sortable.prototype._clearChildTranslations = function () {
             Tactile.Animation.stop(this._siblingEls || []);
-            if (this._childEls) {
-                this._childEls.forEach(function (el) {
-                    el.style.transform = '';
-                    el.style.webkitTransform = '';
-                });
-            }
+            this._childEls && this._childEls.forEach(function (el) {
+                el.style.transform = '';
+                el.style.webkitTransform = '';
+            });
             Tactile.Animation.clear(this._siblingEls || []);
         };
         return Sortable;
-    })(Tactile.Container);
+    }(Tactile.Container));
     Tactile.Sortable = Sortable;
 })(Tactile || (Tactile = {}));
 //# sourceMappingURL=Tactile.js.map
