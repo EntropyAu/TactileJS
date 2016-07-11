@@ -115,7 +115,7 @@ var Tactile;
             return Array.isArray(value) ? value[0] : value;
         }
         function applyStyleProperties(el, properties, index) {
-            var cssProperties = {
+            var propertyUnits = {
                 "top": "px",
                 "left": "px",
                 "opacity": "",
@@ -123,9 +123,9 @@ var Tactile;
                 "height": "px"
             };
             for (var property in properties) {
-                if (cssProperties[property]) {
+                if (propertyUnits[property]) {
                     var value = unwrapVelocityPropertyValue(properties[property], index);
-                    el.style[property] = value + cssProperties[property];
+                    el.style[property] = value + propertyUnits[property];
                 }
             }
         }
@@ -1769,7 +1769,7 @@ var Tactile;
         Sortable.prototype._onDomMutation = function (e) {
             this._childGeometry.clear();
         };
-        Sortable.prototype.enter = function (xy) {
+        Sortable.prototype.enter = function (viewportXY) {
             this.index = null;
             this._entered = true;
             if (!this.placeholder) {
@@ -1781,7 +1781,7 @@ var Tactile;
             this.helperSize = this.placeholder.size;
             this.helperScale = this.placeholder.scale;
             this._childGeometry.clear();
-            this.move(xy);
+            this.move(viewportXY);
         };
         Sortable.prototype.move = function (xy) {
             this._updateIndex(xy);
@@ -1814,24 +1814,24 @@ var Tactile;
             this._clearChildTranslations();
             this._childGeometry.dispose();
         };
-        Sortable.prototype._updateIndex = function (xy) {
+        Sortable.prototype._updateIndex = function (viewportXY) {
             if (this._siblingEls.length === 0) {
                 return this._setPlaceholderIndex(0);
             }
             if (this._direction !== 'wrap') {
-                this._updateIndexViaOffset(xy);
+                this._updateIndexViaOffset(viewportXY);
             }
             else {
-                this._updateIndexViaSelectionApi(xy);
+                this._updateIndexViaSelectionApi(viewportXY);
             }
         };
-        Sortable.prototype._updateIndexViaOffset = function (xy) {
+        Sortable.prototype._updateIndexViaOffset = function (viewportXY) {
             var _this = this;
             var bounds = this.drag.geometryCache.get(this.el, 'cr', function () { return _this.el.getBoundingClientRect(); });
             var sl = this.drag.geometryCache.get(this.el, 'sl', function () { return _this.el.scrollLeft; });
             var st = this.drag.geometryCache.get(this.el, 'st', function () { return _this.el.scrollTop; });
-            var innerXY = [xy[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
-                xy[1] - bounds.top + st - parseInt(this._style.paddingTop, 10)];
+            var innerXY = [viewportXY[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
+                viewportXY[1] - bounds.top + st - parseInt(this._style.paddingTop, 10)];
             var adjustedXY = [innerXY[0] - this.drag.helper.gripXY[0],
                 innerXY[1] - this.drag.helper.gripXY[1]];
             adjustedXY = [adjustedXY[0] / this.helperScale[0],
@@ -1847,14 +1847,14 @@ var Tactile;
             } while (newIndex < this._siblingEls.length);
             this._setPlaceholderIndex(newIndex);
         };
-        Sortable.prototype._updateIndexViaSelectionApi = function (xy) {
-            var closestElement = Tactile.Dom.elementFromPointViaSelection(xy);
+        Sortable.prototype._updateIndexViaSelectionApi = function (viewportXY) {
+            var closestElement = Tactile.Dom.elementFromPointViaSelection(viewportXY);
             var closestElementParents = Tactile.Dom.ancestors(closestElement, 'li');
             var closestSiblingEl = this._siblingEls.filter(function (el) { return closestElementParents.indexOf(el) !== -1; })[0];
             if (closestSiblingEl && !Tactile.Dom.matches(closestSiblingEl, '.velocity-animating')) {
                 var newIndex = this._siblingEls.indexOf(closestSiblingEl);
                 var childBounds = closestSiblingEl.getBoundingClientRect();
-                if (xy[0] > childBounds.left + childBounds.width / 2)
+                if (viewportXY[0] > childBounds.left + childBounds.width / 2)
                     newIndex++;
                 this._setPlaceholderIndex(newIndex);
             }

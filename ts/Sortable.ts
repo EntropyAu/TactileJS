@@ -33,7 +33,7 @@ module Tactile {
     }
 
 
-    public enter(xy: [number, number]): void {
+    public enter(viewportXY: [number, number]): void {
       this.index = null;
       this._entered =  true;
       if (!this.placeholder) {
@@ -45,7 +45,7 @@ module Tactile {
       this.helperSize = this.placeholder.size;
       this.helperScale = this.placeholder.scale;
       this._childGeometry.clear();
-      this.move(xy);
+      this.move(viewportXY);
     }
 
 
@@ -88,33 +88,34 @@ module Tactile {
     }
 
 
-    private _updateIndex(xy: [number, number]): void {
+    private _updateIndex(viewportXY: [number, number]): void {
       if (this._siblingEls.length === 0) {
         return this._setPlaceholderIndex(0);
       }
       if (this._direction !== 'wrap') {
-        this._updateIndexViaOffset(xy);
+        this._updateIndexViaOffset(viewportXY);
       } else {
-        this._updateIndexViaSelectionApi(xy);
+        this._updateIndexViaSelectionApi(viewportXY);
       }
     }
 
 
-    private _updateIndexViaOffset(xy: [number, number]): void {
+    private _updateIndexViaOffset(viewportXY: [number, number]): void {
       const bounds = this.drag.geometryCache.get(this.el, 'cr', () => this.el.getBoundingClientRect());
       const sl = this.drag.geometryCache.get(this.el, 'sl', () => this.el.scrollLeft);
       const st = this.drag.geometryCache.get(this.el, 'st', () => this.el.scrollTop);
 
       // calculate the position of the item relative to this container
-      const innerXY = [xy[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
-                       xy[1] - bounds.top + st - parseInt(this._style.paddingTop, 10)];
+      // TODO: fix to take into account border width cross-browser
+      const innerXY = [viewportXY[0] - bounds.left + sl - parseInt(this._style.paddingLeft, 10),
+                       viewportXY[1] - bounds.top + st - parseInt(this._style.paddingTop, 10)];
       let adjustedXY = [innerXY[0] - this.drag.helper.gripXY[0],
                         innerXY[1] - this.drag.helper.gripXY[1]];
 
       adjustedXY = [adjustedXY[0] / this.helperScale[0],
                     adjustedXY[1] / this.helperScale[1]];
 
-
+      // TODO consider binary search
       let naturalOffset = 0;
       let newIndex = 0;
       do {
@@ -128,14 +129,15 @@ module Tactile {
     }
 
 
-    private _updateIndexViaSelectionApi(xy: [number, number]): void {
-      const closestElement = Dom.elementFromPointViaSelection(xy);
+    private _updateIndexViaSelectionApi(viewportXY: [number, number]): void {
+      const closestElement = Dom.elementFromPointViaSelection(viewportXY);
+      // TODO: fix this to look for draggables rather than LIs
       const closestElementParents = Dom.ancestors(closestElement, 'li');
       const closestSiblingEl = this._siblingEls.filter(el => closestElementParents.indexOf(el) !== -1)[0];
       if (closestSiblingEl && !Dom.matches(closestSiblingEl, '.velocity-animating')) {
         let newIndex = this._siblingEls.indexOf(closestSiblingEl);
         const childBounds = closestSiblingEl.getBoundingClientRect();
-        if (xy[0] > childBounds.left + childBounds.width / 2) newIndex++;
+        if (viewportXY[0] > childBounds.left + childBounds.width / 2) newIndex++;
         this._setPlaceholderIndex(newIndex);
       }
     }

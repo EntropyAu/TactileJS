@@ -397,14 +397,14 @@ declare module Tactile {
         constructor(el: HTMLElement, drag: Drag);
         private _initializeMutationListener();
         private _onDomMutation(e);
-        enter(xy: [number, number]): void;
+        enter(viewportXY: [number, number]): void;
         move(xy: [number, number]): void;
         leave(): void;
         finalizePosition(el: HTMLElement): void;
         dispose(): void;
-        private _updateIndex(xy);
-        private _updateIndexViaOffset(xy);
-        private _updateIndexViaSelectionApi(xy);
+        private _updateIndex(viewportXY);
+        private _updateIndexViaOffset(viewportXY);
+        private _updateIndexViaSelectionApi(viewportXY);
         private _initializeDirection();
         private _initializePlaceholder();
         private _initializeChildAndSiblingEls();

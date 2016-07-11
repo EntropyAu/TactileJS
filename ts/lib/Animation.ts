@@ -135,7 +135,7 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
   }
 
   function applyStyleProperties(el:HTMLElement, properties:any, index:number):void {
-    const cssProperties = {
+    const propertyUnits = {
       "top": "px",
       "left": "px",
       "opacity": "",
@@ -144,9 +144,9 @@ export function clear(els:HTMLElement|HTMLElement[]):void {
     };
 
     for (let property in properties) {
-      if (cssProperties[property]) {
+      if (propertyUnits[property]) {
         let value = unwrapVelocityPropertyValue(properties[property], index);
-        el.style[property] = value + cssProperties[property];
+        el.style[property] = value + propertyUnits[property];
       }
     }
   }
