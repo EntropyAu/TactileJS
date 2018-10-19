@@ -5,19 +5,23 @@ module Tactile {
       super(el, drag);
     }
 
-    enter(xy:[number,number]):void {
+
+    public enter(xy:[number,number]):void {
       // do nothing
     }
 
-    move(xy:[number,number]):void {
+
+    public move(xy:[number,number]):void {
       // do nothing
     }
 
-    leave():void {
+
+    public leave():void {
       // do nothing
     }
 
-    finalizePosition(el:HTMLElement):void {
+
+    public finalizePosition(el:HTMLElement):void {
       Polyfill.remove(el);
     }
   }

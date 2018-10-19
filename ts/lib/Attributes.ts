@@ -1,5 +1,18 @@
 module Tactile.Attributes {
 
+  export function set(
+    el:Element,
+    attrName:string,
+    value:string = '') {
+    el.setAttribute(attrName, value);
+  }
+
+  export function remove(
+    el:Element,
+    attrName:string) {
+    el.removeAttribute(attrName);
+  }
+
   export function get(
     el:Element,
     attrName:string,

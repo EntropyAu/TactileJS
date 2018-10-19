@@ -1,17 +1,17 @@
 module Tactile {
   export class DragManager {
-    public options: Options = defaults;
+    public options:Options = defaults;
 
-    private _drags: any = {};
-    private _pendingDrags: any = {};
-    private _onPointerDownListener: EventListener;
-    private _onPointerMoveListener: EventListener;
-    private _onPointerUpListener: EventListener;
-    private _onKeyDownListener: EventListener;
-    private _onClickListener: EventListener;
+    private _drags:any = {};
+    private _pendingDrags:any = {};
+    private _onPointerDownListener:EventListener;
+    private _onPointerMoveListener:EventListener;
+    private _onPointerUpListener:EventListener;
+    private _onKeyDownListener:EventListener;
+    private _onClickListener:EventListener;
 
 
-    constructor(options?: Options) {
+    constructor(options?:Options) {
       this._onPointerDownListener = this._onPointerDown.bind(this);
       this._onPointerMoveListener = this._onPointerMove.bind(this);
       this._onPointerUpListener = this._onPointerUp.bind(this);
@@ -25,7 +25,7 @@ module Tactile {
     /* PUBLIC METHODS */
     /******************/
 
-    set(options: Options) {
+    set(options:Options) {
       for (let key in (options || {}))
         this.options[key] = options[key];
     }
@@ -76,22 +76,24 @@ module Tactile {
     }
 
 
-    private _bindDraggingEventsForTarget(el: HTMLElement) {
+    private _bindDraggingEventsForTarget(el:HTMLElement) {
       el.addEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
       el.addEventListener(Events.pointerUpEvent, this._onPointerUpListener, true);
     }
 
 
-    private _unbindDraggingEventsForTarget(el: HTMLElement) {
+    private _unbindDraggingEventsForTarget(el:HTMLElement) {
       el.removeEventListener(Events.pointerMoveEvent, this._onPointerMoveListener, true);
       el.removeEventListener(Events.pointerUpEvent, this._onPointerUpListener, true);
     }
 
-    private _onClick(e: MouseEvent) {
+
+    private _onClick(e:MouseEvent) {
       Events.cancel(e);
     }
 
-    private _onPointerDown(e: MouseEvent|TouchEvent) {
+
+    private _onPointerDown(e:MouseEvent|TouchEvent) {
       if (e instanceof MouseEvent && e.which !== 0 && e.which !== 1) return;
 
       for (let pointer of Events.normalizePointerEvent(e)) {
@@ -110,7 +112,7 @@ module Tactile {
     }
 
 
-    private _onPointerMove(e: MouseEvent|TouchEvent) {
+    private _onPointerMove(e:MouseEvent|TouchEvent) {
       for (let pointer of Events.normalizePointerEvent(e)) {
         if (this._drags[pointer.id]) {
           this._drags[pointer.id].move(pointer.xy, pointer.xyEl);
@@ -125,7 +127,7 @@ module Tactile {
     }
 
 
-    private _onPointerUp(e: MouseEvent|TouchEvent) {
+    private _onPointerUp(e:MouseEvent|TouchEvent) {
       for (let pointer of Events.normalizePointerEvent(e)) {
         if (this._drags[pointer.id]) {
           this._endDrag(pointer.id);
@@ -138,7 +140,7 @@ module Tactile {
     }
 
 
-    private _onKeyDown(e: KeyboardEvent): void {
+    private _onKeyDown(e:KeyboardEvent): void {
       if (e.which === 27 /* ESC */) {
         Object.keys(this._drags).forEach(function(dragId) {
           this._endDrag(parseInt(dragId, 10), true, e.shiftKey);
@@ -147,7 +149,11 @@ module Tactile {
     }
 
 
-    private _scheduleDrag(draggableEl: HTMLElement, dragId: number, xy: [number, number]): void {
+    private _scheduleDrag(
+      draggableEl:HTMLElement,
+      dragId:number,
+      xy:[number,number]):void
+    {
       let onPickUpTimeout = function() { this._startScheduledDrag(dragId); }.bind(this);
       this._pendingDrags[dragId] = {
         id: dragId,
@@ -158,7 +164,7 @@ module Tactile {
     }
 
 
-    private _startScheduledDrag(dragId: number) {
+    private _startScheduledDrag(dragId:number) {
       let pendingDrag = this._pendingDrags[dragId];
       clearTimeout(pendingDrag.timerId);
       this._startDrag(pendingDrag.el, pendingDrag.id, pendingDrag.xy, pendingDrag.xyEl);
@@ -166,14 +172,19 @@ module Tactile {
     }
 
 
-    private _cancelScheduledDrag(dragId: number) {
+    private _cancelScheduledDrag(dragId:number) {
       let pendingDrag = this._pendingDrags[dragId];
       clearTimeout(pendingDrag.timerId);
       delete this._pendingDrags[pendingDrag.id];
     }
 
 
-    private _startDrag(draggableEl: HTMLElement, dragId: number, xy: [number, number], xyEl: HTMLElement): Drag {
+    private _startDrag(
+      draggableEl:HTMLElement,
+      dragId:number,
+      xy:[number,number],
+      xyEl:HTMLElement):Drag
+    {
       Dom.clearSelection();
       document.body.setAttribute('data-drag-in-progress', '');
       this._bindDraggingEvents();
@@ -182,7 +193,11 @@ module Tactile {
     }
 
 
-    private _endDrag(dragId: number, cancel: boolean = false, abort: boolean = false) {
+    private _endDrag(
+      dragId:number,
+      cancel:boolean=false,
+      abort:boolean=false):void
+    {
       let drag = this._drags[dragId];
       if (!cancel) drag.drop(); else drag.cancel(abort);
       delete this._drags[dragId];

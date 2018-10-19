@@ -23,12 +23,12 @@
         "ts/lib/Text.ts",
         "ts/lib/Vector.ts",
 
+        "ts/MutationListener.ts",
         "ts/Container.ts",
         "ts/Options.ts",
         "ts/Cache.ts",
         "ts/Canvas.ts",
         "ts/Drag.ts",
-        "ts/DragAction.ts",
         "ts/Draggable.ts",
         "ts/DragManager.ts",
         "ts/Droppable.ts",

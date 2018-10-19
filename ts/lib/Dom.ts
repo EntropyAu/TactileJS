@@ -2,10 +2,11 @@ module Tactile.Dom {
 
   export function matches(el:HTMLElement, selector:string):boolean {
     if (el['matches']) return el['matches'](selector);
-    if (el['msMatchesSelector']) return el['msMatchesSelector'](selector);
-    if (el['mozMatchesSelector']) return el['mozMatchesSelector'](selector);
     if (el['webkitMatchesSelector']) return el['webkitMatchesSelector'](selector);
+    if (el['mozMatchesSelector']) return el['mozMatchesSelector'](selector);
+    if (el['msMatchesSelector']) return el['msMatchesSelector'](selector);
   }
+
 
   export function indexOf(el:HTMLElement):number {
     return Array.prototype.indexOf.call(el.parentElement.children, el);
@@ -21,11 +22,12 @@ module Tactile.Dom {
     return ( el !== descendantEl && el.contains(descendantEl));
   }
 
+
   export function closest(el:HTMLElement, selector:string):HTMLElement {
     if (el === null) return;
     if (typeof el["closest"] === 'function') {
       // chrome 41, firefox 35, not supported in IE or Safari
-      return el["closest"](selector);
+      return <HTMLElement>el["closest"](selector);
     }
     do {
       if (matches(el, selector)) return el;
@@ -54,6 +56,23 @@ module Tactile.Dom {
     return ancestors;
   }
 
+
+  export function cloneAttributesOntoElement(sourceEl:HTMLElement, targetEl:HTMLElement) {
+    // TODO: untested
+    // TODO: confirm includes classlist
+    let sourceAttributes = sourceEl.attributes;
+    let targetAttributes = targetEl.attributes;
+    for(var i = sourceAttributes.length - 1; i >= 0; i--) {
+      sourceAttributes[i].name + "->" + sourceAttributes[i].value;
+    }
+    for (let attrName in sourceAttributes) {
+      targetEl.setAttribute(attrName, sourceAttributes[attrName].value);
+    }
+    for (let attrName in sourceAttributes) {
+      if (!sourceAttributes[attrName])
+      targetEl.removeAttribute(attrName);
+    }
+  }
 
 
   export function copyComputedStyles(sourceEl:HTMLElement, targetEl:HTMLElement):void {
@@ -89,7 +108,7 @@ module Tactile.Dom {
   }
 
 
-  export function children(el:HTMLElement):HTMLElement[] {
+  export function children(el:HTMLElement, selector?:string):HTMLElement[] {
     return [].slice.call(el.children);
   }
 
@@ -106,6 +125,7 @@ module Tactile.Dom {
     const style = getComputedStyle(el);
     return el.offsetHeight + parseInt(style.marginTop, 10) + parseInt(style.marginBottom, 10);
   }
+
 
   export function outerWidth(el:HTMLElement, includeMargins:boolean = false):number {
     if (!includeMargins) return el.offsetWidth;
@@ -158,7 +178,7 @@ module Tactile.Dom {
     // webkit
     if (document['caretRangeFromPoint']) {
       let range = document['caretRangeFromPoint'](xy[0],xy[1]);
-      if (range) node = range.startContainer;
+      if (range) node = <Element>range.startContainer;
     }
     // mozilla
     if (document['caretPositionFromPoint']) {

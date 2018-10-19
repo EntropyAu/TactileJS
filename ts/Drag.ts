@@ -1,37 +1,40 @@
 module Tactile {
 
-  // TODO: xxxxx invalidating geometry cache with heirarchical sortables
-  // TODO: xxxxx - invalidate child measures when entering / exiting hierarchical
-  // TODO: xxxxx - wrapped elements - delay updates while animation is in progress
-  // TODO: xxxxx - constrain placement in canvas
-  // TODO: xxxxx - - scrolling should be constrained within boundary
-  // TODO: xxxxx - Reapply boundary constraint on window scroll
-
   // TODO: Fix scaled sortable calculations - local xy on move
   // TODO: Fix non-velocity scaled helper
   // TODO: update source mode if enter-action is defined on target
-  // TODO: Add revert behaviour - "origin" (in addition to "last")
-  // TODO: listen to dom mutation events
   // TODO: constrain scroll with max scroll (iOS does not enforce)
   // TODO: use pointer position (not constrained) location for scrolling (scrolling can be prevented for large items)
   // TODO: enable events to be registered manually instead of globally
-  // TODO: confirm all references to style are via computed
-  // TODO: convert helper state to enum
-  // TODO: convert placeholder state to enum
   // TODO: allow copy into same container (eg. hold ctrl)
   // TODO: allow multiple drag positions
 
+  export enum DragAction {
+    Copy,
+    Move,
+    Delete,
+    Revert,
+    Cancel
+  }
+
+
+  export enum DragRevertBehaviour {
+    RevertToOriginPosition,
+    RevertToLastValidPosition
+  }
+
 
   export class Drag {
-    xyEl: HTMLElement;
-    draggable: Draggable = null;
-    helper: Helper = null;
-    source: Container = null;
-    target: Container = null;
-    boundary: Boundary = null;
-    action: DragAction = DragAction.Move;
-    geometryCache: Cache = new Cache();
-    containerCache: Cache = new Cache();
+    xyEl:HTMLElement;
+    draggable:Draggable = null;
+    helper:Helper = null;
+    source:Container = null;
+    target:Container = null;
+    boundary:Boundary = null;
+    action:DragAction = DragAction.Move;
+    geometryCache:Cache = new Cache();
+    containerCache:Cache = new Cache();
+    revertBehaviour:DragRevertBehaviour=DragRevertBehaviour.RevertToLastValidPosition;
 
     private _xyChanged: boolean = false;
     private _hasScrolled: boolean = false;
@@ -66,7 +69,7 @@ module Tactile {
     }
 
 
-    move(xy: [number, number], xyEl: HTMLElement): void {
+    public move(xy: [number, number], xyEl: HTMLElement): void {
       if (this._dragEnded) return;
       this.xy = xy;
       this.xyEl = xyEl;
@@ -75,7 +78,7 @@ module Tactile {
     }
 
 
-    cancel(debugElements: boolean = false): void {
+    public cancel(debugElements: boolean = false): void {
       this._dragEnded = true;
       this._raise(this.draggable.el, 'dragend');
       this._cancelTick();
@@ -86,7 +89,7 @@ module Tactile {
     }
 
 
-    drop(): void {
+    public drop(): void {
       this._dragEnded = true;
       this._scroller = null;
       this._tick();
@@ -116,9 +119,10 @@ module Tactile {
     }
 
 
-    dispose() {
+    public dispose() {
       this.containerCache.forEach('container', function(value:any) { value.dispose() });
       this.helper.dispose();
+      this.draggable.dispose();
       this.geometryCache.dispose();
       this.containerCache.dispose();
       this.target && this.target.dispose();
@@ -153,6 +157,7 @@ module Tactile {
         this._afRequestId = Polyfill.requestAnimationFrame(this._tick.bind(this));
       }
     }
+
 
     private _cancelTick(): void {
       if (this._afRequestId) {
@@ -230,7 +235,6 @@ module Tactile {
         this._raise(this.draggable.el, 'drag');
       }
     }
-
 
 
     private _updateTarget(): void {

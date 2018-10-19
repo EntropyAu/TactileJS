@@ -10,21 +10,21 @@ module Tactile {
     scale:[number,number] = [1,1];
 
 
-    constructor(public drag:Drag, draggable:Draggable) {
+    constructor(public drag:Drag, public draggable:Draggable) {
       this.xy = [0,0];
-      this._initialize(draggable);
+      this._initialize();
     }
 
 
-    private _initialize(draggable:Draggable):void {
-      this.el = <HTMLElement>draggable.el.cloneNode(true);
+    private _initialize():void {
+      this.el = <HTMLElement>this.draggable.el.cloneNode(true);
       this.el.removeAttribute("id");
       this.el.setAttribute("data-drag-helper", "");
       this.el.removeAttribute("data-drag-placeholder");
 
       const s = this.el.style;
       if (this.drag.options.helperCloneStyles) {
-        Dom.copyComputedStyles(draggable.el, this.el);
+        Dom.copyComputedStyles(this.draggable.el, this.el);
         Dom.stripClasses(this.el);
         s.setProperty('position', 'fixed', 'important');
         s.setProperty('display', 'block', 'important');
@@ -38,13 +38,11 @@ module Tactile {
 
       // any existing transitions may screw up velocity's work
       // TODO: deal with iOS where a 10ms transition makes movement smoother
-      s.webkitTransition = "none";
       s.transition = "none";
-      s.webkitTransform = "none";
       s.transform = "none";
       s.margin = "0";
 
-      const rect = draggable.el.getBoundingClientRect();
+      const rect = this.draggable.el.getBoundingClientRect();
       this.gripXY = Vector.subtract(this.drag.xy, [rect.left, rect.top]);
       this.gripRelative = Vector.divide(this.gripXY, [rect.width, rect.height])
       this.gripOffset = Vector.multiplyScalar(this.gripXY, -1);
@@ -62,8 +60,8 @@ module Tactile {
       document.body.appendChild(this.el);
 
       this.setPosition(this.drag.xy);
-      this.setSizeAndScale(draggable.originalSize,
-                           draggable.originalScale,
+      this.setSizeAndScale(this.draggable.originalSize,
+                           this.draggable.originalScale,
                            false);
 
       Animation.set(this.el, {
@@ -78,7 +76,7 @@ module Tactile {
     }
 
 
-    setAction(action:DragAction):void {
+    public setAction(action:DragAction):void {
       let opacity = 1;
       switch (action) {
         case DragAction.Revert: opacity = 0.50; break;
@@ -88,7 +86,7 @@ module Tactile {
     }
 
 
-    setPosition(xy:[number,number]):void {
+    public setPosition(xy:[number,number]):void {
       if (Vector.equals(this.xy, xy)) return;
       Animation.set(this.el, {
         translateX: [xy[0], xy[0]],
@@ -99,7 +97,7 @@ module Tactile {
     }
 
 
-    setSizeAndScale(
+    public setSizeAndScale(
       size:[number,number],
       scale:[number,number],
       animate:boolean = true):void {
@@ -128,7 +126,7 @@ module Tactile {
     }
 
 
-    animateToElementAndPutDown(el:HTMLElement, complete?:() => void):void {
+    public animateToElementAndPutDown(el:HTMLElement, complete?:() => void):void {
       Animation.stop(this.el);
 
       const rect = el.getBoundingClientRect();
@@ -147,7 +145,7 @@ module Tactile {
     }
 
 
-    animateDelete(complete?:() => void):void {
+    public animateDelete(complete?:() => void):void {
       Animation.stop(this.el);
       Animation.set(this.el, {
         opacity: 0,
@@ -157,7 +155,7 @@ module Tactile {
     }
 
 
-    dispose():void {
+    public dispose():void {
       Polyfill.remove(this.el);
     }
 
@@ -167,6 +165,16 @@ module Tactile {
         rotateZ: [this.drag.options.helperRotation, 0],
         boxShadowBlur: [this.drag.options.helperShadowSize, 'easeOutBack']
       }, this.drag.options.pickUpAnimation);
+    }
+
+    private _onDraggableElementUpdated(e):void {
+      console.log("Sortable._draggableElementUpdated", e);
+      // replace the current element with a fresh copy
+    }
+
+    private _onElementRemoved(e):void {
+      // somebody has removed this element from the DOM
+      // let's recreate it
     }
   }
 }

@@ -21,8 +21,8 @@ module Tactile {
 
     static buildContainer(el:HTMLElement, drag:Drag):Container {
       if (Dom.matches(el, '[data-drag-canvas]')) return new Canvas(el, drag);
-      if (Dom.matches(el, '[data-drag-droppable]')) return new Droppable(el, drag);
       if (Dom.matches(el, '[data-drag-sortable]')) return new Sortable(el, drag);
+      if (Dom.matches(el, '[data-drag-droppable]')) return new Droppable(el, drag);
       return null;
     }
 
@@ -48,18 +48,36 @@ module Tactile {
     }
 
 
-    willAccept(draggable:Draggable):boolean {
+    public willAccept(draggable:Draggable):boolean {
       if (this.el === draggable.originalParentEl) return true;
       if (this.el.hasAttribute('data-drag-disabled')) return false;
-      return this.accepts.indexOf('*') !== -1
-          || draggable.tags.some(t => this.accepts.indexOf(t) !== -1);
+      return this.accepts.indexOf('*') !== -1 || draggable.tags.some(t => this.accepts.indexOf(t) !== -1);
     }
 
 
-    enter(xy:[number,number]):void { }
-    move(xy:[number,number]):void { }
-    leave():void { }
-    finalizePosition(el:HTMLElement):void { }
-    dispose():void { }
+    public enter(xy:[number,number]):void { }
+
+
+    public move(xy:[number,number]):void { }
+
+
+    public leave():void { }
+
+
+    public finalizePosition(el:HTMLElement):void { }
+
+
+    public dispose():void { }
+
+
+    protected onElementUpdated(e):void {
+      console.log("Container.onElementUpdated", e);
+    }
+
+
+    protected onElementRemoved(e):void {
+      console.log("Container.onElementRemoved", e);
+      this.dispose();
+    }
   }
 }

@@ -2,10 +2,19 @@
 <head>
   <script type="text/javascript" src="../../Tactile.js"></script>
   <script type="text/javascript" src="../vendor/velocity/velocity.js"></script>
+  <script type="text/javascript" src="../vendor/jquery/jquery.js"></script>
   <link rel="stylesheet" type="text/css" href="../vendor/semantic-ui/semantic-ui.min.css">
   <link rel="stylesheet" type="text/css" href="kitchenSink.css">
   <link rel="stylesheet" type="text/css" href="../../css/core.css">
   <link rel="stylesheet" type="text/css" href="../../css/default.css">
+  <script type="text/javascript">
+    setInterval(function() {
+      var lists = $('ol');
+      var randomIndex = Math.floor(Math.random() * lists.length)
+      var list = lists[randomIndex];
+      list.innerHTML = list.innerHTML;
+    }, 50)
+  </script>
 </head>
 <body>
   <div class="ui fixed inverted menu">

@@ -53,7 +53,7 @@ declare module Tactile.Dom {
         width: number;
         height: number;
     };
-    function children(el: HTMLElement): HTMLElement[];
+    function children(el: HTMLElement, selector?: string): HTMLElement[];
     function clientScale(el: HTMLElement): [number, number];
     function outerHeight(el: HTMLElement, includeMargins?: boolean): number;
     function outerWidth(el: HTMLElement, includeMargins?: boolean): number;
@@ -157,7 +157,6 @@ declare module Tactile {
         pickUpDistance?: number;
         helperRotation?: number;
         helperShadowSize?: number;
-        placeholderStyle?: string;
         placeholderClass?: string;
         avoidDomMutations?: boolean;
         scrollAutoDetect?: boolean;
@@ -251,6 +250,7 @@ declare module Tactile {
         static closest(el: HTMLElement): HTMLElement;
         static closestEnabled(el: HTMLElement): HTMLElement;
         data: any;
+        draggableId: string;
         tags: string[];
         originalParentEl: HTMLElement;
         originalIndex: number;
@@ -258,7 +258,14 @@ declare module Tactile {
         originalScale: [number, number];
         originalStyle: string;
         originalOffset: [number, number];
+        private _mutObserver;
         constructor(el: HTMLElement, drag: Drag);
+        private _captureOriginalPosition();
+        private _initializeMutationListener();
+        private _onDomMutation(e);
+        private _disposeMutationListener();
+        private _updateDraggableElement();
+        dispose(): void;
         finalizeMove(target: Container): void;
         finalizeCopy(target: Container): void;
         finalizeDelete(): void;
@@ -395,13 +402,13 @@ declare module Tactile {
         private _mutObserver;
         private _entered;
         constructor(el: HTMLElement, drag: Drag);
-        private _initializeMutationListener();
-        private _onDomMutation(e);
         enter(viewportXY: [number, number]): void;
         move(xy: [number, number]): void;
         leave(): void;
         finalizePosition(el: HTMLElement): void;
         dispose(): void;
+        private _initializeMutationListener();
+        private _onDomMutation(e);
         private _updateIndex(viewportXY);
         private _updateIndexViaOffset(viewportXY);
         private _updateIndexViaSelectionApi(viewportXY);
@@ -413,6 +420,8 @@ declare module Tactile {
         private _getChildGeometry(el);
         private _updatePlaceholderIndex(complete?);
         private _updateChildTranslations(animate?, complete?);
+        _resizeToExcludePlaceholder(): void;
+        _resizeToIncludePlaceholder(): void;
         private _clearChildTranslations();
     }
 }

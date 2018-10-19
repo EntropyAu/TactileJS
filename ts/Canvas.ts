@@ -6,25 +6,21 @@ module Tactile {
     grid:[number,number] = null;
     domain:[number,number] = null;
 
+
     constructor(el:HTMLElement, drag:Drag) {
       super(el, drag);
-
-      let gridAttribute = Attributes.get(this.el, 'data-drag-grid', '10,10');
-      if (gridAttribute !== null) {
-        let tokens = gridAttribute.split(',');
-        this.grid = [parseInt(tokens[0], 10) || 1,
-                     parseInt(tokens[1], 10) || parseInt(tokens[0], 10) || 1];
-      }
+      this._readDataAttributes();
     }
 
 
     public enter(xy:[number,number]):void {
       if (!this.placeholder) {
         this._insertPlaceholder();
+        // TODO: move this logic, should not be cached
         this.helperSize = this.placeholder.size;
         this.helperScale = this.placeholder.scale;
       }
-      this.placeholder.setState("ghost");
+      this.placeholder.setState(PlaceholderState.Ghost);
       this.move(xy);
     }
 
@@ -61,12 +57,12 @@ module Tactile {
     }
 
 
-    public leave() {
+    public leave():void {
       if (this.leaveAction === DragAction.Copy && this.placeholder.isOriginalEl) {
         // TODO: animate placeholder back to it's original position
-        this.placeholder.setState("materialized");
+        this.placeholder.setState(PlaceholderState.Materialized);
       } else {
-        this.placeholder.setState("hidden");
+        this.placeholder.setState(PlaceholderState.Hidden);
       }
     }
 
@@ -82,6 +78,17 @@ module Tactile {
     }
 
 
+    private _readDataAttributes() {
+      this.grid = null;
+      let gridAttribute = Attributes.get(this.el, 'data-drag-grid', '10,10');
+      if (gridAttribute !== null) {
+        let tokens = gridAttribute.split(',');
+        this.grid = [parseInt(tokens[0], 10) || 1,
+                     parseInt(tokens[1], 10) || parseInt(tokens[0], 10) || 1];
+      }
+    }
+
+
     private _insertPlaceholder():void {
       if (this.drag.draggable.originalParentEl === this.el) {
         this.placeholder = new Placeholder(this.drag.draggable.el, this.drag);
@@ -89,7 +96,7 @@ module Tactile {
         this.placeholder = Placeholder.buildPlaceholder(this.el, this.drag);
       }
       Dom.topLeft(this.placeholder.el, [0,0]);
-      this.placeholder.setState("hidden");
+      this.placeholder.setState(PlaceholderState.Hidden);
     }
   }
 }

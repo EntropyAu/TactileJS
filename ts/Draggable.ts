@@ -40,6 +40,7 @@ module Tactile {
 
 
     data:any;
+    draggableId:string;
     tags:string[];
     originalParentEl:HTMLElement;
     originalIndex:number;
@@ -50,27 +51,22 @@ module Tactile {
 
 
     constructor(public el:HTMLElement, public drag:Drag) {
-      this.originalStyle = el.getAttribute('style');
-      this.originalParentEl = el.parentElement;
-      this.originalIndex = Dom.indexOf(el);
-      this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
-      this.originalScale = Dom.clientScale(el);
-      let style = getComputedStyle(this.el);
-      this.originalOffset = [parseInt(style.left, 10), parseInt(style.top, 10)];
+      this.draggableId = Attributes.get(el, 'data-drag-id');
       this.data = Attributes.get(el, 'data-drag-data');
       this.tags = el.hasAttribute('data-drag-tag')
                 ? Attributes.getTags(el, 'data-drag-tag')
                 : Attributes.getTags(el.parentElement, 'data-drag-tag');
+      this._captureOriginalPosition();
     }
 
 
-    finalizeMove(target:Container) {
+    public finalizeMove(target:Container) {
       this.el.setAttribute('style', this.originalStyle);
       target.finalizePosition(this.el);
     }
 
 
-    finalizeCopy(target:Container) {
+    public finalizeCopy(target:Container) {
       let el:HTMLElement = <HTMLElement>this.el.cloneNode(true);
       el.setAttribute('style', this.originalStyle);
       el.removeAttribute('id');
@@ -79,16 +75,47 @@ module Tactile {
     }
 
 
-    finalizeDelete() {
+    public finalizeDelete() {
       Polyfill.remove(this.el);
     }
 
 
-    finalizeRevert():void {
+    public finalizeRevert():void {
       this.el.setAttribute('style', this.originalStyle);
       this.originalParentEl.insertBefore(
         this.el,
         this.originalParentEl.children[this.originalIndex]);
     }
+
+    public dispose():void {
+
+    }
+
+
+    private _captureOriginalPosition() {
+      this.originalStyle = this.el.getAttribute('style');
+      let style = getComputedStyle(this.el);
+      this.originalParentEl = this.el.parentElement;
+      this.originalIndex = Dom.indexOf(this.el);
+      this.originalSize = [this.el.offsetWidth, this.el.offsetHeight];
+      this.originalScale = Dom.clientScale(this.el);
+      this.originalOffset = [parseInt(style.left, 10), parseInt(style.top, 10)];
+    }
+
+
+    private _onElementUpdated(e):void {
+      console.log("Draggable._onElementUpdated", e);
+      // update data-drag attributes
+      // broadcast the updated event
+    }
+
+
+    private _onElementRemoved(e):void {
+      console.log("Draggable._onElementRemoved", e);
+      // if the element being dragged is no longer present in the DOM
+      // cancel the drag in progress
+      this.drag.cancel();
+    }
+
   }
 }
